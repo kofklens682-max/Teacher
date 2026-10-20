@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.1';
+const VERSION_LABEL = 'Teacher 1.2';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -54,7 +54,7 @@ const groupTile = (g) => (g.lvl === 'own' ? `<span class="tp-tile" style="${gv('
   : planned(g.lvl) ? unitTile(weekOf(g.lvl, g.week), g.week - 1) : `<span class="tp-tile" style="--t1:${GRAD[g.lvl][0]};--t2:${GRAD[g.lvl][1]}">${ic('GraduationCap')}</span>`);
 const openLessonAttr = (g) => (g.lvl === 'own' ? `data-push="own" data-g="${g.id}"` : planned(g.lvl) ? `data-push="lesson" data-lvl="${g.lvl}" data-w="${g.week}" data-l="${g.les}" data-g="${g.id}"` : `data-push="register" data-g="${g.id}"`);
 function ring(p, size, w, c1, c2, label) {
-  const r = (size - w) / 2, L = 2 * Math.PI * r, id = 'rg' + Math.random().toString(36).slice(2, 7);
+  const r = (size - w) / 2, L = 2 * Math.PI * r, id = 'rg' + (c1 + c2).replace(/[^a-z0-9]/gi, ''); // the same for the same colours, so redrawing changes nothing
   return `<div class="tp-ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
     <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="rgba(14,19,37,.07)" stroke-width="${w}"/>
     <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="url(#${id})" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${L.toFixed(1)}" stroke-dashoffset="${(L * (1 - p)).toFixed(1)}"/></svg><b>${label}</b></div>`;
@@ -398,27 +398,34 @@ function draw() {
   R.anim = -1;
   syncScreen(); syncSheet(); syncTabs();
 }
-// ---------- the screen on top (week, lesson, register…) ----------
+// ---------- screens on top (week, lesson, register…), kept as a stack like on an iPhone ----------
+// Each open screen keeps its element: going back slides the top one away and the one below glides back, exactly as
+// it was (same scroll), instead of being drawn again. Only the top screen is updated when something changes.
 function syncScreen() {
-  const top = T.push[T.push.length - 1], cur = R.screen;
-  if (cur && cur._sc === top) { setHTML(cur, safe(PUSH[top.s], top), cur._swap); cur._swap = false; return; }
-  const depth = T.push.length, oldDepth = cur ? cur._depth : 0;
-  if (cur) { cur._sc._scroll = cur.scrollTop; R.screen = null; leave(cur, depth > oldDepth ? 'covered' : 'out'); }
-  if (!top) return;
-  const el = document.createElement('div');
-  const slide = depth > oldDepth;
-  el.className = 'tp-push ' + (slide ? 'prep' : 'still');
-  el._sc = top; el._depth = depth;
-  R.screens.appendChild(el);
-  setHTML(el, safe(PUSH[top.s], top));
-  if (top._scroll) el.scrollTop = top._scroll;
-  R.screen = el;
-  if (slide) { void el.offsetHeight; afterPaint(() => el.classList.remove('prep')); } // built first, then it slides in whole
+  const want = T.push, stack = R.stack || (R.stack = []);
+  let k = 0; while (k < want.length && k < stack.length && stack[k]._sc === want[k]) k++;
+  const gone = stack.splice(k), adding = want.length - k;
+  gone.forEach((el, n) => { el._sc._scroll = el.scrollTop; if (n === gone.length - 1 && !adding) slideAway(el); else el.remove(); });
+  for (let n = k; n < want.length; n++) {
+    const el = document.createElement('div'), slide = n === want.length - 1 && !gone.length;
+    el.className = 'tp-push' + (slide ? ' prep' : '');
+    el._sc = want[n];
+    R.screens.appendChild(el);
+    setHTML(el, safe(PUSH[want[n].s], want[n]));
+    if (want[n]._scroll) el.scrollTop = want[n]._scroll;
+    stack.push(el);
+    if (slide) { void el.offsetHeight; afterPaint(() => el.classList.remove('prep')); } // drawn first, then it slides in whole
+  }
+  const top = stack[stack.length - 1];
+  const set = (el, below) => { if (el.classList.contains('under') !== below) el.classList.toggle('under', below); if (el.inert !== below) el.inert = below; };
+  stack.forEach((el) => set(el, el !== top));
+  set(R.vp, stack.length > 0);
+  R.screen = top || null;
+  if (top && !adding) { setHTML(top, safe(PUSH[top._sc.s], top._sc), top._swap); top._swap = false; }
 }
-function leave(el, how) {
-  if (how === 'covered') { setTimeout(() => el.remove(), 560); return; } // the new screen slides over it
-  el.style.zIndex = 16; el.classList.add('out');
-  setTimeout(() => el.remove(), 280);
+function slideAway(el) {
+  el.inert = true; el.classList.remove('under'); el.classList.add('gone');
+  setTimeout(() => el.remove(), 420);
 }
 // ---------- the sheet ----------
 function syncSheet() {
@@ -495,13 +502,15 @@ function syncTabs() {
 }
 // The phone's Back button closes the sheet or the screen on top, like in other apps.
 function stepIn() { try { history.pushState({ tp: ((history.state && history.state.tp) || 0) + 1 }, ''); } catch (e) { /* fine without */ } }
-function goBack() { if (history.state && history.state.tp) history.back(); else closeTop(); }
+// Cancel / ← Back close at once; the history then steps back quietly (its popstate is skipped).
+function goBack() { if (!closeTop()) return; if (history.state && history.state.tp) { R.skipPop = (R.skipPop || 0) + 1; history.back(); } }
 // Close everything at once (after removing a group or restoring data): step back exactly as far as we stepped in.
-function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { R.unwinding = true; try { history.go(-d); } catch (e) { R.unwinding = false; } } }
-window.addEventListener('popstate', () => { if (R && R.unwinding) { R.unwinding = false; return; } closeTop(); });
+function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { R.skipPop = (R.skipPop || 0) + 1; try { history.go(-d); } catch (e) { R.skipPop--; } } }
+window.addEventListener('popstate', () => { if (R && R.skipPop > 0) { R.skipPop--; return; } closeTop(); }); // the phone's Back button
 function closeTop() {
-  if (T.sheet) { T.sheet = null; draw(); return; }
-  if (T.push.length) { T.push.pop(); draw(); }
+  if (T.sheet) { T.sheet = null; draw(); return true; }
+  if (T.push.length) { T.push.pop(); draw(); return true; }
+  return false;
 }
 function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(); }
 function closeSheetNow() { if (T.sheet) goBack(); }
@@ -528,7 +537,11 @@ function bindSwipe() {
     R.sliding = false;
     const a = s.pts[0], b = s.pts[s.pts.length - 1], v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
     let i = T.tab; if ((s.dx < -s.W * 0.3 || v < -0.3) && T.tab < 3) i++; else if ((s.dx > s.W * 0.3 || v > 0.3) && T.tab > 0) i--;
-    vp._moved = Date.now(); tr.classList.add('settle');
+    // finish at the finger's speed: a quick flick glides fast, a slow drag settles gently (like iOS)
+    const left = Math.abs((T.tab - i) * s.W + s.dx), ms = Math.round(Math.max(180, Math.min(420, left / Math.max(Math.abs(v), 0.9))));
+    tr.style.transitionDuration = ms + 'ms'; tr.classList.add('settle', 'glide');
+    clearTimeout(tr._t); tr._t = setTimeout(() => { tr.style.transitionDuration = ''; tr.classList.remove('glide'); }, ms + 40);
+    vp._moved = Date.now();
     if (i !== T.tab) return goTab(i);
     syncTabs();
   };
