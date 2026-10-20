@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.6';
+const VERSION_LABEL = 'Teacher 1.7';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -161,6 +161,7 @@ function scLesson(f) {
       ${l.speaking ? `<div class="tp-card2"><div class="h" style="color:#12B76A">${ic('MessageCircle')}Speaking</div><p>${esc(l.speaking)}</p></div>` : ''}
       ${l.reader ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('BookOpen')}Graded reader</div><p>${esc(l.reader)}</p></div>` : ''}
       ${ed.link ? `<a class="tp-media" href="${esc(safeUrl(ed.link))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('CirclePlay')}</span><span class="tx"><b>Your link for this lesson</b><span>${esc(ed.link)}</span></span></a>` : ''}
+      ${matsBlock(key)}
       <div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>${[...(l.homework || []), ...(ed.hw ? [ed.hw] : [])].map((h) => `<p class="hw">${ic('Square')}${esc(h)}</p>`).join('') || '<p>None</p>'}</div>
       ${l.check ? `<div class="tp-card2 warn">${ic('ClipboardList')}<p><b>Check today:</b> ${esc(l.check)}</p></div>` : ''}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
@@ -176,10 +177,18 @@ function scOwn(f) {
       <div class="tp-whead">${groupTile(g)}<div><div class="tp-eyebrow">${esc(g.book || 'Own book')} · ${esc(g.time)}</div><div class="tp-lt" style="font-size:26px">${esc(g.name)}</div></div></div>
       <div class="tp-card2 note">${ic('StickyNote')}<p>${ed.notes ? esc(ed.notes) : 'Own program: this group has its own book. Tap Edit to write your plan.'}</p></div>
       ${ed.hw ? `<div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div><p class="hw">${ic('Square')}${esc(ed.hw)}</p></div>` : ''}
+      ${matsBlock(key)}
       <p class="tp-small">${n} lesson${n === 1 ? '' : 's'} taught so far</p>
       <button class="tp-cta ${done ? 'done' : ''}" data-owndone="${g.id}">${done ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
     </div>`;
 }
+// Your own files for one lesson (worksheets, pictures, slides, recordings): kept on this phone, listed in S.mats[key]
+const matIc = (t) => (/^image\//.test(t) ? ['Palette', '#7B61FF'] : /pdf/.test(t) ? ['BookOpen', '#E5484D'] : /^audio\//.test(t) ? ['Headphones', '#0FA37F'] : /^video\//.test(t) ? ['CirclePlay', '#FF5A5F'] : ['FileDown', '#147EFB']);
+const matsBlock = (key) => {
+  const xs = S.mats[key] || [];
+  return `${xs.length ? `<div class="tp-card2 tp-mats"><div class="h" style="color:#147EFB">${ic('FileUp')}My files</div>${xs.map((a) => { const [i, c] = matIc(a.type || ''); return `<div class="tp-media"><button class="mi" style="background:${c}" data-openmat="${a.id}" aria-label="Open ${esc(a.name)}">${ic(i)}</button><button class="tx" data-openmat="${a.id}"><b>${esc(a.name)}</b><span>${fmtSize(a.size || 0)}</span></button><button class="tp-iconbtn" data-rmmat="${a.id}" data-key="${key}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button></div>`; }).join('')}` : ''}
+    <label class="tp-dashed filepick${xs.length ? ' in' : ''}">${ic('Plus')} ${xs.length ? 'Add another file' : 'Add my own file'}<input type="file" multiple data-pickmat="${key}" hidden></label>${xs.length ? '</div>' : ''}`;
+};
 const scGone = () => `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button></div><div class="tp-inner"><div class="tp-empty2">${ic('Info')}<b>This group was removed</b></div></div>`;
 const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : 'https://' + u.replace(/^[a-z]+:/i, ''));
 
@@ -796,6 +805,8 @@ function onClick(e) {
   if (d.openbook) return openBook(d.openbook);
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
   if (d.play) return playAudio(b, d.play);
+  if (d.openmat) return openMat(d.openmat);
+  if (d.rmmat) { if (!confirmTwice(b, '')) return; S.mats[d.key] = (S.mats[d.key] || []).filter((a) => a.id !== d.rmmat); if (!S.mats[d.key].length) delete S.mats[d.key]; save(); delFile('mat:' + d.rmmat).catch(() => {}); draw(); return toast('Removed'); }
   if (d.rmaudio) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.audio[id] = (S.audio[id] || []).filter((a) => a.id !== d.rmaudio); save(); delFile('audio:' + d.rmaudio).catch(() => {}); draw(); return toast('Removed'); }
   if (d.rmlink) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.links[id] = (S.links[id] || []).filter((a) => a.id !== d.rmlink); save(); draw(); return toast('Removed'); }
   if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind });
@@ -875,6 +886,29 @@ async function pickBook(input) {
   try { await putFile('pdf:' + f, file); } catch (e) { return toast('Could not keep the PDF: not enough space?'); }
   S.files[f] = { size: file.size, at: Date.now() }; save(); draw(); toast('Added to the app');
 }
+async function pickMat(input) {
+  const key = input.dataset.pickmat, files = [...input.files]; if (!files.length) return;
+  toast('Adding…'); const xs = S.mats[key] || [];
+  for (const file of files) {
+    const a = { id: uid(), name: file.name, size: file.size, type: file.type || '' };
+    try { await putFile('mat:' + a.id, file); } catch (e) { toast('Could not keep the file: not enough space?'); break; }
+    xs.push(a);
+  }
+  if (xs.length) S.mats[key] = xs; save(); draw(); toast(files.length > 1 ? 'Files added' : 'File added');
+}
+async function openMat(id) {
+  const a = Object.values(S.mats).flat().find((x) => x.id === id), blob = await getFile('mat:' + id).catch(() => null);
+  if (!a || !blob) return toast('The file is missing on this phone; add it again');
+  const file = new File([blob], a.name, { type: a.type || blob.type }), url = URL.createObjectURL(file);
+  // pictures, PDFs, recordings and videos open in the phone's viewer; Word, PowerPoint and others go to the app that opens them
+  const shown = /^(image|audio|video|text)\//.test(file.type) || /pdf/.test(file.type);
+  const w = shown ? window.open(url, '_blank') : null;
+  if (!w) {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: a.name }); } catch (e) { /* closed */ } }
+    else { const l = document.createElement('a'); l.href = url; l.download = a.name; document.body.appendChild(l); l.click(); l.remove(); }
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
 async function backup() {
   const blob = new Blob([JSON.stringify({ app: 'teacher', v: 1, at: new Date().toISOString(), data: S }, null, 1)], { type: 'application/json' });
   const name = `teacher-backup-${iso(new Date())}.json`, file = new File([blob], name, { type: 'application/json' });
@@ -898,6 +932,7 @@ async function useCopy(key) {
 function onChange(e) {
   const t = e.target;
   if (t.dataset.pickbook) return pickBook(t);
+  if (t.dataset.pickmat) return pickMat(t);
   if (t.dataset.restore !== undefined) return restore(t);
 }
 function onKey(e) {

@@ -771,3 +771,7 @@ label.tp-lrow{cursor:pointer}
 .dk-btns{align-items:stretch}
 .dk-btns .tp-cta{display:flex;align-items:center;justify-content:center;gap:8px}
 .dk-btns .tp-pill{justify-content:center;border-radius:18px}
+
+/* My files on a lesson */
+.tp-mats .tp-media{box-shadow:none;background:var(--fill);margin:8px 0 0}
+.tp-mats .tp-dashed.in{margin-top:10px;padding:11px}

@@ -9,12 +9,12 @@
 
 const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS = 12;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, ownDone: {}, created: Date.now() });
+const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
 function normalize(d) {
   const out = Object.assign(blank(), d && typeof d === 'object' ? d : {});
-  for (const k of ['rec', 'hw', 'saved', 'taught', 'edits', 'links', 'audio', 'files', 'ownDone']) if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
+  for (const k of ['rec', 'hw', 'saved', 'taught', 'edits', 'links', 'audio', 'files', 'mats', 'ownDone']) if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
   if (!Array.isArray(out.groups)) out.groups = [];
   out.groups = out.groups.filter((g) => g && typeof g === 'object').map((g) => ({
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
