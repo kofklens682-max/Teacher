@@ -588,3 +588,34 @@ label.tp-lrow{cursor:pointer}
 .tp{--g1:#5E7BFF;--g2:#3D5AFE} /* default colours for buttons outside a level (welcome, settings) */
 [hidden]{display:none!important}
 .tp-segs,.tp-hscroll{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px} /* chip strips run to the screen edges */
+/* ===== v2: motion (each change glides; nothing jumps) ===== */
+.tp-sheet .scrim{animation:none;opacity:0;transition:opacity .32s ease;touch-action:none}
+.tp-sheet.show .scrim{opacity:1}
+.tp-sheet .panel{animation:none;transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.85,.25,1);will-change:transform;overscroll-behavior:contain}
+.tp-sheet.show .panel{transform:none}
+.tp-sheet.dragging .panel{transition:none}
+.tp-sheet.closing{pointer-events:none}
+.tp-sheet.closing .panel{transition:transform .32s cubic-bezier(.4,0,.7,.2)}
+.tp-sheet .panel::before{cursor:grab}
+.tp-push.still{animation:none}
+.tp-push.out{animation:tp-out .26s cubic-bezier(.4,0,.7,.2) both}
+@keyframes tp-swap{from{opacity:0;transform:translateY(10px)}}
+.swapin>.tp-lvlcard,.swapin>.tp-list,.swapin>.tp-empty2,.swapin>.tp-shelf,.swapin>.tp-media,.swapin>.tp-dashed,.swapin>.tp-note2,.swapin>.tp-small,
+.tp-push.swapin .tl-grid,.tp-push.swapin .rg-nav>div,.tp-push.swapin .save-day,.panel.swapin>*{animation:tp-swap .32s cubic-bezier(.2,.8,.2,1) both}
+.swapin>.tp-list,.swapin>.tp-shelf{animation-delay:.03s}
+.tp-segs{scroll-behavior:auto;-webkit-overflow-scrolling:touch}
+.tp-segs button,.tp-seg2 button,.tp-chips2 button{transition:background .25s,color .25s,box-shadow .25s,transform .15s}
+.ht-main,.ht-reg,.tp-wrow,.tp-lesrow2,.tp-lrow,.tp-book,.tp-media,.tp-segs button,.tp-chips2 button,.tl-main,.tl-hw,.tp-pill,.tp-roundbtn,.tp-iconbtn{transition:transform .15s ease,background .25s,color .25s,opacity .2s}
+.ht-main:active,.tp-wrow:active,.tp-lesrow2:active,.tp-lrow:active,.tp-book:active,.tl-main:active{transform:scale(.98)}
+.tp-segs button:active,.tp-chips2 button:active,.tl-hw:active,.tp-pill:active,.tp-roundbtn:active,.tp-iconbtn:active,.ht-reg:active{transform:scale(.94)}
+.tl-st .st{transition:opacity .2s}
+.tp-screens,.tp-sheets{display:contents}
+.tp-push.prep{animation:none;transform:translateX(100%)}
+.tp-tabs{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.97)} /* no live blur: it made every frame slow */
+.swapin-el{animation:tp-swap .32s cubic-bezier(.2,.8,.2,1) both}
+.panel.swapin>*{animation:tp-swap .3s cubic-bezier(.2,.8,.2,1) both}
+/* Lists never grow wider than the phone (long one-line subtitles end with "…"), and no screen can be pushed sideways */
+.tp-list{grid-template-columns:minmax(0,1fr)}
+.tp-list>*{min-width:0;max-width:100%}
+.tp-page,.tp-push,.tp-sheet .panel{overflow-x:hidden}
+.tp-push,.tp-sheet .panel{touch-action:pan-y}

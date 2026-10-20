@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.0';
+const VERSION_LABEL = 'Teacher 1.1';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -314,7 +314,7 @@ function sheetSettings(s) {
     <p class="tp-small">${VERSION_LABEL} · the course: Beginner to Upper-Intermediate</p>`;
 }
 function sheetCopies(s) {
-  if (!s.list) { copyList().then((l) => { if (T.sheet === s) { s.list = l; draw(true); } }).catch(() => { s.list = []; draw(true); }); }
+  if (!s.list) { copyList().then((l) => { if (T.sheet === s) { s.list = l; draw(); } }).catch(() => { s.list = []; draw(); }); }
   const list = s.list;
   return `<div class="tp-sh-h"><button class="tp-back" data-sheet="settings">${ic('ChevronLeft')} Back</button><b>Automatic copies</b><span></span></div>
     ${!list ? '<p class="tp-small">Loading…</p>' : !list.length ? `<div class="tp-empty2">${ic('History')}<b>No copies yet</b><span>The first one is made today once you have a group.</span></div>`
@@ -325,82 +325,226 @@ const PAGES = [pgHome, pgUnits, pgAtt, pgBooks];
 const PUSH = { week: scWeek, lesson: scLesson, own: scOwn, register: scRegister };
 const SHEETS = { group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
-/* ===================== drawing, back button, swipe, tab slide ===================== */
-let root;
-function draw(keep) {
-  const scr = keep ? [...root.querySelectorAll('.tp-page')].map((p) => p.scrollTop) : null;
-  const ps0 = keep && root.querySelector('.tp-push') ? root.querySelector('.tp-push').scrollTop : 0;
-  const ss0 = keep && root.querySelector('.tp-sheet .panel') ? root.querySelector('.tp-sheet .panel').scrollTop : 0;
-  const top = T.push[T.push.length - 1];
-  let html;
-  try {
-    html = `<div class="tp-viewport"><div class="tp-track" style="transform:translateX(${-T.tab * 25}%)">${PAGES.map((p) => `<section class="tp-page">${p()}</section>`).join('')}</div></div>
-    ${top ? `<div class="tp-push" style="${top.shown ? 'animation:none' : ''}">${PUSH[top.s](top)}</div>` : ''}
-    <nav class="tp-tabs"><span class="tp-ind" style="transform:translateX(${T.tab * 100}%)"></span>${[['House', 'Home'], ['BookOpen', 'Units'], ['ClipboardCheck', 'Attendance'], ['Library', 'Books']].map((t, i) => `<button data-tab="${i}" class="${i === T.tab ? 'on' : ''}">${ic(t[0])}<span>${t[1]}</span></button>`).join('')}</nav>
-    ${T.sheet ? `<div class="tp-sheet ${T.sheet.shown ? 'still' : ''}"><div class="scrim" data-closesheet></div><div class="panel">${SHEETS[T.sheet.s](T.sheet)}</div></div>` : ''}`;
-  } catch (e) {
-    console.error(e);
-    html = `<div class="tp-inner"><div class="tp-empty2">${ic('TriangleAlert')}<b>Something went wrong on this screen</b><span>Your data is safe. ${esc(e.message)}</span><button class="tp-cta" data-reset-ui>Back to Home</button></div></div>`;
-  }
-  root.innerHTML = html;
-  if (top) top.shown = true; if (T.sheet) T.sheet.shown = true;
-  if (scr) root.querySelectorAll('.tp-page').forEach((p, i) => { p.scrollTop = scr[i]; });
-  const ps = root.querySelector('.tp-push'), sp = root.querySelector('.tp-sheet .panel');
-  if (ps0 && ps) ps.scrollTop = ps0; if (ss0 && sp) sp.scrollTop = ss0;
-  root.querySelectorAll('.tp-segs').forEach((s) => { const on = s.querySelector('.on'); if (on && (on.offsetLeft + on.offsetWidth > s.clientWidth || on.offsetLeft < s.scrollLeft)) s.scrollLeft = on.offsetLeft - 16; });
+/* ===================== drawing, back button, swipe, tab slide =====================
+   The app is drawn into a fixed frame (4 pages, a screen on top, the tab bar, a sheet). draw() rebuilds only the parts
+   whose content changed, so nothing that stayed the same jumps, loses its scroll or restarts an animation:
+   - a page or screen keeps its scroll; a chip strip keeps its sideways scroll and glides the chosen chip into view;
+   - a new screen slides in over the old one; going back slides it away and shows the one below as it was;
+   - a sheet slides up, follows the finger when pulled down (from anywhere, when its content is at the top), and closes
+     with a pull, a flick, a tap outside, Cancel or the phone's Back button. */
+let root, R = null;
+const TABS = [['House', 'Home'], ['BookOpen', 'Units'], ['ClipboardCheck', 'Attendance'], ['Library', 'Books']];
+function frame() {
+  root.innerHTML = `<div class="tp-viewport"><div class="tp-track">${PAGES.map(() => '<section class="tp-page"></section>').join('')}</div></div>
+    <div class="tp-screens"></div>
+    <nav class="tp-tabs"><span class="tp-ind"></span>${TABS.map((t, i) => `<button data-tab="${i}">${ic(t[0])}<span>${t[1]}</span></button>`).join('')}</nav>
+    <div class="tp-sheets"></div>`;
+  R = { vp: root.querySelector('.tp-viewport'), track: root.querySelector('.tp-track'), pages: [...root.querySelectorAll('.tp-page')],
+    screens: root.querySelector('.tp-screens'), tabs: root.querySelector('.tp-tabs'), ind: root.querySelector('.tp-ind'), sheets: root.querySelector('.tp-sheets'),
+    screen: null, sheet: null, anim: -1 };
   bindSwipe(); bindTabSlide();
 }
+// Chip strips: remember their sideways scroll across a redraw, then glide the chosen chip into view if it is hidden.
+function stripsOf(el) { return [...el.querySelectorAll('.tp-segs')].map((s) => s.scrollLeft); }
+function restoreStrips(el, xs) {
+  el.querySelectorAll('.tp-segs').forEach((s, i) => {
+    if (xs[i] !== undefined) s.scrollLeft = xs[i];
+    const on = s.querySelector('.on'); if (!on) return;
+    const a = s.getBoundingClientRect(), b = on.getBoundingClientRect();
+    if (b.left < a.left + 8 || b.right > a.right - 8) s.scrollTo({ left: s.scrollLeft + (b.left - a.left) - (a.width - b.width) / 2, behavior: xs[i] === undefined ? 'auto' : 'smooth' });
+  });
+}
+// Put new content into el, changing as little as possible: blocks that stayed the same are kept as they are, changed
+// blocks are replaced (with a soft fade-in when swap is set), and chip strips / switches keep their element and only
+// move the highlight, so it glides and the strip keeps its scroll.
+const STRIPS = ['tp-segs', 'tp-seg2', 'tp-chips2'];
+function sameStrip(o, n) {
+  const k = STRIPS.find((c) => o.classList.contains(c)); if (!k || !n.classList.contains(k)) return false;
+  const a = o.children, b = n.children; if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i].tagName !== b[i].tagName || a[i].dataset.unitlvl !== b[i].dataset.unitlvl || a[i].dataset.booklvl !== b[i].dataset.booklvl || a[i].dataset.bookseg !== b[i].dataset.bookseg) return false;
+  return true;
+}
+function syncStrip(o, n) { [...n.children].forEach((b, i) => { const x = o.children[i]; if (x.className !== b.className) x.className = b.className; if (x.innerHTML !== b.innerHTML) x.innerHTML = b.innerHTML; }); }
+function setHTML(el, html, swap) {
+  if (el._html === html) return false;
+  const xs = stripsOf(el), tpl = document.createElement('template'); tpl.innerHTML = html;
+  const neu = [...tpl.content.children], old = [...el.children];
+  const textOnTop = [...tpl.content.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim());
+  if (el._html !== undefined && !textOnTop && neu.length === old.length && neu.every((x, i) => x.tagName === old[i].tagName)) {
+    neu.forEach((x, i) => {
+      const o = old[i];
+      if (o.outerHTML === x.outerHTML) return;
+      if (sameStrip(o, x)) { syncStrip(o, x); return; }
+      o.replaceWith(x);
+      if (swap) x.classList.add('swapin-el');
+    });
+  } else {
+    el.replaceChildren(tpl.content);
+    if (swap && el._html !== undefined) { el.classList.remove('swapin'); void el.offsetWidth; el.classList.add('swapin'); }
+  }
+  el._html = html;
+  restoreStrips(el, xs);
+  return true;
+}
+function safe(fn, arg) {
+  try { return fn(arg); } catch (e) {
+    console.error(e);
+    return `<div class="tp-inner"><div class="tp-empty2">${ic('TriangleAlert')}<b>Something went wrong on this screen</b><span>Your data is safe. ${esc(e.message)}</span><button class="tp-cta" data-reset-ui>Back to Home</button></div></div>`;
+  }
+}
+function draw() {
+  if (!R) frame();
+  PAGES.forEach((p, i) => setHTML(R.pages[i], safe(p), R.anim === i));
+  R.anim = -1;
+  syncScreen(); syncSheet(); syncTabs();
+}
+// ---------- the screen on top (week, lesson, register…) ----------
+function syncScreen() {
+  const top = T.push[T.push.length - 1], cur = R.screen;
+  if (cur && cur._sc === top) { setHTML(cur, safe(PUSH[top.s], top), cur._swap); cur._swap = false; return; }
+  const depth = T.push.length, oldDepth = cur ? cur._depth : 0;
+  if (cur) { cur._sc._scroll = cur.scrollTop; R.screen = null; leave(cur, depth > oldDepth ? 'covered' : 'out'); }
+  if (!top) return;
+  const el = document.createElement('div');
+  const slide = depth > oldDepth;
+  el.className = 'tp-push ' + (slide ? 'prep' : 'still');
+  el._sc = top; el._depth = depth;
+  R.screens.appendChild(el);
+  setHTML(el, safe(PUSH[top.s], top));
+  if (top._scroll) el.scrollTop = top._scroll;
+  R.screen = el;
+  if (slide) { void el.offsetHeight; afterPaint(() => el.classList.remove('prep')); } // built first, then it slides in whole
+}
+function leave(el, how) {
+  if (how === 'covered') { setTimeout(() => el.remove(), 560); return; } // the new screen slides over it
+  el.style.zIndex = 16; el.classList.add('out');
+  setTimeout(() => el.remove(), 280);
+}
+// ---------- the sheet ----------
+function syncSheet() {
+  const cur = R.sheet, sh = T.sheet;
+  if (cur && sh && cur._sh === sh) { setHTML(cur._panel, safe(SHEETS[sh.s], sh)); return; }
+  if (cur && sh) { // another sheet in the same place (Settings → Automatic copies): a soft cross-fade
+    cur._sh = sh; setHTML(cur._panel, safe(SHEETS[sh.s], sh), true); cur._panel.scrollTop = 0; return;
+  }
+  if (cur && !sh) { R.sheet = null; closeAnim(cur); return; }
+  if (!sh) return;
+  const el = document.createElement('div');
+  el.className = 'tp-sheet';
+  el.innerHTML = '<div class="scrim"></div><div class="panel" role="dialog" aria-modal="true"></div>';
+  el._sh = sh; el._panel = el.querySelector('.panel'); el._scrim = el.querySelector('.scrim');
+  setHTML(el._panel, safe(SHEETS[sh.s], sh));
+  R.sheets.appendChild(el); R.sheet = el;
+  bindSheetDrag(el);
+  void el._panel.offsetHeight; afterPaint(() => el.classList.add('show')); // drawn below the screen first, then it slides up
+}
+// Run fn once the browser has drawn the new element (two frames), or after 120 ms if frames are paused.
+function afterPaint(fn) { let done = false; const go = () => { if (!done) { done = true; fn(); } }; requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 120); }
+function closeAnim(el) {
+  if (document.activeElement && el.contains(document.activeElement)) document.activeElement.blur();
+  el.classList.remove('dragging'); el.classList.add('closing');
+  el._panel.style.transform = ''; el._scrim.style.opacity = '';
+  el.classList.remove('show');
+  setTimeout(() => el.remove(), 420);
+}
+// Pull the sheet down to close it — from anywhere inside it while its content is scrolled to the top. A flick closes it too.
+function bindSheetDrag(el) {
+  const p = el._panel, s = el._scrim; let x0 = 0, y0 = null, t0 = 0, dy = 0, mode = null;
+  const begin = (x, y, target) => {
+    if (target.closest('input, textarea, select') || p.scrollTop > 2) return;
+    x0 = x; y0 = y; t0 = performance.now(); dy = 0; mode = null;
+  };
+  const follow = (x, y, e) => {
+    if (y0 === null) return;
+    const ddx = x - x0, ddy = y - y0;
+    if (!mode) { if (Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return; mode = ddy > 0 && Math.abs(ddy) > Math.abs(ddx) * 1.2 ? 'drag' : 'none'; if (mode === 'drag') el.classList.add('dragging'); }
+    if (mode !== 'drag') return;
+    if (e.cancelable) e.preventDefault();
+    dy = Math.max(0, ddy);
+    p.style.transform = `translateY(${dy}px)`;
+    s.style.opacity = String(Math.max(0.1, 1 - dy / (p.offsetHeight || 600)));
+  };
+  const release = () => {
+    if (y0 === null) return;
+    const wasDrag = mode === 'drag', speed = dy / Math.max(1, performance.now() - t0);
+    y0 = null; mode = null;
+    if (!wasDrag) return;
+    el._dragged = Date.now();
+    el.classList.remove('dragging');
+    if (dy > Math.min(140, p.offsetHeight * 0.25) || (speed > 0.55 && dy > 30)) closeSheetNow();
+    else { p.style.transform = ''; s.style.opacity = ''; }
+  };
+  p.addEventListener('touchstart', (e) => begin(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
+  p.addEventListener('touchmove', (e) => follow(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
+  p.addEventListener('touchend', release); p.addEventListener('touchcancel', release);
+  p.addEventListener('pointerdown', (e) => { // a mouse can pull the top bar
+    if (e.pointerType !== 'mouse' || !e.target.closest('.tp-sh-h') || e.target.closest('button')) return;
+    begin(e.clientX, e.clientY, e.target);
+    const mv = (ev) => follow(ev.clientX, ev.clientY, ev), up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); release(); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+  });
+  s.addEventListener('click', () => closeSheetNow()); // a tap outside the sheet closes it
+}
+// ---------- the tab bar and the pages' position ----------
+function syncTabs() {
+  if (!R.sliding) {
+    R.track.style.transform = `translateX(${-T.tab * 25}%)`;
+    R.ind.style.transform = `translateX(${T.tab * 100}%)`;
+  }
+  R.tabs.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === T.tab));
+}
 // The phone's Back button closes the sheet or the screen on top, like in other apps.
-function stepIn() { try { history.pushState({ tp: (history.state && history.state.tp || 0) + 1 }, ''); } catch (e) { /* fine without */ } }
+function stepIn() { try { history.pushState({ tp: ((history.state && history.state.tp) || 0) + 1 }, ''); } catch (e) { /* fine without */ } }
 function goBack() { if (history.state && history.state.tp) history.back(); else closeTop(); }
 // Close everything at once (after removing a group or restoring data): step back exactly as far as we stepped in.
-function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { try { history.go(-d); } catch (e) { /* ignore */ } } }
-window.addEventListener('popstate', () => closeTop());
+function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { R.unwinding = true; try { history.go(-d); } catch (e) { R.unwinding = false; } } }
+window.addEventListener('popstate', () => { if (R && R.unwinding) { R.unwinding = false; return; } closeTop(); });
 function closeTop() {
-  if (T.sheet) { const sh = root.querySelector('.tp-sheet'); if (sh) sh.classList.add('out'); const was = T.sheet; setTimeout(() => { if (T.sheet === was) { T.sheet = null; draw(true); } }, 220); return; }
-  if (T.push.length) { const p = root.querySelector('.tp-push'); if (p) p.classList.add('out'); setTimeout(() => { T.push.pop(); draw(true); }, 230); }
+  if (T.sheet) { T.sheet = null; draw(); return; }
+  if (T.push.length) { T.push.pop(); draw(); }
 }
-function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(true); }
+function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(); }
 function closeSheetNow() { if (T.sheet) goBack(); }
-function pushScreen(sc) { T.push.push(sc); stepIn(); draw(true); }
+function pushScreen(sc) { T.push.push(sc); stepIn(); draw(); }
 function goTab(i) {
-  if (i === T.tab && !T.push.length) { root.querySelectorAll('.tp-page')[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (i === T.tab && !T.push.length) { R.pages[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const hadPush = T.push.length; T.tab = i; T.push = [];
   if (hadPush) unwind();
-  const tr = root.querySelector('.tp-track'); tr.classList.add('settle'); tr.style.transform = `translateX(${-i * 25}%)`;
-  root.querySelector('.tp-ind').style.transform = `translateX(${i * 100}%)`;
-  root.querySelectorAll('.tp-tabs button').forEach((b, k) => b.classList.toggle('on', k === i));
-  const p = root.querySelector('.tp-push'); if (p) { p.classList.add('out'); setTimeout(() => draw(true), 240); }
+  R.track.classList.add('settle');
+  draw();
 }
 function bindSwipe() {
-  const vp = root.querySelector('.tp-viewport'), tr = root.querySelector('.tp-track'); if (!vp) return; let st = null;
-  vp.onpointerdown = (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, pts: [] }; };
-  vp.onpointermove = (e) => {
+  const vp = R.vp, tr = R.track; let st = null;
+  vp.addEventListener('pointerdown', (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, pts: [] }; });
+  vp.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
-    if (!st.on) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; } st.on = true; st.W = vp.offsetWidth; tr.classList.remove('settle'); try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    if (!st.on) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; } st.on = true; st.W = vp.offsetWidth; tr.classList.remove('settle'); R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
     st.pts.push([e.timeStamp, e.clientX]); if (st.pts.length > 6) st.pts.shift();
     st.dx = (T.tab === 0 && dx > 0) || (T.tab === 3 && dx < 0) ? dx / 3 : dx;
-    tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; root.querySelector('.tp-ind').style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
-  };
+    tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
+  });
   const end = (e) => {
     if (!st || e.pointerId !== st.id) return; const s = st; st = null; if (!s.on) return;
+    R.sliding = false;
     const a = s.pts[0], b = s.pts[s.pts.length - 1], v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
     let i = T.tab; if ((s.dx < -s.W * 0.3 || v < -0.3) && T.tab < 3) i++; else if ((s.dx > s.W * 0.3 || v > 0.3) && T.tab > 0) i--;
-    vp._moved = Date.now(); if (i !== T.tab) return goTab(i);
-    tr.classList.add('settle'); tr.style.transform = `translateX(${-T.tab * 25}%)`; root.querySelector('.tp-ind').style.transform = `translateX(${T.tab * 100}%)`;
+    vp._moved = Date.now(); tr.classList.add('settle');
+    if (i !== T.tab) return goTab(i);
+    syncTabs();
   };
-  vp.onpointerup = end; vp.onpointercancel = end;
+  vp.addEventListener('pointerup', end); vp.addEventListener('pointercancel', end);
 }
 function bindTabSlide() {
-  const bar = root.querySelector('.tp-tabs'), ind = bar.querySelector('.tp-ind'); let st = null;
-  bar.onpointerdown = (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, over: T.tab }; };
-  bar.onpointermove = (e) => {
+  const bar = R.tabs, ind = R.ind; let st = null;
+  bar.addEventListener('pointerdown', (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, over: T.tab }; });
+  bar.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return;
-    if (!st.on) { if (Math.abs(e.clientX - st.x0) < 8) return; st.on = true; bar.classList.add('sliding'); try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    if (!st.on) { if (Math.abs(e.clientX - st.x0) < 8) return; st.on = true; R.sliding = true; bar.classList.add('sliding'); try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
     const r = bar.getBoundingClientRect(), w = (r.width - 10) / 4, x = Math.max(0, Math.min(w * 3, e.clientX - r.left - 5 - w / 2));
     ind.style.transform = `translateX(${x}px) scale(1.06)`; st.over = Math.round(x / w); bar.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === st.over));
-  };
-  bar.onpointerup = bar.onpointercancel = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); if (s.on) { bar._slid = Date.now(); goTab(s.over); } };
+  });
+  const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = Date.now(); R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
+  bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
 }
 let toastT = 0;
 function toast(msg) {
@@ -420,23 +564,25 @@ function keepForm() {
 function tapCtx(b) { const grid = b.closest('.tl-grid'); return grid ? { g: gById(grid.dataset.g), d: fromIso(grid.dataset.date), grid } : null; }
 function refreshRow(grid, g, d, sid) {
   const s = g.students.find((x) => x.id === sid), row = grid.querySelector(`.tl-st[data-sid="${sid}"]`); if (!s || !row) return;
-  const tmp = document.createElement('div'); tmp.innerHTML = stuRow(g, d, s, rec(g, d)); row.replaceWith(tmp.firstElementChild);
+  const r = rec(g, d), a = r.get(sid), hw = r.hwOf(sid), hb = row.querySelector('.tl-hw'); // changed in place, so the colour glides
+  row.className = 'tl-st ' + a; row.querySelector('.st').textContent = a;
+  hb.hidden = a === 'absent'; hb.classList.toggle('on', hw); hb.innerHTML = ic(hw ? 'BookCheck' : 'BookX');
   const btn = grid.parentElement.querySelector(`[data-saveday="${g.id}"]`); if (btn) btn.textContent = saveLabel(g, d);
 }
 
 function onClick(e) {
   const b = e.target.closest('button,a,label'); if (!b || !root.contains(b)) return;
   if (b.tagName === 'A' || b.tagName === 'LABEL') return;
-  const vp = root.querySelector('.tp-viewport'), bar = root.querySelector('.tp-tabs');
-  if ((vp && vp._moved && Date.now() - vp._moved < 350) || (bar && bar._slid && Date.now() - bar._slid < 350)) return;
+  if ((R.vp._moved && Date.now() - R.vp._moved < 350) || (R.tabs._slid && Date.now() - R.tabs._slid < 350)) return;
+  if (R.sheet && R.sheet._dragged && Date.now() - R.sheet._dragged < 350) return; // the end of a pull isn't a tap
   const d = b.dataset, top = T.push[T.push.length - 1];
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();
-  if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; return draw(); }
+  if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
-  if (d.unitlvl) { T.unitLvl = d.unitlvl; keepUi(); return draw(true); }
-  if (d.booklvl) { T.bookLvl = +d.booklvl; keepUi(); return draw(true); }
-  if (d.bookseg) { T.bookSeg = d.bookseg; return draw(true); }
+  if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; T.unitLvl = d.unitlvl; keepUi(); R.anim = 1; return draw(); }
+  if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; T.bookLvl = +d.booklvl; keepUi(); R.anim = 3; return draw(); }
+  if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
   if (d.saveday) {
@@ -444,35 +590,35 @@ function onClick(e) {
     g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
     (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; save();
     const here = g.students.filter((s) => r.get(s.id) !== 'absent').length, hw = g.students.filter((s) => r.get(s.id) !== 'absent' && r.hwOf(s.id)).length;
-    draw(true); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework`);
+    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework`);
   }
-  if (d.lessonday) { top.date = d.lessonday; return draw(true); }
-  if (d.regtoday !== undefined) { top.date = iso(TODAY); return draw(true); }
-  if (d.addstu) { const n = val('tp-newstu'); if (!n) return toast('Type the name first'); gById(d.addstu).students.push({ id: uid(), name: n }); save(); draw(true); return toast(n + ' added'); }
+  if (d.lessonday) { top.date = d.lessonday; if (R.screen) R.screen._swap = true; return draw(); }
+  if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
+  if (d.addstu) { const n = val('tp-newstu'); if (!n) return toast('Type the name first'); gById(d.addstu).students.push({ id: uid(), name: n }); save(); draw(); return toast(n + ' added'); }
   if (d.taught) {
     const g = gById(d.taught), k = iso(TODAY), t = taughtOn(g, TODAY);
-    if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(true); return toast('Undone'); }
-    (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l; save(); draw(true);
+    if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(); return toast('Undone'); }
+    (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l; save(); draw();
     return toast(`Taught. ${g.name} moves to the next lesson.`);
   }
-  if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(true); return toast(m[k] ? 'Taught' : 'Undone'); }
+  if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }
   if (d.book) return openSheet({ s: 'book', book: d.book });
   if (d.openbook) return openBook(d.openbook);
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
   if (d.play) return playAudio(b, d.play);
-  if (d.rmaudio) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.audio[id] = (S.audio[id] || []).filter((a) => a.id !== d.rmaudio); save(); delFile('audio:' + d.rmaudio).catch(() => {}); draw(true); return toast('Removed'); }
-  if (d.rmlink) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.links[id] = (S.links[id] || []).filter((a) => a.id !== d.rmlink); save(); draw(true); return toast('Removed'); }
+  if (d.rmaudio) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.audio[id] = (S.audio[id] || []).filter((a) => a.id !== d.rmaudio); save(); delFile('audio:' + d.rmaudio).catch(() => {}); draw(); return toast('Removed'); }
+  if (d.rmlink) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.links[id] = (S.links[id] || []).filter((a) => a.id !== d.rmlink); save(); draw(); return toast('Removed'); }
   if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind });
   if (d.closesheet !== undefined) return closeSheetNow();
-  if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(true); }
-  if (d.fDay !== undefined) { keepForm(); const ds = T.sheet.form.days, k = +d.fDay; T.sheet.form.days = ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k].sort(); return draw(true); }
+  if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(); }
+  if (d.fDay !== undefined) { keepForm(); const ds = T.sheet.form.days, k = +d.fDay; T.sheet.form.days = ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k].sort(); return draw(); }
   if (d.fAdd !== undefined) { keepForm(); addFormStudent(); return; }
-  if (d.fRm !== undefined) { keepForm(); T.sheet.form.students.splice(+d.fRm, 1); return draw(true); }
+  if (d.fRm !== undefined) { keepForm(); T.sheet.form.students.splice(+d.fRm, 1); return draw(); }
   if (d.savegroup !== undefined) return saveGroup();
   if (d.delgroup) {
     if (!confirmTwice(b, 'Tap again to remove the group')) return;
     S.groups = S.groups.filter((g) => g.id !== d.delgroup); save(); T.sheet = null; T.push = [];
-    unwind(); draw(true); return toast('Group removed');
+    unwind(); draw(); return toast('Group removed');
   }
   if (d.savelesson) { const v = { notes: val('f-notes'), link: val('f-link'), hw: val('f-hw') }; if (v.notes || v.link || v.hw) S.edits[d.savelesson] = v; else delete S.edits[d.savelesson]; save(); closeSheetNow(); return toast('Lesson saved'); }
   if (d.savemedia) return saveMedia(d.savemedia);
@@ -488,7 +634,7 @@ function confirmTwice(b, msg) {
 }
 function addFormStudent() {
   const n = val('f-stu'); if (!n) return;
-  T.sheet.form.students.push({ id: uid(), name: n }); draw(true);
+  T.sheet.form.students.push({ id: uid(), name: n }); draw();
   const inp = root.querySelector('#f-stu'); if (inp) inp.focus();
 }
 function saveGroup() {
@@ -537,7 +683,7 @@ async function pickBook(input) {
   if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) return toast('Choose a PDF file');
   toast('Adding…');
   try { await putFile('pdf:' + f, file); } catch (e) { return toast('Could not keep the PDF: not enough space?'); }
-  S.files[f] = { size: file.size, at: Date.now() }; save(); draw(true); toast('Added to the app');
+  S.files[f] = { size: file.size, at: Date.now() }; save(); draw(); toast('Added to the app');
 }
 async function backup() {
   const blob = new Blob([JSON.stringify({ app: 'teacher', v: 1, at: new Date().toISOString(), data: S }, null, 1)], { type: 'application/json' });
@@ -570,6 +716,19 @@ function onKey(e) {
   if (e.target.id === 'tp-newstu') { e.preventDefault(); const b = root.querySelector('[data-addstu]'); if (b) b.click(); }
 }
 
+// The first lesson screen and sheet a phone draws are slow (fonts, shapes, styles drawn for the first time).
+// Draw one of each invisibly when the app is idle, so the first real tap opens as fast as the next ones.
+function prewarm() {
+  const run = () => {
+    if (T.sheet || T.push.length) return;
+    const el = document.createElement('div'); el.className = 'tp-push still'; el.style.visibility = 'hidden'; el.setAttribute('aria-hidden', 'true');
+    try { el.innerHTML = scLesson({ lvl: 'B2', w: 8, l: 3 }) + scLesson({ lvl: 'A2', w: 1, l: 1 }) + `<div class="tp-sheet show"><div class="panel">${sheetGroup({})}</div></div>`; } catch (e) { return; }
+    R.screens.appendChild(el); void el.offsetHeight;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 }); else run();
+}
+
 // ---------- start ----------
 async function start() {
   root = document.getElementById('tp');
@@ -577,12 +736,13 @@ async function start() {
   const hadQuick = loadQuick();
   draw();
   root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('keydown', onKey);
-  const took = await startSecond(hadQuick); if (took) draw(true);
+  const took = await startSecond(hadQuick); if (took) draw();
   makeCopy('day');
+  setTimeout(prewarm, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* the browser decides */ }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
-    const now = midnight(new Date()); if (iso(now) !== iso(TODAY)) { TODAY = now; makeCopy('day'); draw(true); }
+    const now = midnight(new Date()); if (iso(now) !== iso(TODAY)) { TODAY = now; makeCopy('day'); draw(); }
   });
 }
 window.addEventListener('error', (e) => { try { toast('Something went wrong: ' + (e.message || 'error')); } catch (_) { /* ignore */ } });
