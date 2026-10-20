@@ -145,7 +145,10 @@ function scLesson(f) {
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${u.final ? '' : 'Week ' + u.n + ' · '}Lesson ${l.n} · ${esc(u.title)}</div><div class="tp-lt" style="font-size:26px">${esc(l.subtopic)}</div></div></div>
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       ${l.skill ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic(/^Reading/.test(l.skill) ? 'BookOpenCheck' : /^Listening/.test(l.skill) ? 'Headphones' : 'PenLine')}Skill</div><p class="big">${esc(l.skill)}</p><p class="ex">${esc(l.how)}</p><p class="sub">Source: ${esc(l.source)}</p></div>` : ''}
+      ${l.routine ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('Clock')}Lesson plan · ${l.routine.reduce((a, r) => a + r[0], 0)} min</div>${l.routine.map((r) => `<p class="rt-row"><b>${r[0]}′</b><span>${esc(r[1])}<small>${esc(r[2])}</small></span></p>`).join('')}<p class="sub">The minutes are a guide: every group moves at its own pace.</p></div>` : ''}
+      ${l.real ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('Globe')}Real English</div><p class="big">${esc(l.real)}</p><p class="sub">Main idea first, then 3 questions, then talk about it. The exam practice comes after.</p></div>` : ''}
       ${l.activity ? `<div class="tp-card2"><div class="h" style="color:#F5A000">${ic('PartyPopper')}Activity</div><p>${esc(l.activity)}</p></div>` : ''}
+      ${l.exit ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('ListChecks')}Exit check · 3 min</div><p>${esc(l.exit)}</p></div>` : ''}
       ${l.grammarTopic || l.grammar ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}Grammar topic</div><p class="big">${esc(l.grammarTopic || l.grammar)}</p>${l.grammarTopic && l.grammar ? `<p class="ex">${esc(l.grammar)}</p>` : ''}${l.bgiu && l.bgiu.length ? `<p class="sub">${L.id === 'A1' ? "Teacher's reference" : 'Students practice in'}: ${esc(l.gbook || 'Basic Grammar in Use (American)')}, unit${l.bgiu.length > 1 ? 's' : ''} ${l.bgiu.join(', ')}</p>` : ''}${l.grammarExtra ? `<p class="sub">Also: ${esc(l.grammarExtra.book)}, unit${l.grammarExtra.units.length > 1 ? 's' : ''} ${l.grammarExtra.units.join(', ')}</p>` : ''}</div>` : ''}
       ${l.words.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${esc(l.vocabTopic || '')} · ${l.words.length}${l.revise ? ' new' : ''} words</p>${chips(l.words)}
         ${l.revise ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('RotateCcw')}Revision words</div>${chips(l.revise)}` : ''}
@@ -424,7 +427,10 @@ function syncScreen() {
   const top = stack[stack.length - 1];
   const set = (el, below) => { if (el.classList.contains('under') !== below) el.classList.toggle('under', below); if (el.inert !== below) el.inert = below; };
   stack.forEach((el) => set(el, el !== top));
-  set(R.vp, stack.length > 0);
+  // the pages under a screen: only shifted and hidden from screen readers. Not inert: that restyles every page and
+  // was the slowest part of opening and closing a screen; the screen covers them, so no tap can reach them anyway.
+  const under = stack.length > 0;
+  if (R.vp.classList.contains('under') !== under) { R.vp.classList.toggle('under', under); R.vp.toggleAttribute('aria-hidden', under); }
   R.screen = top || null;
   if (top && !adding) { setHTML(top, safe(PUSH[top._sc.s], top._sc), top._swap); top._swap = false; }
 }
@@ -585,10 +591,13 @@ function bindSwipe() {
   const end = (e) => {
     if (!st || e.pointerId !== st.id) return; const s = st; st = null; if (!s.on) return;
     R.sliding = false;
-    const a = s.pts[0], b = s.pts[s.pts.length - 1], v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
+    // finger speed over its last 120 ms only (a slow first frame must not hide a flick); held still = no flick
+    const b = s.pts[s.pts.length - 1], a = b && (s.pts.find((p) => b[0] - p[0] <= 120) || b), a2 = a === b ? s.pts[s.pts.length - 2] : a;
+    const v = b && a2 && b[0] > a2[0] && e.timeStamp - b[0] < 100 ? (b[1] - a2[1]) / (b[0] - a2[0]) : 0;
     if (s.lv) {
       const L = s.lv; vp._moved = Date.now();
-      const go = L.peek && (L.dir > 0 ? s.dx < -L.w * 0.25 || v < -0.3 : s.dx > L.w * 0.25 || v > 0.3);
+      // a flick counts only when the finger really travelled that way (moving out and back, then letting go, stays)
+      const go = L.peek && (L.dir > 0 ? s.dx < -L.w * 0.25 || (v < -0.3 && s.dx < -24) : s.dx > L.w * 0.25 || (v > 0.3 && s.dx > 24));
       if (go) return lvGo(T.tab, L.cur + L.dir, s.dx, v, { peek: L.peek, at: L.at });
       // not far enough: both glide back
       const ms = Math.round(Math.max(180, Math.min(360, Math.abs(s.dx) / Math.max(Math.abs(v), 0.9)))), ease = `transform ${ms}ms cubic-bezier(.15,.8,.3,1)`;
@@ -648,7 +657,9 @@ function lvSide(tab, dir) { // the drawn neighbour on one side, drawing it now i
   if (!pane || n < 0 || n >= C.levels.length) return null;
   const w = pane.offsetWidth, key = page._html + '|' + w; let c = (R.lvc || (R.lvc = {}))[tab];
   if (!c || c.key !== key) { lvDrop(tab); c = R.lvc[tab] = { key, els: {} }; }
-  if (!c.els[dir] && arguments[2] !== false) c.els[dir] = lvBuild(tab, n, w, { x: pane.offsetLeft + dir * (w + LV_GAP), y: pane.offsetTop - page.scrollTop });
+  // parked well past the edge of the screen (shadows included). Measured on screen, not with offsetLeft: that counts
+  // from the start of the row of pages, so Units' left neighbour once waited ON the screen, over every tab.
+  if (!c.els[dir] && arguments[2] !== false) { const vr = R.vp.getBoundingClientRect(); c.els[dir] = lvBuild(tab, n, w, { x: dir > 0 ? vr.width + 60 : -w - 60, y: pane.getBoundingClientRect().top - vr.top }); }
   return c.els[dir] || null;
 }
 function lvPrep(tab, one) {
@@ -665,7 +676,7 @@ function lvIdle(tab) { // only when nothing is moving: never in the middle of a 
   if (lvIdle[tab]) return; lvIdle[tab] = true;
   const later = () => ('requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 4000 }) : setTimeout(run, 300));
   const run = () => {
-    if (R.sliding || R.lvEnd || performance.now() - (R.drawnAt || 0) < 1500) { setTimeout(later, 500); return; }
+    if (R.sliding || R.lvEnd || performance.now() - (R.drawnAt || 0) < 450) { setTimeout(later, 200); return; }
     if (lvPrep(tab, true)) { setTimeout(later, 60); return; }
     lvIdle[tab] = false;
   };
@@ -897,7 +908,7 @@ function prewarm() {
   const run = () => {
     if (T.sheet || T.push.length) return;
     const el = document.createElement('div'); el.className = 'tp-push still'; el.style.visibility = 'hidden'; el.setAttribute('aria-hidden', 'true');
-    try { el.innerHTML = scLesson({ lvl: 'B2', w: 8, l: 3 }) + scLesson({ lvl: 'A2', w: 1, l: 1 }) + `<div class="tp-sheet show"><div class="panel">${sheetGroup({})}</div></div>`; } catch (e) { return; }
+    try { el.innerHTML = scWeek({ lvl: 'B2', w: 3 }) + scLesson({ lvl: 'B2', w: 8, l: 3 }) + scLesson({ lvl: 'A2', w: 1, l: 1 }) + scLesson({ lvl: 'I2', w: 1, l: 1 }) + `<div class="tp-sheet show"><div class="panel">${sheetGroup({})}</div></div>`; } catch (e) { return; }
     R.screens.appendChild(el); void el.offsetHeight;
     requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
   };
