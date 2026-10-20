@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v7';
+const VERSION = 'teacher-v8';
 const SHELL = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const SHELL = [
   './js/icons.js',
   './data/course.js',
   './js/store.js',
+  './js/deck.js',
   './js/app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
@@ -25,11 +26,15 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL.map(fresh))).then(() => self.skipWaiting()));
 });
 
+// Pictures and voices of the lesson presentations (media/…): a separate cache that every app update keeps, filled the
+// first time each file is used and by the app's quiet download when the phone is idle.
+const MEDIA = 'teacher-media';
+
 // Budget ("budget-…") and Notes ("notes-…") live on the same site with their own caches: only clear ours.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('teacher-') && k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('teacher-') && k !== VERSION && k !== MEDIA).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -40,6 +45,13 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
+  if (url.pathname.includes('/media/')) { // pictures and voices: from the phone if kept, else fetched once and kept
+    e.respondWith(caches.open(MEDIA).then(async (cache) => {
+      const hit = await cache.match(req, { ignoreSearch: true }); if (hit) return hit;
+      try { const res = await fetch(req); if (res && res.ok) cache.put(req, res.clone()); return res; } catch (err) { return Response.error(); }
+    }));
+    return;
+  }
   e.respondWith(
     caches.open(VERSION).then(async (cache) => {
       const key = req.mode === 'navigate' ? './index.html' : req;

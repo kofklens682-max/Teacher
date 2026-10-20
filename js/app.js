@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.5';
+const VERSION_LABEL = 'Teacher 1.6';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -145,6 +145,7 @@ function scLesson(f) {
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${u.final ? '' : 'Week ' + u.n + ' · '}Lesson ${l.n} · ${esc(u.title)}</div><div class="tp-lt" style="font-size:26px">${esc(l.subtopic)}</div></div></div>
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       ${l.skill ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic(/^Reading/.test(l.skill) ? 'BookOpenCheck' : /^Listening/.test(l.skill) ? 'Headphones' : 'PenLine')}Skill</div><p class="big">${esc(l.skill)}</p><p class="ex">${esc(l.how)}</p><p class="sub">Source: ${esc(l.source)}</p></div>` : ''}
+      ${l.deck ? `<div class="tp-2col dk-btns"><button class="tp-cta" data-present="${L.id}|${f.w}|${f.l}">${ic('Play')} Present (10 min)</button><button class="tp-pill" data-deckpdf="${L.id}|${f.w}|${f.l}">${ic('FileDown')} PDF</button></div>` : ''}
       ${l.routine ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('Clock')}Lesson plan · ${l.routine.reduce((a, r) => a + r[0], 0)} min</div>${l.routine.map((r) => `<p class="rt-row"><b>${r[0]}′</b><span>${esc(r[1])}<small>${esc(r[2])}</small></span></p>`).join('')}<p class="sub">The minutes are a guide: every group moves at its own pace.</p></div>` : ''}
       ${l.real ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('Globe')}Real English</div><p class="big">${esc(l.real)}</p><p class="sub">Main idea first, then 3 questions, then talk about it. The exam practice comes after.</p></div>` : ''}
       ${l.activity ? `<div class="tp-card2"><div class="h" style="color:#F5A000">${ic('PartyPopper')}Activity</div><p>${esc(l.activity)}</p></div>` : ''}
@@ -551,6 +552,7 @@ function goBack() { if (!closeTop()) return; if (history.state && history.state.
 function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { R.skipPop = (R.skipPop || 0) + 1; try { history.go(-d); } catch (e) { R.skipPop--; } } }
 window.addEventListener('popstate', () => { if (R && R.skipPop > 0) { R.skipPop--; return; } closeTop(); }); // the phone's Back button
 function closeTop() {
+  if (closeDeck()) return true; // a presentation first
   if (T.sheet) { T.sheet = null; draw(); return true; }
   if (T.push.length) { T.push.pop(); draw(); return true; }
   return false;
@@ -788,6 +790,8 @@ function onClick(e) {
     return toast(`Taught. ${g.name} moves to the next lesson.`);
   }
   if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }
+  if (d.present) { const [lvl, w, l] = d.present.split('|'); return openDeck({ lvl, w: +w, l: +l }); }
+  if (d.deckpdf) { const [lvl, w, l] = d.deckpdf.split('|'); return printDeck({ lvl, w: +w, l: +l }); }
   if (d.book) return openSheet({ s: 'book', book: d.book });
   if (d.openbook) return openBook(d.openbook);
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
@@ -913,6 +917,7 @@ function prewarm() {
     requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
   };
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 }); else run();
+  setTimeout(dkFetchMedia, 4000); // the decks' pictures and voices, kept for offline lessons
   lvIdle(1); lvIdle(3); // the levels beside the current one on Units and Books, ready for a swipe
 }
 
