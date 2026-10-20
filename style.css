@@ -639,3 +639,10 @@ label.tp-lrow{cursor:pointer}
 .tp-seg2.slide button:active{transform:none}
 .f-prog{display:grid;gap:14px}
 .f-prog:empty{display:none}
+
+/* v5: level pager (Units and Books): the level part of the page slides sideways; the neighbouring levels wait,
+   drawn and parked just off the screen in a layer over the pages, and slide in beside it */
+.lv-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+.lv-float{position:absolute;top:0;left:0;will-change:transform;contain:layout style}
+.lv-float.live{pointer-events:auto}
+.swapin>.lv-pane{animation:tp-swap .32s cubic-bezier(.2,.8,.2,1) both}

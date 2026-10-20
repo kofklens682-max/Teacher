@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.3';
+const VERSION_LABEL = 'Teacher 1.4';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -14,10 +14,10 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
 const lv = (id) => C.levels.find((l) => l.id === id);
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
-const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2'].includes(id);
+const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2'].includes(id);
 const avColor = (s) => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
 const gById = (id) => S.groups.find((g) => g.id === id);
-const weekOf = (lid, n) => lv(lid).units[n - 1];
+const weekOf = (lid, n) => { const u = lv(lid).units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
 
 // ---------- dates (the real today; refreshed when the app comes back) ----------
 const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -121,8 +121,8 @@ function pgUnits() {
         <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${grp.length ? ` · <em>${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</span><b>${esc(u.title)}</b><span>${u.lessons.map((l) => esc(l.subtopic)).join(' · ')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('')}</div>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Teen course</div><div class="tp-lt">Units</div></div></div>
     <div class="tp-segs" data-noswipe>${chips}</div>
-    <div class="tp-lvlcard" style="${gv(L.id)}"><div><div class="k">${esc(L.cefr)} · ${L.weeks} weeks</div><b>${esc(LVNAME(L.id))}</b><span>${planned(L.id) ? esc(L.focus) : 'Planned next'}</span></div>${here.length ? `<span class="n">${here.length}<small>group${here.length > 1 ? 's' : ''}</small></span>` : ''}</div>
-    ${body}`;
+    <div class="lv-pane" data-lvpane><div class="tp-lvlcard" style="${gv(L.id)}"><div><div class="k">${esc(L.cefr)} · ${L.weeks} weeks</div><b>${esc(LVNAME(L.id))}</b><span>${planned(L.id) ? esc(L.focus) : 'Planned next'}</span></div>${here.length ? `<span class="n">${here.length}<small>group${here.length > 1 ? 's' : ''}</small></span>` : ''}</div>
+    ${body}</div>`;
 }
 function scWeek(f) {
   const L = lv(f.lvl), u = weekOf(f.lvl, f.w), i = f.w - 1;
@@ -131,7 +131,7 @@ function scWeek(f) {
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i, true)}<div><div class="tp-eyebrow">${esc(LVNAME(L.id))} · ${u.final ? 'One lesson' : 'Week ' + u.n}</div><div class="tp-lt" style="font-size:28px">${esc(u.title)}</div></div></div>
       <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : 'By the end of the week they can say'}</small>${u.final ? esc(u.goal) : `“${esc(u.goal)}”`}</div></div>
       <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${esc(l.skill || l.grammarTopic || l.grammar)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
-      ${u.skill ? `<div class="tp-card2"><div class="h">${ic('MessageCircle')}Speaking</div><p>${esc(u.skill)}</p>${u.writing ? `<div class="h" style="margin-top:10px">${ic('PenLine')}Writing</div><p>${esc(u.writing)}</p>` : ''}${u.eew ? `<div class="h" style="margin-top:10px">${ic('BookA')}Word book</div><p>${esc(u.eew)}</p>` : ''}${u.reading ? `<div class="h" style="margin-top:10px">${ic('BookOpen')}Reader</div><p>${esc(u.reading)}</p>` : ''}</div>` : ''}
+      ${u.skill ? `<div class="tp-card2"><div class="h">${ic('MessageCircle')}Speaking</div><p>${esc(u.skill)}</p>${u.writing ? `<div class="h" style="margin-top:10px">${ic('PenLine')}Writing</div><p>${esc(u.writing)}</p>` : ''}${u.eew ? `<div class="h" style="margin-top:10px">${ic('BookA')}Word book</div><p>${esc(u.eew)}</p>` : ''}${u.reading ? `<div class="h" style="margin-top:10px">${ic('BookOpen')}Reader</div><p>${esc(u.reading)}</p>` : ''}${u.mock ? `<div class="h" style="margin-top:10px">${ic('ClipboardCheck')}Mock test</div><p>${esc(u.mock)}</p>` : ''}</div>` : ''}
     </div>`;
 }
 const chips = (arr, cls) => `<div class="tp-words${cls ? ' ' + cls : ''}">${arr.map((w) => `<span>${esc(w)}</span>`).join('')}</div>`;
@@ -261,7 +261,7 @@ function pgBooks() {
   else body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings. Videos start at Elementary.</div>` : '') + links.map((a, i) => `<div class="tp-media"><a class="mi" style="background:#FF5A5F" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener">${ic('CirclePlay')}</a><a class="tx" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener"><b>${esc(a.name)}</b><span>${esc(a.note || a.url)}</span></a>${a.id ? `<button class="tp-iconbtn" data-rmlink="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button>` : `<span class="tp-chev">${ic('ExternalLink')}</span>`}</div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="video">${ic('Plus')} Add a link</button>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Your files and links</div><div class="tp-lt">Books</div></div></div>
     <div class="tp-segs" data-noswipe>${levelChips}</div>
-    <div class="tp-seg2 slide" data-noswipe style="--n:${seg.length}"><span class="seg-thumb" style="--i:${seg.findIndex((k) => k[0] === T.bookSeg)}"></span>${seg.map((k) => `<button class="${T.bookSeg === k[0] ? 'on' : ''}" data-bookseg="${k[0]}">${ic(k[3])} ${k[1]} <em>${k[2]}</em></button>`).join('')}</div><div class="bk-body">${body}</div>`; // one block below the switch, so the switch itself is kept
+    <div class="tp-seg2 slide" data-noswipe style="--n:${seg.length}"><span class="seg-thumb" style="--i:${seg.findIndex((k) => k[0] === T.bookSeg)}"></span>${seg.map((k) => `<button class="${T.bookSeg === k[0] ? 'on' : ''}" data-bookseg="${k[0]}">${ic(k[3])} ${k[1]} <em>${k[2]}</em></button>`).join('')}</div><div class="bk-body" data-lvpane>${body}</div>`; // one block below the switch, so the switch itself is kept
 }
 
 /* ===================== sheets ===================== */
@@ -397,9 +397,11 @@ function safe(fn, arg) {
 }
 function draw() {
   if (!R) frame();
+  R.drawnAt = performance.now();
   PAGES.forEach((p, i) => setHTML(R.pages[i], safe(p), R.anim === i));
   R.anim = -1;
   syncScreen(); syncSheet(); syncTabs();
+  if ((T.tab === 1 || T.tab === 3) && !R.lvEnd) lvIdle(T.tab);
 }
 // ---------- screens on top (week, lesson, register…), kept as a stack like on an iPhone ----------
 // Each open screen keeps its element: going back slides the top one away and the one below glides back, exactly as
@@ -562,8 +564,21 @@ function bindSwipe() {
   vp.addEventListener('pointerdown', (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, pts: [] }; });
   vp.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
-    if (!st.on) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; } st.on = true; st.W = vp.offsetWidth; tr.classList.remove('settle'); R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    if (!st.on) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; }
+      st.on = true; st.W = vp.offsetWidth; R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ }
+      const page = R.pages[T.tab], pane = (T.tab === 1 || T.tab === 3) && page.querySelector('[data-lvpane]'), cur = pane ? lvIndex(T.tab) : -1, n = cur + (dx < 0 ? 1 : -1);
+      if (pane && n >= 0 && n < C.levels.length) { if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT); const p = page.querySelector('[data-lvpane]'); p.style.transition = 'none'; st.lv = { page, pane: p, cur: lvIndex(T.tab), dir: 0, peek: null, w: p.offsetWidth + LV_GAP }; }
+      else tr.classList.remove('settle');
+    }
     st.pts.push([e.timeStamp, e.clientX]); if (st.pts.length > 6) st.pts.shift();
+    if (st.lv) { // paging through the levels: the pane follows the finger, the next level comes in beside it
+      const L = st.lv, dir = dx < 0 ? 1 : -1, n = L.cur + dir, has = n >= 0 && n < C.levels.length;
+      if (dir !== L.dir) { lvHide(L.peek); L.peek = has ? lvPeek(T.tab, dir) : null; if (L.peek) { L.at = lvPlace(L.page, L.pane, L.peek); L.peek.style.transition = 'none'; L.peek.classList.add('on'); } L.dir = dir; }
+      st.dx = has ? dx : dx / 3;
+      L.pane.style.transform = `translate3d(${st.dx}px,0,0)`; if (L.peek) lvMove(L.peek, L.at.x + st.dx + dir * L.w, L.at.y);
+      return;
+    }
     st.dx = (T.tab === 0 && dx > 0) || (T.tab === 3 && dx < 0) ? dx / 3 : dx;
     tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
   });
@@ -571,6 +586,17 @@ function bindSwipe() {
     if (!st || e.pointerId !== st.id) return; const s = st; st = null; if (!s.on) return;
     R.sliding = false;
     const a = s.pts[0], b = s.pts[s.pts.length - 1], v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0;
+    if (s.lv) {
+      const L = s.lv; vp._moved = Date.now();
+      const go = L.peek && (L.dir > 0 ? s.dx < -L.w * 0.25 || v < -0.3 : s.dx > L.w * 0.25 || v > 0.3);
+      if (go) return lvGo(T.tab, L.cur + L.dir, s.dx, v, { peek: L.peek, at: L.at });
+      // not far enough: both glide back
+      const ms = Math.round(Math.max(180, Math.min(360, Math.abs(s.dx) / Math.max(Math.abs(v), 0.9)))), ease = `transform ${ms}ms cubic-bezier(.15,.8,.3,1)`;
+      L.pane.style.transition = ease; L.pane.style.transform = 'translate3d(0,0,0)';
+      if (L.peek) { L.peek.style.transition = ease; lvMove(L.peek, L.at.x + L.dir * L.w, L.at.y); }
+      clearTimeout(R.lvBackT); R.lvBackT = setTimeout(() => { if (L.pane.isConnected) L.pane.removeAttribute('style'); if (L.peek && !L.peek.classList.contains('live')) lvHide(L.peek); }, ms + 40);
+      return;
+    }
     let i = T.tab; if ((s.dx < -s.W * 0.3 || v < -0.3) && T.tab < 3) i++; else if ((s.dx > s.W * 0.3 || v > 0.3) && T.tab > 0) i--;
     // finish at the finger's speed: a quick flick glides fast, a slow drag settles gently (like iOS)
     const left = Math.abs((T.tab - i) * s.W + s.dx), ms = Math.round(Math.max(180, Math.min(420, left / Math.max(Math.abs(v), 0.9))));
@@ -593,6 +619,106 @@ function bindTabSlide() {
   });
   const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = Date.now(); R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
   bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
+}
+// ---------- level pager (Units and Books) ----------
+// A sideways swipe on Units or Books moves to the next or previous level: the level's page follows the finger and the
+// neighbouring level slides in beside it, like turning a page. Only at the first or last level does the swipe move to
+// the next tab. Tapping a level chip slides the pages the same way. The new level is chosen the moment the finger lifts
+// (or the chip is tapped), so a quick next tap is never lost.
+// For smoothness the two neighbouring levels are drawn ahead of time, out of sight, in a layer over the pages; a swipe
+// then only moves pictures that are ready. The page itself is redrawn once the slide has finished.
+const LV_GAP = 16;
+const lvIndex = (tab) => (tab === 1 ? C.levels.findIndex((l) => l.id === T.unitLvl) : T.bookLvl);
+function lvSet(tab, i) { if (tab === 1) T.unitLvl = C.levels[i].id; else T.bookLvl = i; keepUi(); }
+function lvLayer() { if (!R.lvLayer) { R.lvLayer = document.createElement('div'); R.lvLayer.className = 'lv-layer'; R.vp.appendChild(R.lvLayer); } return R.lvLayer; }
+function lvBuild(tab, i, w, side) { // the pane of another level, drawn and parked just off the screen, ready to slide in
+  const k = tab === 1 ? 'unitLvl' : 'bookLvl', was = T[k];
+  T[k] = tab === 1 ? C.levels[i].id : i;
+  let el;
+  try { const t = document.createElement('template'); t.innerHTML = safe(PAGES[tab]); el = t.content.querySelector('[data-lvpane]'); } finally { T[k] = was; }
+  el.removeAttribute('data-lvpane'); el.classList.add('lv-float'); el.setAttribute('aria-hidden', 'true'); el.inert = true; el.style.width = w + 'px';
+  el._side = side || { x: -2 * w - 99, y: 0 }; lvMove(el, el._side.x, el._side.y);
+  lvLayer().appendChild(el); return el;
+}
+function lvDrop(tab) { const c = R.lvc && R.lvc[tab]; if (c) { Object.values(c.els).forEach((e) => e.remove()); delete R.lvc[tab]; } }
+// Draw the levels on both sides of the current one (only again when the page has changed). With one = true it draws at
+// most one of them, so the work is done in small pieces while the phone is idle.
+function lvSide(tab, dir) { // the drawn neighbour on one side, drawing it now if needed (build = false: only if ready)
+  const page = R.pages[tab], pane = page.querySelector('[data-lvpane]'), n = lvIndex(tab) + dir;
+  if (!pane || n < 0 || n >= C.levels.length) return null;
+  const w = pane.offsetWidth, key = page._html + '|' + w; let c = (R.lvc || (R.lvc = {}))[tab];
+  if (!c || c.key !== key) { lvDrop(tab); c = R.lvc[tab] = { key, els: {} }; }
+  if (!c.els[dir] && arguments[2] !== false) c.els[dir] = lvBuild(tab, n, w, { x: pane.offsetLeft + dir * (w + LV_GAP), y: pane.offsetTop - page.scrollTop });
+  return c.els[dir] || null;
+}
+function lvPrep(tab, one) {
+  if (R.lvEnd || !R.pages[tab].querySelector('[data-lvpane]')) return false;
+  for (const dir of [1, -1]) {
+    if (lvSide(tab, dir, false)) continue;
+    const n = lvIndex(tab) + dir; if (n < 0 || n >= C.levels.length) continue;
+    lvSide(tab, dir);
+    if (one) return true; // more to do next time
+  }
+  return false;
+}
+function lvIdle(tab) { // only when nothing is moving: never in the middle of a slide, a sheet or a new screen
+  if (lvIdle[tab]) return; lvIdle[tab] = true;
+  const later = () => ('requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 4000 }) : setTimeout(run, 300));
+  const run = () => {
+    if (R.sliding || R.lvEnd || performance.now() - (R.drawnAt || 0) < 1500) { setTimeout(later, 500); return; }
+    if (lvPrep(tab, true)) { setTimeout(later, 60); return; }
+    lvIdle[tab] = false;
+  };
+  later();
+}
+const lvPeek = (tab, dir) => lvSide(tab, dir); // for a swipe: drawn now if it isn't ready yet
+// Where the neighbour sits on screen: level with the current pane. If the neighbour is shorter and the page is scrolled
+// far down, it sits where the page will end up after the swap, so nothing jumps at the end.
+function lvPlace(page, pane, peek) {
+  const pr = pane.getBoundingClientRect(), vr = R.vp.getBoundingClientRect(), sc = page.scrollTop;
+  const sc2 = Math.min(sc, Math.max(0, page.scrollHeight - pane.offsetHeight + peek.offsetHeight - page.clientHeight));
+  return { x: pr.left - vr.left, y: pr.top - vr.top + (sc - sc2), sc2 };
+}
+const lvMove = (el, x, y) => { el.style.transform = `translate3d(${x}px,${y}px,0)`; };
+function lvHide(peek) { if (!peek) return; peek.classList.remove('on', 'live'); peek.style.transition = ''; lvMove(peek, peek._side.x, peek._side.y); peek.inert = true; peek.setAttribute('aria-hidden', 'true'); }
+function lvChips(tab) { // the chosen chip lights up at once and glides into view
+  const page = R.pages[tab];
+  page.querySelectorAll('.tp-segs button').forEach((b) => b.classList.toggle('on', tab === 1 ? b.dataset.unitlvl === T.unitLvl : +b.dataset.booklvl === T.bookLvl));
+  restoreStrips(page, stripsOf(page));
+}
+// Choose level i on this tab and slide: the old pane leaves to one side, the new one arrives from the other.
+// d = where the finger left the pane (0 for a tap), v = finger speed (px/ms) so the glide finishes at that speed.
+function lvGo(tab, i, d = 0, v = 0, ready) {
+  if (R.lvEnd) R.lvEnd(); // a slide still running finishes at once
+  clearTimeout(R.lvBackT);
+  const page = R.pages[tab], pane = page.querySelector('[data-lvpane]'), from = lvIndex(tab);
+  if (!pane || i === from || i < 0 || i >= C.levels.length) return;
+  const dir = i > from ? 1 : -1, W = pane.offsetWidth + LV_GAP;
+  const peek = (ready && ready.peek) || (Math.abs(i - from) === 1 ? lvSide(tab, dir, false) : null);
+  if (!peek) { // a far level (or a neighbour not drawn yet): draw it in place; it glides in from the side it lies on
+    lvSet(tab, i); draw();
+    const p = page.querySelector('[data-lvpane]');
+    if (p && p.animate) p.animate([{ transform: `translate3d(${dir * 56}px,0,0)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    return;
+  }
+  peek.classList.add('on');
+  const at = (ready && ready.at) || lvPlace(page, pane, peek);
+  lvSet(tab, i); lvChips(tab);
+  peek.classList.add('on', 'live'); peek.inert = false; peek.removeAttribute('aria-hidden'); // taps on the arriving level work at once
+  pane.style.pointerEvents = 'none'; pane.style.transition = peek.style.transition = 'none';
+  pane.style.transform = `translate3d(${d}px,0,0)`; lvMove(peek, at.x + d + dir * W, at.y);
+  void peek.offsetWidth;
+  const ms = v ? Math.round(Math.max(180, Math.min(420, Math.abs(d + dir * W) / Math.max(Math.abs(v), 0.9)))) : 340;
+  pane.style.transition = peek.style.transition = `transform ${ms}ms cubic-bezier(.15,.8,.3,1)`;
+  pane.style.transform = `translate3d(${-dir * W}px,0,0)`; lvMove(peek, at.x, at.y);
+  const t = setTimeout(() => R.lvEnd && R.lvEnd(), ms + 30);
+  R.lvEnd = () => { // the page now draws the new level exactly where the sliding picture is, then the picture goes
+    R.lvEnd = null; clearTimeout(t);
+    draw();
+    const p = page.querySelector('[data-lvpane]'); if (p) p.removeAttribute('style');
+    if (page.scrollTop !== at.sc2) page.scrollTop = at.sc2;
+    peek.remove(); lvDrop(tab); lvIdle(tab);
+  };
 }
 let toastT = 0;
 function toast(msg) {
@@ -629,8 +755,8 @@ function onClick(e) {
   if (d.pop !== undefined) return goBack();
   if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
-  if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; T.unitLvl = d.unitlvl; keepUi(); R.anim = 1; return draw(); }
-  if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; T.bookLvl = +d.booklvl; keepUi(); R.anim = 3; return draw(); }
+  if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
+  if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
@@ -776,6 +902,7 @@ function prewarm() {
     requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
   };
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 }); else run();
+  lvIdle(1); lvIdle(3); // the levels beside the current one on Units and Books, ready for a swipe
 }
 
 // ---------- start ----------
