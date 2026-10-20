@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Teacher",
+  "short_name": "Teacher",
+  "description": "Your groups, the teen course, attendance and books. Data stays on this phone.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F2F3F8",
+  "theme_color": "#F2F3F8",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
