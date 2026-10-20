@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.2';
+const VERSION_LABEL = 'Teacher 1.3';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -261,7 +261,7 @@ function pgBooks() {
   else body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings. Videos start at Elementary.</div>` : '') + links.map((a, i) => `<div class="tp-media"><a class="mi" style="background:#FF5A5F" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener">${ic('CirclePlay')}</a><a class="tx" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener"><b>${esc(a.name)}</b><span>${esc(a.note || a.url)}</span></a>${a.id ? `<button class="tp-iconbtn" data-rmlink="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button>` : `<span class="tp-chev">${ic('ExternalLink')}</span>`}</div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="video">${ic('Plus')} Add a link</button>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Your files and links</div><div class="tp-lt">Books</div></div></div>
     <div class="tp-segs" data-noswipe>${levelChips}</div>
-    <div class="tp-seg2" data-noswipe>${seg.map((k) => `<button class="${T.bookSeg === k[0] ? 'on' : ''}" data-bookseg="${k[0]}">${ic(k[3])} ${k[1]} <em>${k[2]}</em></button>`).join('')}</div>${body}`;
+    <div class="tp-seg2 slide" data-noswipe style="--n:${seg.length}"><span class="seg-thumb" style="--i:${seg.findIndex((k) => k[0] === T.bookSeg)}"></span>${seg.map((k) => `<button class="${T.bookSeg === k[0] ? 'on' : ''}" data-bookseg="${k[0]}">${ic(k[3])} ${k[1]} <em>${k[2]}</em></button>`).join('')}</div><div class="bk-body">${body}</div>`; // one block below the switch, so the switch itself is kept
 }
 
 /* ===================== sheets ===================== */
@@ -273,9 +273,9 @@ function sheetGroup(s) {
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
     <label class="tp-f"><span>Group name</span><input id="f-name" value="${esc(F.name)}" placeholder="e.g. Group D" autocomplete="off"></label>
     <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), 'own'].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
-    ${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
+    <div class="f-prog">${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
       : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${[1, 2, 3].map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>Lesson ${n}</option>`).join('')}</select></div></div>`
-      : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}
+      : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
     <div class="tp-f"><span>Days</span><div class="tp-chips2 days">${DAYS.map((d, i) => `<button class="${F.days.includes(i) ? 'on' : ''}" data-f-day="${i}">${d}</button>`).join('')}</div></div>
     <label class="tp-f"><span>Time</span><input id="f-time" type="time" value="${esc(F.time)}"></label>
     <div class="tp-f"><span>Students · ${F.students.length}</span><div class="tp-stulist">${F.students.map((x, i) => `<span>${esc(x.name)}<button data-f-rm="${i}" aria-label="Remove ${esc(x.name)}">${ic('X')}</button></span>`).join('')}</div>
@@ -342,7 +342,7 @@ function frame() {
   R = { vp: root.querySelector('.tp-viewport'), track: root.querySelector('.tp-track'), pages: [...root.querySelectorAll('.tp-page')],
     screens: root.querySelector('.tp-screens'), tabs: root.querySelector('.tp-tabs'), ind: root.querySelector('.tp-ind'), sheets: root.querySelector('.tp-sheets'),
     screen: null, sheet: null, anim: -1 };
-  bindSwipe(); bindTabSlide();
+  bindSwipe(); bindTabSlide(); bindSegSlide();
 }
 // Chip strips: remember their sideways scroll across a redraw, then glide the chosen chip into view if it is hidden.
 function stripsOf(el) { return [...el.querySelectorAll('.tp-segs')].map((s) => s.scrollLeft); }
@@ -364,7 +364,10 @@ function sameStrip(o, n) {
   for (let i = 0; i < a.length; i++) if (a[i].tagName !== b[i].tagName || a[i].dataset.unitlvl !== b[i].dataset.unitlvl || a[i].dataset.booklvl !== b[i].dataset.booklvl || a[i].dataset.bookseg !== b[i].dataset.bookseg) return false;
   return true;
 }
-function syncStrip(o, n) { [...n.children].forEach((b, i) => { const x = o.children[i]; if (x.className !== b.className) x.className = b.className; if (x.innerHTML !== b.innerHTML) x.innerHTML = b.innerHTML; }); }
+function syncStrip(o, n) {
+  [...n.children].forEach((b, i) => { const x = o.children[i]; if (x.className !== b.className) x.className = b.className; if (x.innerHTML !== b.innerHTML) x.innerHTML = b.innerHTML; if ((x.getAttribute('style') || '') !== (b.getAttribute('style') || '')) x.setAttribute('style', b.getAttribute('style') || ''); });
+  if ((o.getAttribute('style') || '') !== (n.getAttribute('style') || '')) o.setAttribute('style', n.getAttribute('style') || '');
+}
 function setHTML(el, html, swap) {
   if (el._html === html) return false;
   const xs = stripsOf(el), tpl = document.createElement('template'); tpl.innerHTML = html;
@@ -454,43 +457,75 @@ function closeAnim(el) {
   el.classList.remove('show');
   setTimeout(() => el.remove(), 420);
 }
-// Pull the sheet down to close it — from anywhere inside it while its content is scrolled to the top. A flick closes it too.
+// Pull the sheet down to close it — from ANYWHERE inside it (fields, chips, the student list…). If its content is
+// scrolled down, the same pull first scrolls it back to the top and then carries the sheet down (like iOS). A short
+// quick flick is enough; a plain tap never closes it (it types, chooses, presses as usual).
 function bindSheetDrag(el) {
-  const p = el._panel, s = el._scrim; let x0 = 0, y0 = null, t0 = 0, dy = 0, mode = null;
-  const begin = (x, y, target) => {
-    if (target.closest('input, textarea, select') || p.scrollTop > 2) return;
-    x0 = x; y0 = y; t0 = performance.now(); dy = 0; mode = null;
+  const p = el._panel, s = el._scrim; let st = null;
+  const move = (y) => {
+    const now = performance.now(); st.v = (y - st.last) / Math.max(1, now - st.lt); st.last = y; st.lt = now;
+    st.dy = Math.max(0, y - st.y0);
+    p.style.transform = `translateY(${st.dy}px)`;
+    s.style.opacity = String(Math.max(0.1, 1 - st.dy / (p.offsetHeight || 600)));
   };
+  const start = (x, y) => { st = { x0: x, y0: y, mode: null, dy: 0, last: y, lt: performance.now(), v: 0 }; };
   const follow = (x, y, e) => {
-    if (y0 === null) return;
-    const ddx = x - x0, ddy = y - y0;
-    if (!mode) { if (Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return; mode = ddy > 0 && Math.abs(ddy) > Math.abs(ddx) * 1.2 ? 'drag' : 'none'; if (mode === 'drag') el.classList.add('dragging'); }
-    if (mode !== 'drag') return;
-    if (e.cancelable) e.preventDefault();
-    dy = Math.max(0, ddy);
-    p.style.transform = `translateY(${dy}px)`;
-    s.style.opacity = String(Math.max(0.1, 1 - dy / (p.offsetHeight || 600)));
+    if (!st) return;
+    if (st.mode === null) {
+      const ddx = x - st.x0, ddy = y - st.y0;
+      if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+      st.mode = Math.abs(ddx) > Math.abs(ddy) ? 'none' : 'wait'; // sideways moves belong to chips and fields
+    }
+    if (st.mode === 'none') return;
+    if (st.mode === 'wait') {
+      if (p.scrollTop <= 0 && y > st.last) { st.mode = 'drag'; st.y0 = st.last; el.classList.add('dragging'); if (document.activeElement && p.contains(document.activeElement)) document.activeElement.blur(); }
+      else { st.last = y; st.lt = performance.now(); return; } // the content scrolls back up first
+    }
+    if (e && e.cancelable) e.preventDefault();
+    move(y);
   };
   const release = () => {
-    if (y0 === null) return;
-    const wasDrag = mode === 'drag', speed = dy / Math.max(1, performance.now() - t0);
-    y0 = null; mode = null;
-    if (!wasDrag) return;
-    el._dragged = Date.now();
-    el.classList.remove('dragging');
-    if (dy > Math.min(140, p.offsetHeight * 0.25) || (speed > 0.55 && dy > 30)) closeSheetNow();
+    if (!st) return; const k = st; st = null;
+    if (k.mode !== 'drag') return;
+    el._dragged = Date.now(); el.classList.remove('dragging');
+    if (k.dy > Math.min(110, p.offsetHeight * 0.2) || (k.v > 0.35 && k.dy > 16)) closeSheetNow();
     else { p.style.transform = ''; s.style.opacity = ''; }
   };
-  p.addEventListener('touchstart', (e) => begin(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
+  p.addEventListener('touchstart', (e) => start(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
   p.addEventListener('touchmove', (e) => follow(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
   p.addEventListener('touchend', release); p.addEventListener('touchcancel', release);
   p.addEventListener('pointerdown', (e) => { // a mouse can pull the top bar
     if (e.pointerType !== 'mouse' || !e.target.closest('.tp-sh-h') || e.target.closest('button')) return;
-    begin(e.clientX, e.clientY, e.target);
+    start(e.clientX, e.clientY);
     const mv = (ev) => follow(ev.clientX, ev.clientY, ev), up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); release(); };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
   });
   s.addEventListener('click', () => closeSheetNow()); // a tap outside the sheet closes it
+}
+// A switch with a gliding highlight (Books | Audio | Videos): tap an option, or press and slide along it — the
+// highlight follows the finger and the option under it is chosen when the finger lifts (like iOS).
+function bindSegSlide() {
+  let st = null;
+  root.addEventListener('pointerdown', (e) => {
+    const sw = e.target.closest('.tp-seg2.slide'); if (!sw) return;
+    const btns = [...sw.querySelectorAll('button')], th = sw.querySelector('.seg-thumb');
+    st = { sw, btns, th, x0: e.clientX, id: e.pointerId, on: false, i: btns.findIndex((b) => b.classList.contains('on')) };
+  });
+  root.addEventListener('pointermove', (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    if (!st.on) { if (Math.abs(e.clientX - st.x0) < 6) return; st.on = true; st.sw.classList.add('sliding'); try { st.sw.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    const r = st.sw.getBoundingClientRect(), w = (r.width - 6) / st.btns.length, x = Math.max(0, Math.min(w * (st.btns.length - 1), e.clientX - r.left - 3 - w / 2));
+    st.th.style.transform = `translateX(${x}px)`; st.i = Math.round(x / w);
+    st.btns.forEach((b, k) => b.classList.toggle('on', k === st.i));
+  });
+  const up = (e) => {
+    if (!st || e.pointerId !== st.id) return; const k = st; st = null;
+    if (!k.on) return;
+    k.sw.classList.remove('sliding'); k.th.style.transform = ''; k.sw._slid = Date.now();
+    const seg = k.btns[k.i].dataset.bookseg;
+    if (seg && seg !== T.bookSeg) { T.bookSeg = seg; R.anim = 3; draw(); } else draw();
+  };
+  root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
 }
 // ---------- the tab bar and the pages' position ----------
 function syncTabs() {
@@ -588,6 +623,7 @@ function onClick(e) {
   if (b.tagName === 'A' || b.tagName === 'LABEL') return;
   if ((R.vp._moved && Date.now() - R.vp._moved < 350) || (R.tabs._slid && Date.now() - R.tabs._slid < 350)) return;
   if (R.sheet && R.sheet._dragged && Date.now() - R.sheet._dragged < 350) return; // the end of a pull isn't a tap
+  const sw = b.closest('.tp-seg2'); if (sw && sw._slid && Date.now() - sw._slid < 350) return; // nor the end of a slide
   const d = b.dataset, top = T.push[T.push.length - 1];
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();

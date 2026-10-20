@@ -631,3 +631,11 @@ label.tp-lrow{cursor:pointer}
 .tp-viewport{transition:transform .44s cubic-bezier(.2,.85,.25,1)}
 .tp-viewport.under{transform:translateX(-24%)}
 .tp-track.glide{transition-timing-function:cubic-bezier(.15,.8,.3,1)}
+/* ===== v4: switches with a gliding highlight (press and slide) ===== */
+.tp-seg2.slide{position:relative;touch-action:none}
+.tp-seg2.slide .seg-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / var(--n));border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(14,19,37,.12),0 3px 10px rgba(14,19,37,.06);transform:translateX(calc(var(--i) * 100%));transition:transform .42s cubic-bezier(.3,1.2,.45,1)}
+.tp-seg2.slide.sliding .seg-thumb{transition:none;transform-origin:center}
+.tp-seg2.slide button{position:relative;z-index:1;background:transparent!important;box-shadow:none!important;transition:color .25s}
+.tp-seg2.slide button:active{transform:none}
+.f-prog{display:grid;gap:14px}
+.f-prog:empty{display:none}
