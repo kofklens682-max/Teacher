@@ -4,7 +4,7 @@
    units. "Open" shows a file; "Share" sends the real file through the phone's share sheet (Telegram, Saved Messages, ...)
    without saving it on the phone. Files are fetched when the lesson opens (the service worker keeps them for offline), so a
    tap on Share can start the share sheet at once. */
-const PK_KINDS = [['l', 'Lesson', "Explains today's topic · for the laptop"], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
+const PK_KINDS = [['l', 'Lesson', "Explains today's topic · for the laptop"], ['t', 'Written test', 'To print · A4 · 40 points'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
 const packBlobs = {};
 const packHas = (L, u, l) => (typeof PACKS !== 'undefined' && PACKS[`${L.id.toLowerCase()}-w${u.n}-l${l.n}`]) || null;
 const packSize = (kb) => (kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
