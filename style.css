@@ -732,3 +732,4 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .gc.absent{background:#FEE4E2;color:#B42318}
 .gc.na{background:var(--fill)}
 .gc.nohw::after{content:"";position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:#B42318}
+.gt-n i{font-style:normal;color:var(--text3);font-weight:700;font-size:11px;display:inline-block;width:18px}
