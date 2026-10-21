@@ -733,3 +733,23 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .gc.na{background:var(--fill)}
 .gc.nohw::after{content:"";position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:#B42318}
 .gt-n i{font-style:normal;color:var(--text3);font-weight:700;font-size:11px;display:inline-block;width:18px}
+/* Attendance table v2: bigger squares, names and % stay put while the dates scroll */
+.gt-wrap{overflow-x:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px;overscroll-behavior-x:contain}
+.gt{display:grid;gap:0;align-items:center;width:max-content}
+.gt>*{min-width:0}
+.gt-n,.gt-p{position:sticky;z-index:2;background:var(--card);align-self:stretch;display:flex;align-items:center}
+.gt-n{left:0;padding-right:4px;font-size:13.5px}
+.gt-p{left:96px;justify-content:center;font-size:12.5px;box-shadow:6px 0 6px -6px rgba(14,19,37,.18)}
+.gt-h.gt-n,.gt-h.gt-p{display:flex;align-items:flex-end;justify-content:center}
+.gt-d{display:grid;justify-items:center;align-content:center;gap:0;padding:4px 0;border-radius:10px;line-height:1.15}
+.gt-d b{font-size:15px}
+.gt-d.today b{color:var(--g2)}
+.gt-d.cur{background:color-mix(in srgb,var(--g2) 14%,#fff)}
+.gc{height:42px;width:42px;margin:2px;border-radius:12px;font-size:16px;justify-self:center}
+.gc.na{background:var(--fill);border:1.5px dashed rgba(14,19,37,.14)}
+.gc.na.soon{background:transparent;border-color:rgba(14,19,37,.10)}
+.gc.nohw::after{right:5px;top:5px;width:6px;height:6px}
+.lock-note{display:none;margin:0 0 8px;font-size:13px;font-weight:700;color:#B54708;align-items:center;gap:6px}
+.lock-note svg{width:16px;height:16px}
+.tl-lockable.locked .lock-note{display:flex}
+.tl-lockable.locked .tl-grid,.tl-lockable.locked .save-day{opacity:.45}
