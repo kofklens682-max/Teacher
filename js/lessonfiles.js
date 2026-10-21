@@ -12,13 +12,22 @@ function packGet(name) {
   if (!packBlobs[name]) packBlobs[name] = fetch('media/packs/' + name).then((r) => { if (!r.ok) throw new Error('missing'); return r.blob(); }).catch((e) => { delete packBlobs[name]; throw e; });
   return packBlobs[name];
 }
+const packQueue = [];
+function packLater(name) {
+  if (packBlobs[name] || packQueue.includes(name)) return;
+  packQueue.push(name);
+  if (packQueue.length > 1) return;
+  const next = () => { const n = packQueue[0]; if (!n) return; packGet(n).catch(() => {}).then(() => { packQueue.shift(); if (packQueue.length) idle(next); }); };
+  idle(next);
+}
+const idle = (f) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 4000 }) : setTimeout(f, 1500));
 function packBlock(L, u, l) {
   const P = packHas(L, u, l); if (!P) return '';
   const key = `${L.id.toLowerCase()}-w${u.n}-l${l.n}`, title = `${LVNAME(L.id)} W${u.n} L${l.n} - ${l.subtopic}`;
   const rows = PK_KINDS.filter(([k]) => P[k]).map(([k, name, sub]) => {
-    packGet(P[k][0]).catch(() => {});
+    packLater(P[k][0]);
     const d = `data-pk="${key}|${k}" data-pt="${esc(title + ' - ' + name)}"`;
-    return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></div><button class="tp-pill" data-packopen="${key}|${k}" ${d}>Open</button><button class="tp-pill" data-packshare="${key}|${k}" ${d}>${ic('Share2')} Share</button></div>`;
+    return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></div><a class="tp-pill" href="media/packs/${P[k][0]}" target="_blank" rel="noopener">Open</a><button class="tp-pill" data-packshare="${key}|${k}" ${d}>${ic('Share2')} Share</button></div>`;
   }).join('');
   const games = (P.g || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
   const all = PK_KINDS.filter(([k]) => P[k]).length > 1 ? `<button class="tp-cta pk-all" data-packshareall="${key}" data-pt="${esc(title)}">${ic('Share2')} Share all ${PK_KINDS.filter(([k]) => P[k]).length}</button>` : '';
@@ -29,13 +38,6 @@ function packBlock(L, u, l) {
 async function packFile(key, kind, title) {
   const name = PACKS[key][kind][0];
   return new File([await packGet(name)], title.replace(/[\\/:*?"<>|]/g, '') + '.pdf', { type: 'application/pdf' });
-}
-async function packOpen(ref, title) {
-  const [key, kind] = ref.split('|');
-  let file; try { file = await packFile(key, kind, title); } catch (e) { return toast('Connect to the internet once to get this file'); }
-  const url = URL.createObjectURL(file), w = window.open(url, '_blank');
-  if (!w) return packShare(ref, title);
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 async function packShare(ref, title) {
   const [key, kind] = ref.split('|');
