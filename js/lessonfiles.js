@@ -20,8 +20,9 @@ function packBlock(L, u, l) {
     const d = `data-pk="${key}|${k}" data-pt="${esc(title + ' - ' + name)}"`;
     return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></div><button class="tp-pill" data-packopen="${key}|${k}" ${d}>Open</button><button class="tp-pill" data-packshare="${key}|${k}" ${d}>${ic('Share2')} Share</button></div>`;
   }).join('');
-  const games = (P.g || []).map((g) => `<a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a>`).join('');
-  return `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Lesson files</div>${rows}</div>`
+  const games = (P.g || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
+  const all = PK_KINDS.filter(([k]) => P[k]).length > 1 ? `<button class="tp-cta pk-all" data-packshareall="${key}" data-pt="${esc(title)}">${ic('Share2')} Share all ${PK_KINDS.filter(([k]) => P[k]).length}</button>` : '';
+  return `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Lesson files</div>${rows}${all}</div>`
     + (games ? `<div class="tp-card2 pk-game"><div class="h" style="color:#FF5A5F">${ic('Play')}Game · Baamboozle</div>${games}</div>` : '')
     + (P.b && P.b.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookOpen')}Books for this lesson</div>${P.b.map((b) => `<p>${esc(b)}</p>`).join('')}</div>` : '');
 }
@@ -45,4 +46,19 @@ async function packShare(ref, title) {
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); // no file sharing here (a computer): save the file
   setTimeout(() => URL.revokeObjectURL(a.href), 60000); toast('Saved. Find it in your downloads');
+}
+// Share every file of the lesson in one go (Telegram takes them together); on a computer each file is saved
+async function packShareAll(key, title) {
+  const files = []; try { for (const [k, name] of PK_KINDS) if (PACKS[key][k]) files.push(await packFile(key, k, `${title} - ${name}`)); } catch (e) { return toast('Connect to the internet once to get these files'); }
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try { await navigator.share({ files, title }); } catch (e) { if (e && e.name === 'NotAllowedError') toast('Ready. Tap Share again'); }
+    return;
+  }
+  files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }, i * 400));
+  toast('Saved. Find them in your downloads');
+}
+// Share just the game link (the phone's share sheet, else copy it)
+async function shareLink(url, title) {
+  if (navigator.share) { try { await navigator.share({ title, url }); } catch (e) { /* closed */ } return; }
+  try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch (e) { toast(url); }
 }

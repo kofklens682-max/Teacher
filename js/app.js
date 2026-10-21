@@ -801,6 +801,8 @@ function onClick(e) {
   if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }
   if (d.packopen) return packOpen(d.packopen, d.pt);
   if (d.packshare) return packShare(d.packshare, d.pt);
+  if (d.packshareall) return packShareAll(d.packshareall, d.pt);
+  if (d.sharelink) return shareLink(d.sharelink, d.pt);
   if (d.book) return openSheet({ s: 'book', book: d.book });
   if (d.openbook) return openBook(d.openbook);
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }

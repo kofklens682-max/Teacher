@@ -659,7 +659,11 @@ label.tp-lrow{cursor:pointer}
 .pk-row+.pk-row{border-top:1px solid rgba(92,99,120,.16)}
 .pk-t{flex:1;min-width:0}.pk-t b{display:block;font-size:15px}.pk-t span{display:block;font-size:12px;color:#5C6378;line-height:1.3}
 .pk-row .tp-pill{flex:none;justify-content:center}
-.pk-game .tp-media{margin:8px 0 0;max-width:100%;min-width:0}
+.pk-all{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.pk-gr{display:flex;align-items:center;gap:8px;margin-top:8px}
+.pk-gr .tp-media{flex:1;margin:0;min-width:0}
+.pk-ic{flex:none;width:44px;height:44px;padding:0;justify-content:center;border-radius:14px}
+.pk-game .tp-media{max-width:100%;min-width:0}
 .pk-game .tx{min-width:0;overflow:hidden}
 .pk-game .tx b,.pk-game .tx span{display:block;white-space:normal;overflow-wrap:anywhere}
 
