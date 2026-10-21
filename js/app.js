@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.7';
+const VERSION_LABEL = 'Teacher 1.8';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -93,11 +93,17 @@ const T = { tab: 0, push: [], sheet: null, unitLvl: 'A1', bookLvl: 0, bookSeg: '
 try { const u = JSON.parse(localStorage.getItem('teacher-ui') || '{}'); if (u.unitLvl && lv(u.unitLvl)) T.unitLvl = u.unitLvl; if (u.bookLvl >= 0 && u.bookLvl < C.levels.length) T.bookLvl = u.bookLvl; } catch (e) { /* defaults */ }
 const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({ unitLvl: T.unitLvl, bookLvl: T.bookLvl })); } catch (e) { /* not needed */ } };
 
+
+/* ===================== Profile (name and role on the Home screen; kept on this phone) ===================== */
+const profileGet = () => { try { return JSON.parse(localStorage.getItem('teacher-profile') || '{}') || {}; } catch (e) { return {}; } };
+const profileSet = (p) => { try { localStorage.setItem('teacher-profile', JSON.stringify(p)); } catch (e) { /* not needed */ } };
+const initials = (n) => String(n || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+
 /* ===================== Home: groups as tiles ===================== */
 function pgHome() {
   const todayN = S.groups.filter((g) => hasLesson(g, TODAY)).length;
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}${S.groups.length ? ` · ${todayN} lesson${todayN === 1 ? '' : 's'} today` : ''}</div><div class="tp-lt">My groups</div></div>
-    <div class="hdr-btns"><button class="tp-iconbtn" data-sheet="settings" aria-label="Settings and backup">${ic('Ellipsis')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
+    <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
   if (!S.groups.length) return head + `<div class="tp-empty2 welcome">${ic('Users')}<b>Add your first group</b><span>Choose its level, the days and time, and the students. The app then shows each group's next lesson and opens the register with everyone marked here.</span><button class="tp-cta" data-sheet="group">${ic('Plus')} New group</button></div>`;
   const tiles = [...S.groups].sort((a, b) => nextOffset(a) - nextOffset(b) || a.time.localeCompare(b.time)).map((g) => {
     const p = attPct(g), u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = taughtOn(g, TODAY) || (S.ownDone[g.id] || {})[iso(TODAY)];
@@ -320,12 +326,16 @@ function sheetBook(s) {
 }
 function sheetSettings(s) {
   const n = S.groups.reduce((a, g) => a + g.students.length, 0);
-  return `<div class="tp-sh-h"><span></span><b>Settings</b><button class="tp-back strong" data-closesheet>Done</button></div>
+  const P = profileGet();
+  return `<div class="tp-sh-h"><span></span><b>Profile and settings</b><button class="tp-back strong" data-closesheet>Done</button></div>
+    <div class="tp-prof"><span class="tp-avatar big">${initials(P.name) || ic('UserRound')}</span><div><b>${esc(P.name || 'Your name')}</b><span>${esc(P.role || 'Teacher')}</span></div></div>
+    <label class="tp-f"><span>Your name</span><input id="f-pname" value="${esc(P.name || '')}" placeholder="e.g. Aziz Karimov" autocomplete="off" data-profile></label>
+    <label class="tp-f"><span>Your role</span><input id="f-prole" value="${esc(P.role || '')}" placeholder="e.g. English teacher" autocomplete="off" data-profile></label>
     <div class="tp-card2"><div class="h">${ic('ShieldCheck')}Your data</div><p>${S.groups.length} group${S.groups.length === 1 ? '' : 's'} · ${n} student${n === 1 ? '' : 's'}. Everything stays on this phone, with a second copy and automatic daily copies.</p></div>
     <button class="tp-lrow" data-backup>${ic('Download')}<span class="tx"><b>Save a backup file</b><span>Send it to yourself in Telegram or Drive</span></span></button>
     <label class="tp-lrow">${ic('Upload')}<span class="tx"><b>Restore from a backup file</b><span>Replaces what is in the app now (a copy is kept first)</span></span><input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>
     <button class="tp-lrow" data-sheet="copies">${ic('History')}<span class="tx"><b>Automatic copies</b><span>One a day for two weeks, then one a month</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>
-    <p class="tp-small">${VERSION_LABEL} · the course: Beginner to Upper-Intermediate</p>`;
+    <p class="tp-small">${VERSION_LABEL} · the course: Beginner to IELTS 7+</p>`;
 }
 function sheetCopies(s) {
   if (!s.list) { copyList().then((l) => { if (T.sheet === s) { s.list = l; draw(); } }).catch(() => { s.list = []; draw(); }); }
@@ -935,6 +945,7 @@ function onChange(e) {
   if (t.dataset.pickbook) return pickBook(t);
   if (t.dataset.pickmat) return pickMat(t);
   if (t.dataset.restore !== undefined) return restore(t);
+  if (t.dataset.profile !== undefined) { const nm = root.querySelector('#f-pname'), ro = root.querySelector('#f-prole'); profileSet({ name: (nm ? nm.value : '').trim().slice(0, 40), role: (ro ? ro.value : '').trim().slice(0, 40) }); return draw(); }
 }
 function onKey(e) {
   if (e.key !== 'Enter') return;

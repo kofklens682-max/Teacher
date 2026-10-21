@@ -671,3 +671,13 @@ a.tp-pill{text-decoration:none}
 /* My files on a lesson */
 .tp-mats .tp-media{box-shadow:none;background:var(--fill);margin:8px 0 0}
 .tp-mats .tp-dashed.in{margin-top:10px;padding:11px}
+
+/* Profile button on Home and the profile card in Settings */
+.tp-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,#7B61FF,#147EFB);color:#fff;font-weight:700;font-size:14px;letter-spacing:.2px}
+.tp-avatar svg{width:20px;height:20px}
+.tp-avatar.big{width:56px;height:56px;font-size:20px}
+.tp-avatar.big svg{width:28px;height:28px}
+.tp-prof{display:flex;align-items:center;gap:14px;padding:6px 2px 14px}
+.tp-prof>div{display:grid;gap:2px;min-width:0}
+.tp-prof b{font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-prof span:not(.tp-avatar){color:var(--sub,#8a8a8e);font-size:14px}

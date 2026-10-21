@@ -4,7 +4,7 @@
    units. "Open" shows a file; "Share" sends the real file through the phone's share sheet (Telegram, Saved Messages, ...)
    without saving it on the phone. Files are fetched when the lesson opens (the service worker keeps them for offline), so a
    tap on Share can start the share sheet at once. */
-const PK_KINDS = [['l', 'Lesson', "Explains today's topic · for the laptop"], ['t', 'Written test', 'To print · A4 · 40 points'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
+const PK_KINDS = [['l', 'Lesson', "Explains today's topic · for the laptop"], ['t', 'Written test', 'To print · A4 · written part'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
 const packBlobs = {};
 const packHas = (L, u, l) => (typeof PACKS !== 'undefined' && PACKS[`${L.id.toLowerCase()}-w${u.n}-l${l.n}`]) || null;
 const packSize = (kb) => (kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
@@ -30,8 +30,10 @@ function packBlock(L, u, l) {
     return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></div><a class="tp-pill" href="media/packs/${P[k][0]}" target="_blank" rel="noopener">Open</a><button class="tp-pill" data-packshare="${key}|${k}" ${d}>${ic('Share2')} Share</button></div>`;
   }).join('');
   const games = (P.g || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
+  const vids = (P.v || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#147EFB">${ic('CirclePlay')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
   const all = PK_KINDS.filter(([k]) => P[k]).length > 1 ? `<button class="tp-cta pk-all" data-packshareall="${key}" data-pt="${esc(title)}">${ic('Share2')} Share all ${PK_KINDS.filter(([k]) => P[k]).length}</button>` : '';
   return `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Lesson files</div>${rows}${all}</div>`
+    + (vids ? `<div class="tp-card2 pk-game"><div class="h" style="color:#147EFB">${ic('CirclePlay')}Watch and listen</div>${vids}</div>` : '')
     + (games ? `<div class="tp-card2 pk-game"><div class="h" style="color:#FF5A5F">${ic('Play')}Game · Baamboozle</div>${games}</div>` : '')
     + (P.b && P.b.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookOpen')}Books for this lesson</div>${P.b.map((b) => `<p>${esc(b)}</p>`).join('')}</div>` : '');
 }
