@@ -11,6 +11,7 @@ const AVC = ['#FF6B9A', '#32ADE6', '#8B6CFF', '#34C759', '#FF8A4C', '#5E7BFF', '
 const NEXT = { here: 'absent', absent: 'late', late: 'here' };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
 const lv = (id) => C.levels.find((l) => l.id === id);
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
@@ -48,9 +49,10 @@ function nextDayLabel(g) {
   for (let i = 0; i < 7; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) && !(i === 0 && (taughtOn(g, d) || (S.ownDone[g.id] || {})[iso(d)]))) return i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAYS_LONG[wd(d)]; }
   return g.days.length ? DAYS_LONG[g.days[0]] : 'No days set';
 }
+const gvg = (g) => (COLORS[g.color] ? `--g1:${COLORS[g.color][0]};--g2:${COLORS[g.color][1]}` : gv(g.lvl)); // a group's own colour, else its level's
 const groupLabel = (g) => `${esc(LVNAME(g.lvl))} · ${esc(g.name)}`;
 const unitTile = (u, i, big) => `<span class="tp-tile${big ? ' big' : ''}" style="--t1:${TOPIC[(i * 2) % TOPIC.length]};--t2:${TOPIC[(i * 2 + 1) % TOPIC.length]}">${ic(u.icon || 'BookOpen')}</span>`;
-const groupTile = (g) => (g.lvl === 'own' ? `<span class="tp-tile" style="${gv('own')};--t1:var(--g1);--t2:var(--g2)">${ic('Shapes')}</span>`
+const groupTile = (g) => (COLORS[g.color] ? `<span class="tp-tile" style="--t1:${COLORS[g.color][0]};--t2:${COLORS[g.color][1]}">${ic(g.lvl === 'own' ? 'Shapes' : planned(g.lvl) ? weekOf(g.lvl, g.week).icon || 'BookOpen' : 'GraduationCap')}</span>` : g.lvl === 'own' ? `<span class="tp-tile" style="${gv('own')};--t1:var(--g1);--t2:var(--g2)">${ic('Shapes')}</span>`
   : planned(g.lvl) ? unitTile(weekOf(g.lvl, g.week), g.week - 1) : `<span class="tp-tile" style="--t1:${GRAD[g.lvl][0]};--t2:${GRAD[g.lvl][1]}">${ic('GraduationCap')}</span>`);
 const openLessonAttr = (g) => (g.lvl === 'own' ? `data-push="own" data-g="${g.id}"` : planned(g.lvl) ? `data-push="lesson" data-lvl="${g.lvl}" data-w="${g.week}" data-l="${g.les}" data-g="${g.id}"` : `data-push="register" data-g="${g.id}"`);
 function ring(p, size, w, c1, c2, label) {
@@ -89,7 +91,7 @@ function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1
 function lastLesson(g) { return hasLesson(g, TODAY) || (S.rec[g.id] || {})[iso(TODAY)] ? new Date(TODAY) : lessonDay(g, TODAY, -1); }
 
 // ---------- UI state ----------
-const T = { tab: 0, push: [], sheet: null, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books' };
+const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books' };
 try { const u = JSON.parse(localStorage.getItem('teacher-ui') || '{}'); if (u.unitLvl && lv(u.unitLvl)) T.unitLvl = u.unitLvl; if (u.bookLvl >= 0 && u.bookLvl < C.levels.length) T.bookLvl = u.bookLvl; } catch (e) { /* defaults */ }
 const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({ unitLvl: T.unitLvl, bookLvl: T.bookLvl })); } catch (e) { /* not needed */ } };
 
@@ -110,7 +112,7 @@ function pgHome() {
   if (!S.groups.length) return head + `<div class="tp-empty2 welcome">${ic('Users')}<b>Add your first group</b><span>Choose its level, the days and time, and the students. The app then shows each group's next lesson and opens the register with everyone marked here.</span><button class="tp-cta" data-sheet="group">${ic('Plus')} New group</button></div>`;
   const tiles = [...S.groups].sort((a, b) => nextOffset(a) - nextOffset(b) || a.time.localeCompare(b.time)).map((g) => {
     const p = attPct(g), u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = taughtOn(g, TODAY) || (S.ownDone[g.id] || {})[iso(TODAY)];
-    return `<div class="ht-tile" style="${gv(g.lvl)}"><button class="ht-main" ${openLessonAttr(g)}>
+    return `<div class="ht-tile" style="${gvg(g)}"><button class="ht-main" ${openLessonAttr(g)}>
       <div class="ht-top"><span class="ht-ico">${ic(u ? u.icon || 'BookOpen' : g.lvl === 'own' ? 'Shapes' : 'GraduationCap')}</span>${p === null ? '' : ring(p / 100, 40, 4, '#ffffff', '#ffffffcc', p + '%')}</div>
       <b>${esc(g.name)}</b><span class="lv">${esc(LVNAME(g.lvl))} · ${g.students.length} student${g.students.length === 1 ? '' : 's'}</span>
       <span class="nx">${done ? 'Taught today ✓' : `${nextDayLabel(g)} · ${esc(g.time)}`}</span>
@@ -220,7 +222,8 @@ function pgAtt() {
   const today = S.groups.filter((g) => hasLesson(g, TODAY)).sort((a, b) => a.time.localeCompare(b.time)), others = S.groups.filter((g) => !hasLesson(g, TODAY));
   if (!S.groups.length) return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div></div><div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div>
-    ${today.map((g) => `<div class="tl-sec" style="${gv(g.lvl)}"><div class="tl-h">${groupTile(g)}<div><b>${groupLabel(g)}</b><span>${esc(g.time)}</span></div><button class="tp-iconbtn" data-push="register" data-g="${g.id}" aria-label="History and other lessons">${ic('History')}</button></div>${tapList(g, TODAY)}</div>`).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
+    ${today.map((g) => { const r = rec(g, TODAY), n = g.students.length, open = !!T.open[g.id];
+      return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="${gvg(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${esc(g.time)} · ${n} student${n === 1 ? '' : 's'}${r.saved ? ' · taken ✓' : ''}</span></span><span class="tl-chev">${ic('ChevronDown')}</span></button><button class="tp-iconbtn" data-push="register" data-g="${g.id}" aria-label="History and other lessons">${ic('History')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, TODAY)}</div></div></div>`; }).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
     ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="tp-list">${others.map((g) => `<button class="tp-lrow" data-push="register" data-g="${g.id}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
 }
 function histGrid(g) {
@@ -235,9 +238,9 @@ function scRegister(f) {
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit group</button></div>`;
   const head = `<div><div class="tp-eyebrow">${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}</div><div class="tp-lt" style="font-size:28px">${groupLabel(g)}</div></div>`;
   const add = `<div class="tp-addrow"><input id="tp-newstu" placeholder="Add a student" aria-label="New student's name" autocomplete="off"><button data-addstu="${g.id}" aria-label="Add student">${ic('UserPlus')}</button></div>`;
-  if (!f.date) return `${bar}<div class="tp-inner" style="${gv(g.lvl)}">${head}<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons yet</b><span>First lesson: ${nextDayLabel(g)}.</span><button class="tp-pill" data-regtoday>${ic('ClipboardCheck')} Take the register today</button></div>${add}</div>`;
+  if (!f.date) return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons yet</b><span>First lesson: ${nextDayLabel(g)}.</span><button class="tp-pill" data-regtoday>${ic('ClipboardCheck')} Take the register today</button></div>${add}</div>`;
   const d = fromIso(f.date), prev = lessonDay(g, d, -1), nxt = lessonDay(g, d, 1);
-  return `${bar}<div class="tp-inner" style="${gv(g.lvl)}">${head}
+  return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}
     <div class="rg-nav"><button class="tp-iconbtn" ${prev ? `data-lessonday="${iso(prev)}"` : 'disabled'} aria-label="Previous lesson">${ic('ChevronLeft')}</button>
       <div><b>${dayName(d)}</b><span>${rec(g, d).saved ? 'taken' : 'not taken yet'}</span></div>
       <button class="tp-iconbtn" ${nxt ? `data-lessonday="${iso(nxt)}"` : 'disabled'} aria-label="Next lesson">${ic('ChevronRight')}</button></div>
@@ -290,12 +293,13 @@ function pgBooks() {
 /* ===================== sheets ===================== */
 function sheetGroup(s) {
   const g = s.g ? gById(s.g) : null;
-  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })) }
-    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', week: 1, les: 1, students: [] };
+  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })) }
+    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', color: '', week: 1, les: 1, students: [] };
   const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null;
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
     <label class="tp-f"><span>Group name</span><input id="f-name" value="${esc(F.name)}" placeholder="e.g. Group D" autocomplete="off"></label>
     <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), 'own'].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
+    <div class="tp-f"><span>Colour</span><div class="tp-swatches" id="f-colors"><button class="auto${F.color ? '' : ' on'}" data-f-color="" aria-label="Automatic colour">A</button>${Object.entries(COLORS).map(([k, c]) => `<button class="${F.color === k ? 'on' : ''}" style="--g1:${c[0]};--g2:${c[1]}" data-f-color="${k}" aria-label="${k}"></button>`).join('')}</div></div>
     <div class="f-prog">${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
       : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${[1, 2, 3].map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>Lesson ${n}</option>`).join('')}</select></div></div>`
       : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
@@ -833,6 +837,8 @@ function onClick(e) {
   if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind });
   if (d.closesheet !== undefined) return closeSheetNow();
   if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(); }
+  if (d.fColor !== undefined) { keepForm(); T.sheet.form.color = d.fColor; b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return; }
+  if (d.opengrp) { const sec = b.closest('.tl-sec'), on = !sec.classList.contains('open'); T.open[d.opengrp] = on; sec.classList.toggle('open', on); b.setAttribute('aria-expanded', on); return; }
   if (d.fDay !== undefined) { keepForm(); const ds = T.sheet.form.days, k = +d.fDay; T.sheet.form.days = ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k].sort(); return draw(); }
   if (d.fAdd !== undefined) { keepForm(); addFormStudent(); return; }
   if (d.fRm !== undefined) { keepForm(); T.sheet.form.students.splice(+d.fRm, 1); return draw(); }
@@ -863,7 +869,7 @@ function saveGroup() {
   keepForm(); const F = T.sheet.form; if (!F.name) return toast('Give the group a name');
   const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending });
   const old = T.sheet.g && gById(T.sheet.g);
-  const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: F.time || '15:00', week: +F.week || 1, les: +F.les || 1 });
+  const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: F.time || '15:00', color: F.color || '', week: +F.week || 1, les: +F.les || 1 });
   if (old) { const keep = new Set(F.students.map((s) => s.id)); g.gone = [...(g.gone || []), ...old.students.filter((s) => !keep.has(s.id))]; }
   g.students = F.students;
   if (planned(g.lvl)) { const p = advance(g, 0); g.week = p.w; g.les = p.l; }

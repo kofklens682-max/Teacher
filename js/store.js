@@ -21,7 +21,7 @@ function normalize(d) {
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
     students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || '') })).filter((s) => s.name),
-    gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(),
+    color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(),
   }));
   out.rev = +out.rev || 0;
   return out;
