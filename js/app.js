@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.8';
+const VERSION_LABEL = 'Teacher 1.9';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -97,6 +97,9 @@ const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({
 /* ===================== Profile (name and role on the Home screen; kept on this phone) ===================== */
 const profileGet = () => { try { return JSON.parse(localStorage.getItem('teacher-profile') || '{}') || {}; } catch (e) { return {}; } };
 const profileSet = (p) => { try { localStorage.setItem('teacher-profile', JSON.stringify(p)); } catch (e) { /* not needed */ } };
+const lookGet = () => { try { return localStorage.getItem('teacher-look') === 'glass' ? 'glass' : 'normal'; } catch (e) { return 'normal'; } };
+const lookApply = () => document.documentElement.classList.toggle('glass', lookGet() === 'glass');
+lookApply();
 const initials = (n) => String(n || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
 
 /* ===================== Home: groups as tiles ===================== */
@@ -331,6 +334,7 @@ function sheetSettings(s) {
     <div class="tp-prof"><span class="tp-avatar big">${initials(P.name) || ic('UserRound')}</span><div><b>${esc(P.name || 'Your name')}</b><span>${esc(P.role || 'Teacher')}</span></div></div>
     <label class="tp-f"><span>Your name</span><input id="f-pname" value="${esc(P.name || '')}" placeholder="e.g. Aziz Karimov" autocomplete="off" data-profile></label>
     <label class="tp-f"><span>Your role</span><input id="f-prole" value="${esc(P.role || '')}" placeholder="e.g. English teacher" autocomplete="off" data-profile></label>
+    <div class="tp-f"><span>Look</span><div class="tp-seg2 slide" id="look-seg" style="--n:2"><span class="seg-thumb" style="--i:${lookGet() === 'glass' ? 1 : 0}"></span><button class="${lookGet() === 'normal' ? 'on' : ''}" data-look="normal">Normal</button><button class="${lookGet() === 'glass' ? 'on' : ''}" data-look="glass">Glass</button></div></div>
     <div class="tp-card2"><div class="h">${ic('ShieldCheck')}Your data</div><p>${S.groups.length} group${S.groups.length === 1 ? '' : 's'} · ${n} student${n === 1 ? '' : 's'}. Everything stays on this phone, with a second copy and automatic daily copies.</p></div>
     <button class="tp-lrow" data-backup>${ic('Download')}<span class="tx"><b>Save a backup file</b><span>Send it to yourself in Telegram or Drive</span></span></button>
     <label class="tp-lrow">${ic('Upload')}<span class="tx"><b>Restore from a backup file</b><span>Replaces what is in the app now (a copy is kept first)</span></span><input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>
@@ -783,6 +787,12 @@ function onClick(e) {
   if (R.sheet && R.sheet._dragged && Date.now() - R.sheet._dragged < 350) return; // the end of a pull isn't a tap
   const sw = b.closest('.tp-seg2'); if (sw && sw._slid && Date.now() - sw._slid < 350) return; // nor the end of a slide
   const d = b.dataset, top = T.push[T.push.length - 1];
+  if (d.look !== undefined) {
+    try { localStorage.setItem('teacher-look', d.look === 'glass' ? 'glass' : 'normal'); } catch (err) { /* not needed */ }
+    lookApply(); const sg = root.querySelector('#look-seg');
+    if (sg) { sg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); sg.querySelector('.seg-thumb').style.setProperty('--i', d.look === 'glass' ? 1 : 0); }
+    return;
+  }
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();
   if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }
