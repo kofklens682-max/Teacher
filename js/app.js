@@ -226,11 +226,16 @@ function pgAtt() {
       return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="${gvg(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${esc(g.time)} · ${n} student${n === 1 ? '' : 's'}${r.saved ? ' · taken ✓' : ''}</span></span><span class="tl-chev">${ic('ChevronDown')}</span></button><button class="tp-iconbtn" data-push="register" data-g="${g.id}" aria-label="History and other lessons">${ic('History')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, TODAY)}</div></div></div>`; }).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
     ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="tp-list">${others.map((g) => `<button class="tp-lrow" data-push="register" data-g="${g.id}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
 }
-function histGrid(g) {
-  const ds = savedDates(g).slice(-8);
+const GSYM = { here: '✓', late: 'L', absent: '✕' };
+const gridPct = (g, ds, sid) => { let n = 0, h = 0; ds.forEach((k) => { const r = rec(g, fromIso(k)); if (!(sid in r.att)) return; n++; if (r.get(sid) !== 'absent') h++; }); return n ? Math.round((h / n) * 100) : null; };
+function histGrid(g) { // the register as a table: names down, dates across; tap a square to change it
+  const ds = savedDates(g).slice(-6);
   if (!ds.length) return '';
-  return `<div class="tp-card2"><div class="h">${ic('History')}Last ${ds.length} lesson${ds.length > 1 ? 's' : ''}</div><div class="hist" style="grid-template-columns:76px repeat(${ds.length},1fr)">${g.students.map((s) => `<span class="n">${esc(s.name)}</span>${ds.map((k) => { const r = rec(g, fromIso(k)); if (!(s.id in r.att)) return '<i class="na"></i>'; const a = r.get(s.id); return `<i class="${a}${a !== 'absent' && !r.hwOf(s.id) ? ' nohw' : ''}" title="${k}"></i>`; }).join('')}`).join('')}</div>
-    <p class="sub">Green here · amber late · red absent · a dot inside = homework not done</p></div>`;
+  const cols = `grid-template-columns:62px repeat(${ds.length},31px) 38px`;
+  return `<div class="tp-card2"><div class="h">${ic('Table2')}Attendance table</div><div class="gt-wrap" data-gtwrap><div class="gt" data-g="${g.id}" style="${cols}">
+    <span class="gt-h gt-n"></span>${ds.map((k) => { const d = fromIso(k); return `<span class="gt-h"><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()].slice(0, 3)}</small></span>`; }).join('')}<span class="gt-h gt-p"><small>Here</small></span>
+    ${g.students.map((s) => { const pc = gridPct(g, ds, s.id); return `<span class="gt-n" title="${esc(s.name)}">${esc(s.name)}</span>${ds.map((k) => { const r = rec(g, fromIso(k)); if (!(s.id in r.att)) return `<button class="gc na" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k}"></button>`; const a = r.get(s.id); return `<button class="gc ${a}${a !== 'absent' && !r.hwOf(s.id) ? ' nohw' : ''}" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k} ${a}">${GSYM[a]}</button>`; }).join('')}<b class="gt-p" data-gpct="${s.id}">${pc === null ? '' : pc + '%'}</b>`; }).join('')}
+  </div></div><p class="sub">✓ here · L late · ✕ absent · a dot = homework not done. Tap a square to change it.</p></div>`;
 }
 function scRegister(f) {
   const g = gById(f.g); if (!g) return scGone();
@@ -805,6 +810,14 @@ function onClick(e) {
   if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
+  if (d.gcell !== undefined) {
+    const gt = b.closest('.gt'), g = gById(gt.dataset.g), dt = fromIso(d.gdate), r = rec(g, dt, true);
+    r.att[d.gcell] = NEXT[r.get(d.gcell)]; save();
+    const a = r.get(d.gcell); b.className = 'gc ' + a + (a !== 'absent' && !r.hwOf(d.gcell) ? ' nohw' : ''); b.textContent = GSYM[a];
+    const pc = gridPct(g, savedDates(g).slice(-6), d.gcell), pe = gt.querySelector(`[data-gpct="${d.gcell}"]`); if (pe) pe.textContent = pc === null ? '' : pc + '%';
+    const grid = root.querySelector(`.tl-grid[data-g="${g.id}"][data-date="${d.gdate}"]`); if (grid) refreshRow(grid, g, dt, d.gcell);
+    return;
+  }
   if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
   if (d.saveday) {
     const g = gById(d.saveday), dt = fromIso(d.date), r = rec(g, dt, true);
