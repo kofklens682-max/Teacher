@@ -139,18 +139,19 @@ function scLesson(f) {
   const L = lv(f.lvl), u = weekOf(f.lvl, f.w), l = u.lessons[f.l - 1], key = `${L.id}-${u.n}-${l.n}`, ed = S.edits[key] || {};
   const g = f.g && gById(f.g), t = g && taughtOn(g, TODAY);
   const isTaught = t && t.w === f.w && t.l === f.l, isNext = g && g.week === f.w && g.les === f.l && !t;
-  const books = l.vocabBook ? `<p class="sub" style="margin-top:8px">Practice: ${l.vocabBook.map((b) => esc(b.book + ', unit ' + b.unit + (b.title ? ' (' + b.title + ')' : ''))).join('; ')}</p>` : '';
+  const hasPack = !!packHas(L, u, l);
+  const books = l.vocabBook && !hasPack ? `<p class="sub" style="margin-top:8px">Practice: ${l.vocabBook.map((b) => esc(b.book + ', unit ' + b.unit + (b.title ? ' (' + b.title + ')' : ''))).join('; ')}</p>` : '';
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="lesson" data-key="${key}">${ic('Pencil')} Edit</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${u.final ? '' : 'Week ' + u.n + ' · '}Lesson ${l.n} · ${esc(u.title)}</div><div class="tp-lt" style="font-size:26px">${esc(l.subtopic)}</div></div></div>
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       ${l.skill ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic(/^Reading/.test(l.skill) ? 'BookOpenCheck' : /^Listening/.test(l.skill) ? 'Headphones' : 'PenLine')}Skill</div><p class="big">${esc(l.skill)}</p><p class="ex">${esc(l.how)}</p><p class="sub">Source: ${esc(l.source)}</p></div>` : ''}
-      ${l.deck ? `<div class="tp-2col dk-btns"><button class="tp-cta" data-present="${L.id}|${f.w}|${f.l}">${ic('Play')} Present (10 min)</button><button class="tp-pill" data-deckpdf="${L.id}|${f.w}|${f.l}">${ic('FileDown')} PDF</button></div>` : ''}
+      ${packBlock(L, u, l)}
       ${l.routine ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('Clock')}Lesson plan · ${l.routine.reduce((a, r) => a + r[0], 0)} min</div>${l.routine.map((r) => `<p class="rt-row"><b>${r[0]}′</b><span>${esc(r[1])}<small>${esc(r[2])}</small></span></p>`).join('')}<p class="sub">The minutes are a guide: every group moves at its own pace.</p></div>` : ''}
       ${l.real ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('Globe')}Real English</div><p class="big">${esc(l.real)}</p><p class="sub">Main idea first, then 3 questions, then talk about it. The exam practice comes after.</p></div>` : ''}
       ${l.activity ? `<div class="tp-card2"><div class="h" style="color:#F5A000">${ic('PartyPopper')}Activity</div><p>${esc(l.activity)}</p></div>` : ''}
       ${l.exit ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('ListChecks')}Exit check · 3 min</div><p>${esc(l.exit)}</p></div>` : ''}
-      ${l.grammarTopic || l.grammar ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}Grammar topic</div><p class="big">${esc(l.grammarTopic || l.grammar)}</p>${l.grammarTopic && l.grammar ? `<p class="ex">${esc(l.grammar)}</p>` : ''}${l.bgiu && l.bgiu.length ? `<p class="sub">${L.id === 'A1' ? "Teacher's reference" : 'Students practice in'}: ${esc(l.gbook || 'Basic Grammar in Use (American)')}, unit${l.bgiu.length > 1 ? 's' : ''} ${l.bgiu.join(', ')}</p>` : ''}${l.grammarExtra ? `<p class="sub">Also: ${esc(l.grammarExtra.book)}, unit${l.grammarExtra.units.length > 1 ? 's' : ''} ${l.grammarExtra.units.join(', ')}</p>` : ''}</div>` : ''}
+      ${l.grammarTopic || l.grammar ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}Grammar topic</div><p class="big">${esc(l.grammarTopic || l.grammar)}</p>${l.grammarTopic && l.grammar ? `<p class="ex">${esc(l.grammar)}</p>` : ''}${l.bgiu && l.bgiu.length && !hasPack ? `<p class="sub">${L.id === 'A1' ? "Teacher's reference" : 'Students practice in'}: ${esc(l.gbook || 'Basic Grammar in Use (American)')}, unit${l.bgiu.length > 1 ? 's' : ''} ${l.bgiu.join(', ')}</p>` : ''}${l.grammarExtra ? `<p class="sub">Also: ${esc(l.grammarExtra.book)}, unit${l.grammarExtra.units.length > 1 ? 's' : ''} ${l.grammarExtra.units.join(', ')}</p>` : ''}</div>` : ''}
       ${l.words.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${esc(l.vocabTopic || '')} · ${l.words.length}${l.revise ? ' new' : ''} words</p>${chips(l.words)}
         ${l.revise ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('RotateCcw')}Revision words</div>${chips(l.revise)}` : ''}
         ${l.collocations ? `<div class="h" style="color:#0FA37F;margin-top:8px">${ic('Link')}Collocations</div>${chips(l.collocations, 'col')}` : ''}
@@ -561,7 +562,6 @@ function goBack() { if (!closeTop()) return; if (history.state && history.state.
 function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 0) { R.skipPop = (R.skipPop || 0) + 1; try { history.go(-d); } catch (e) { R.skipPop--; } } }
 window.addEventListener('popstate', () => { if (R && R.skipPop > 0) { R.skipPop--; return; } closeTop(); }); // the phone's Back button
 function closeTop() {
-  if (closeDeck()) return true; // a presentation first
   if (T.sheet) { T.sheet = null; draw(); return true; }
   if (T.push.length) { T.push.pop(); draw(); return true; }
   return false;
@@ -799,8 +799,8 @@ function onClick(e) {
     return toast(`Taught. ${g.name} moves to the next lesson.`);
   }
   if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }
-  if (d.present) { const [lvl, w, l] = d.present.split('|'); return openDeck({ lvl, w: +w, l: +l }); }
-  if (d.deckpdf) { const [lvl, w, l] = d.deckpdf.split('|'); return printDeck({ lvl, w: +w, l: +l }); }
+  if (d.packopen) return packOpen(d.packopen, d.pt);
+  if (d.packshare) return packShare(d.packshare, d.pt);
   if (d.book) return openSheet({ s: 'book', book: d.book });
   if (d.openbook) return openBook(d.openbook);
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
@@ -952,7 +952,6 @@ function prewarm() {
     requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
   };
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 2000 }); else run();
-  setTimeout(dkFetchMedia, 4000); // the decks' pictures and voices, kept for offline lessons
   lvIdle(1); lvIdle(3); // the levels beside the current one on Units and Books, ready for a swipe
 }
 

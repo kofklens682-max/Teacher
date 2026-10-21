@@ -1,14 +1,15 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v9';
+const VERSION = 'teacher-v11';
 const SHELL = [
   './',
   './index.html',
   './style.css',
   './js/icons.js',
   './data/course.js',
+  './data/packs.js',
   './js/store.js',
-  './js/deck.js',
+  './js/lessonfiles.js',
   './js/app.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
@@ -35,6 +36,8 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k.startsWith('teacher-') && k !== VERSION && k !== MEDIA).map((k) => caches.delete(k))))
+      // the old slide-deck pictures and voices are not used any more: keep only the lesson files
+      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !r.url.includes('/media/packs/')).map((r) => c.delete(r))))))
       .then(() => self.clients.claim())
   );
 });
