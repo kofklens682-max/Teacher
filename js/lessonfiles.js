@@ -4,7 +4,7 @@
    units. "Open" shows a file; "Share" sends the real file through the phone's share sheet (Telegram, Saved Messages, ...)
    without saving it on the phone. Files are fetched when the lesson opens (the service worker keeps them for offline), so a
    tap on Share can start the share sheet at once. */
-const PK_KINDS = [['y', 'Vocabulary', 'English and Russian · A4'], ['f', 'Flashcards', 'Print on both sides · A4'], ['c', 'Translation check', '12 sentences · answers on page 2'], ['l', 'Lesson', "Explains today's topic · for the laptop"], ['t', 'Written test', 'To print · A4 · written part'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
+const PK_KINDS = [['e', 'Grammar explained', 'The topic step by step · A4'], ['y', 'Vocabulary', 'English and Russian · A4'], ['f', 'Flashcards', 'Print on both sides · A4'], ['c', 'Translation check', '12 sentences · answers on page 2'], ['l', 'Lesson', "Explains today's topic · for the laptop"], ['t', 'Written test', 'To print · A4 · written part'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4']];
 const packBlobs = {};
 const packHas = (L, u, l) => (typeof PACKS !== 'undefined' && PACKS[`${L.id.toLowerCase()}-w${u.n}-l${l.n}`]) || null;
 const packSize = (kb) => (kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
