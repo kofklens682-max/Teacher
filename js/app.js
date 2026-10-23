@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 2.4';
+const VERSION_LABEL = 'Teacher 2.6';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -13,7 +13,7 @@ const NEXT = { here: 'absent', absent: 'late', late: 'here' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
-const KIDLV = typeof KIDS !== 'undefined' ? KIDS : [];
+const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : [])];
 const lv = (id) => C.levels.find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
 const dayWord = (id) => (lv(id) && lv(id).kids ? 'Day' : 'Lesson');
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
@@ -98,7 +98,7 @@ function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1
 function lastLesson(g) { return hasLesson(g, TODAY) || (S.rec[g.id] || {})[iso(TODAY)] ? new Date(TODAY) : lessonDay(g, TODAY, -1) || lessonDay(g, TODAY, 1); } // else the first lesson coming
 
 // ---------- UI state ----------
-const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books', aud: 'teens', kidLvl: KIDLV.length ? KIDLV[0].id : '' };
+const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books', aud: 'teens', kidLvl: KIDLV.length ? KIDLV[0].id : '', big: {} };
 try { const u = JSON.parse(localStorage.getItem('teacher-ui') || '{}'); if (u.unitLvl && lv(u.unitLvl)) T.unitLvl = u.unitLvl; if (u.bookLvl >= 0 && u.bookLvl < C.levels.length) T.bookLvl = u.bookLvl; if (u.aud === 'kids' && KIDLV.length) T.aud = 'kids'; if (u.kidLvl && KIDLV.some((l) => l.id === u.kidLvl)) T.kidLvl = u.kidLvl; } catch (e) { /* defaults */ }
 const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({ unitLvl: T.unitLvl, bookLvl: T.bookLvl, aud: T.aud, kidLvl: T.kidLvl })); } catch (e) { /* not needed */ } };
 
@@ -203,6 +203,9 @@ function scKids(f) {
       <div class="tp-goal2">${ic('Target')}<div><small>By the end they can say</small>“${esc(k.goal)}”</div></div>
       <div class="tp-card2">${k.cb.length ? `<div class="h" style="color:#147EFB">${ic('BookOpen')}Class Book today</div>${chips(k.cb.map(([p, x]) => `p. ${p} · ${x}`))}<div class="h" style="color:#5C6378;margin-top:10px">${ic('ListChecks')}Homework</div>` : `<div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>`}<p class="hw">${ic('Square')}${esc(k.wb)}</p>${ed.hw ? `<p class="hw">${ic('Square')}${esc(ed.hw)}</p>` : ''}</div>
       ${packBlock(L, u, l)}
+      ${k.rule ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}The rule · ${esc(k.rule.title)}</div>${k.rule.lines.map((x) => `<p>${esc(x)}</p>`).join('')}<p class="sub"><b>Signal words:</b> ${esc(k.rule.signal)}</p><p class="sub"><b>Russian and English:</b> ${esc(k.rule.ru)}</p><div class="h" style="color:#E5484D;margin-top:8px">${ic('TriangleAlert')}We often say</div>${k.rule.oops.map((x) => `<p><s>${esc(x.split(' → ')[0])}</s> → <b>${esc(x.split(' → ')[1] || '')}</b></p>`).join('')}</div>` : ''}
+      ${k.big && k.big.length ? `<button class="tp-cta" data-push="big" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}">${ic('Play')} Big screen · ${k.big.length} slides</button>` : ''}
+      ${k.rwords && k.rwords.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Reading words</div>${chips(k.rwords)}${k.retell && k.retell.length ? `<div class="h" style="color:#0FA37F;margin-top:10px">${ic('MessageCircle')}Retell with</div>${chips(k.retell)}` : ''}</div>` : ''}
       <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do today</div>${k.steps.map((s, i) => `<p class="rt-row"><b>${i + 1}</b><span>${esc(s)}</span></p>`).join('')}</div>
       ${k.copy.length ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('PenLine')}Copybook words</div>${chips(k.copy)}</div>` : ''}
       ${k.us.length ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Globe')}The book says → we say</div>${k.us.map(([a, b]) => `<p><s>${esc(a)}</s> → <b>${esc(b)}</b></p>`).join('')}</div>` : ''}
@@ -213,6 +216,24 @@ function scKids(f) {
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>` : ''}
     </div>`;
 }
+/* ===================== Big screen: grammar games for the TV (one slide at a time) ===================== */
+function bigKey(f) { return `${f.lvl}-${f.w}-${f.l}`; }
+function scBig(f) {
+  const L = lv(f.lvl), u = weekOf(f.lvl, f.w), l = u.lessons[f.l - 1], k = l.kd, S = k.big || [], key = bigKey(f);
+  const st = T.big[key] || (T.big[key] = { i: 0, sel: -1, shown: false });
+  const n = S.length; st.n = n; st.i = Math.max(0, Math.min(st.i, n - 1));
+  const s = S[st.i] || [], pick = st.sel >= 0;
+  const show = (ans, big) => (st.shown ? `<div class="bg-a${big ? ' big' : ''}">${esc(ans)}</div>` : `<button class="bg-show" data-bgshow="${key}">Show the answer</button>`);
+  let body = '';
+  if (s[0] === 'c') body = `<div class="bg-q">${esc(s[1])}</div><div class="bg-opts">${s[2].map((o, j) => `<button class="bg-opt${pick && j === s[3] ? ' ok' : pick && st.sel === j ? ' no' : ''}" data-bgpick="${key}|${j}">${esc(o)}</button>`).join('')}</div>${pick ? `<div class="bg-a ${st.sel === s[3] ? '' : 'bad'}">${st.sel === s[3] ? 'Yes! ' : 'Not this one. '}${esc(s[4])}</div>` : ''}`;
+  else if (s[0] === 'r') body = `<div class="bg-q">${esc(s[1])}</div>${show(s[2], true)}`;
+  else if (s[0] === 'p') body = `<img class="bg-img" src="media/k/${s[1]}.jpg" alt=""><div class="bg-q">${esc(s[2])}</div>${show(s[3], true)}`;
+  else if (s[0] === 'v') body = `<div class="bg-two"><img src="media/k/${s[1]}.jpg" alt=""><img src="media/k/${s[2]}.jpg" alt=""></div><div class="bg-q">Compare them: <b>${esc(s[3])}</b></div>${show(s[4], true)}`;
+  return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><span class="bg-count">${st.i + 1} / ${n}</span></div>
+    <div class="tp-inner bg-wrap" style="${gv(L.id)}"><div class="bg-bar"><span style="width:${Math.round(((st.i + 1) / n) * 100)}%"></span></div><div class="bg-card">${body}</div>
+      <div class="bg-nav"><button data-bgnav="${key}|-1" ${st.i === 0 ? 'disabled' : ''}>${ic('ChevronLeft')} Back</button><button class="next" data-bgnav="${key}|1" ${st.i >= n - 1 ? 'disabled' : ''}>Next ${ic('ChevronRight')}</button></div></div>`;
+}
+function bigMove(key, dl) { const st = T.big[key]; if (!st) return; const i = Math.max(0, Math.min(st.n - 1, st.i + dl)); if (i === st.i) return; st.i = i; st.sel = -1; st.shown = false; draw(); }
 function scOwn(f) {
   const g = gById(f.g); if (!g) return scGone();
   const key = 'own-' + g.id, ed = S.edits[key] || {}, done = (S.ownDone[g.id] || {})[iso(TODAY)], n = Object.keys(S.ownDone[g.id] || {}).length;
@@ -398,7 +419,7 @@ function sheetCopies(s) {
     <p class="tp-small">Tap a copy to bring it back. What is in the app now is kept as a copy first.</p>`;
 }
 const PAGES = [pgHome, pgUnits, pgAtt, pgBooks];
-const PUSH = { week: scWeek, lesson: scLesson, own: scOwn, register: scRegister };
+const PUSH = { week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
 const SHEETS = { group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
@@ -863,6 +884,9 @@ function onClick(e) {
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
   if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
   if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
+  if (d.bgshow) { const st = T.big[d.bgshow]; if (st) { st.shown = true; draw(); } return; }
+  if (d.bgpick) { const [key, j] = d.bgpick.split('|'), st = T.big[key]; if (st && st.sel < 0) { st.sel = +j; draw(); } return; }
+  if (d.bgnav) { const [key, dl] = d.bgnav.split('|'); bigMove(key, +dl); return; }
   if (d.aud) { if (d.aud === T.aud) return; T.aud = d.aud; keepUi(); return draw(); }
   if (d.kidlvl) { if (d.kidlvl === T.kidLvl) return; T.kidLvl = d.kidlvl; keepUi(); return draw(); }
   if (d.kshow) { T.open['tr-' + d.kshow] = !T.open['tr-' + d.kshow]; return draw(); }
@@ -1044,6 +1068,8 @@ function onChange(e) {
   if (t.dataset.profile !== undefined) { const nm = root.querySelector('#f-pname'), ro = root.querySelector('#f-prole'); profileSet({ name: (nm ? nm.value : '').trim().slice(0, 40), role: (ro ? ro.value : '').trim().slice(0, 40) }); return draw(); }
 }
 function onKey(e) {
+  const sc = R.screen && R.screen._sc;
+  if (sc && sc.s === 'big' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === ' ')) { e.preventDefault(); const key = bigKey(sc), st = T.big[key]; if (e.key === ' ' && st && !st.shown) { st.shown = true; return draw(); } return bigMove(key, e.key === 'ArrowLeft' ? -1 : 1); }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'f-stu') { e.preventDefault(); keepForm(); addFormStudent(); }
   if (e.target.id === 'tp-newstu') { e.preventDefault(); const b = root.querySelector('[data-addstu]'); if (b) b.click(); }

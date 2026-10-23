@@ -753,3 +753,22 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .lock-note svg{width:16px;height:16px}
 .tl-lockable.locked .lock-note{display:flex}
 .tl-lockable.locked .tl-grid,.tl-lockable.locked .save-day{opacity:.45}
+
+.bg-count{margin-left:auto;font-weight:800;font-size:15px;color:var(--ink2,#5C6378)}
+.bg-wrap{max-width:1100px;margin:0 auto}
+.bg-bar{height:8px;border-radius:99px;background:rgba(14,19,37,.08);overflow:hidden;margin:6px 0 14px}.bg-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--g1),var(--g2));border-radius:99px;transition:width .3s}
+.bg-card{background:#fff;border-radius:26px;padding:22px 18px 26px;min-height:46vh;display:flex;flex-direction:column;justify-content:center;gap:14px;box-shadow:0 10px 30px -14px rgba(14,19,37,.25)}
+.bg-q{font-size:clamp(26px,6.2vw,58px);font-weight:800;line-height:1.18;text-align:center;letter-spacing:-.01em}
+.bg-opts{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.bg-opt{padding:16px 12px;border-radius:20px;font-size:clamp(20px,4.6vw,38px);font-weight:800;background:#EEF1FB;color:#1b2a4a;border:3px solid transparent;transition:transform .15s,background .2s}
+.bg-opt:active{transform:scale(.96)}.bg-opt.ok{background:#D1FADF;border-color:#12B76A;color:#05603A}.bg-opt.no{background:#FEE4E2;border-color:#F04438;color:#912018}
+.bg-a{font-size:clamp(22px,5vw,44px);font-weight:700;text-align:center;color:#05603A;animation:bgin .3s}.bg-a.bad{color:#B42318}.bg-a.big{font-size:clamp(26px,5.6vw,50px)}
+@keyframes bgin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bg-show{align-self:center;padding:14px 26px;border-radius:99px;font-weight:800;font-size:clamp(18px,3.6vw,28px);color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.bg-img{display:block;margin:0 auto;max-width:min(78vw,520px);max-height:36vh;object-fit:contain;border-radius:20px}
+.bg-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bg-two img{width:100%;max-height:32vh;object-fit:contain;border-radius:20px;background:#f6f7fb}
+.bg-nav{display:flex;justify-content:space-between;gap:12px;margin:16px 0 8px}
+.bg-nav button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-radius:18px;font-weight:800;font-size:17px;background:#fff;color:#1b2a4a;box-shadow:0 6px 16px -10px rgba(14,19,37,.3)}
+.bg-nav button.next{color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2))}.bg-nav button:disabled{opacity:.4}
+.bg-nav svg{width:22px;height:22px;flex:none}
+.bg-nav button{font-size:18px}
