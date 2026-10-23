@@ -2,8 +2,8 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 1.9';
-const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], own: ['#F5B300', '#E8770E'] };
+const VERSION_LABEL = 'Teacher 2.4';
+const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -13,9 +13,11 @@ const NEXT = { here: 'absent', absent: 'late', late: 'here' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
-const lv = (id) => C.levels.find((l) => l.id === id);
+const KIDLV = typeof KIDS !== 'undefined' ? KIDS : [];
+const lv = (id) => C.levels.find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
+const dayWord = (id) => (lv(id) && lv(id).kids ? 'Day' : 'Lesson');
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
-const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2'].includes(id);
+const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2'].includes(id) || KIDLV.some((l) => l.id === id);
 const avColor = (s) => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
 const gById = (id) => S.groups.find((g) => g.id === id);
 const weekOf = (lid, n) => { const u = lv(lid).units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
@@ -96,9 +98,9 @@ function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1
 function lastLesson(g) { return hasLesson(g, TODAY) || (S.rec[g.id] || {})[iso(TODAY)] ? new Date(TODAY) : lessonDay(g, TODAY, -1) || lessonDay(g, TODAY, 1); } // else the first lesson coming
 
 // ---------- UI state ----------
-const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books' };
-try { const u = JSON.parse(localStorage.getItem('teacher-ui') || '{}'); if (u.unitLvl && lv(u.unitLvl)) T.unitLvl = u.unitLvl; if (u.bookLvl >= 0 && u.bookLvl < C.levels.length) T.bookLvl = u.bookLvl; } catch (e) { /* defaults */ }
-const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({ unitLvl: T.unitLvl, bookLvl: T.bookLvl })); } catch (e) { /* not needed */ } };
+const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books', aud: 'teens', kidLvl: KIDLV.length ? KIDLV[0].id : '' };
+try { const u = JSON.parse(localStorage.getItem('teacher-ui') || '{}'); if (u.unitLvl && lv(u.unitLvl)) T.unitLvl = u.unitLvl; if (u.bookLvl >= 0 && u.bookLvl < C.levels.length) T.bookLvl = u.bookLvl; if (u.aud === 'kids' && KIDLV.length) T.aud = 'kids'; if (u.kidLvl && KIDLV.some((l) => l.id === u.kidLvl)) T.kidLvl = u.kidLvl; } catch (e) { /* defaults */ }
+const keepUi = () => { try { localStorage.setItem('teacher-ui', JSON.stringify({ unitLvl: T.unitLvl, bookLvl: T.bookLvl, aud: T.aud, kidLvl: T.kidLvl })); } catch (e) { /* not needed */ } };
 
 
 /* ===================== Profile (name and role on the Home screen; kept on this phone) ===================== */
@@ -121,7 +123,7 @@ function pgHome() {
       <div class="ht-top"><span class="ht-ico">${ic(u ? u.icon || 'BookOpen' : g.lvl === 'own' ? 'Shapes' : 'GraduationCap')}</span>${p === null ? '' : ring(p / 100, 40, 4, '#ffffff', '#ffffffcc', p + '%')}</div>
       <b>${esc(g.name)}</b><span class="lv">${esc(LVNAME(g.lvl))} · ${g.students.length} student${g.students.length === 1 ? '' : 's'}</span>
       <span class="nx">${done ? 'Taught today ✓' : `${nextDayLabel(g)} · ${esc(g.time)}`}</span>
-      <span class="ls">${u ? `Week ${g.week} · Lesson ${g.les}: ${esc(u.lessons[g.les - 1].subtopic)}` : g.lvl === 'own' ? esc(g.book || 'Own book') : 'Plan coming'}</span></button>
+      <span class="ls">${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}: ${esc(u.lessons[g.les - 1].subtopic)}` : g.lvl === 'own' ? esc(g.book || 'Own book') : 'Plan coming'}</span></button>
       <button class="ht-reg" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')} Register</button></div>`;
   }).join('');
   return head + `<div class="ht-grid">${tiles}<button class="ht-tile add" data-sheet="group">${ic('Plus')}<b>New group</b></button></div>`;
@@ -129,15 +131,17 @@ function pgHome() {
 
 /* ===================== Units: level → weeks → lessons ===================== */
 function pgUnits() {
-  const L = lv(T.unitLvl), here = S.groups.filter((g) => g.lvl === L.id);
-  const chips = C.levels.map((l) => `<button class="${l.id === T.unitLvl ? 'on' : ''}" style="${gv(l.id)}" data-unitlvl="${l.id}">${esc(LVNAME(l.id))}</button>`).join('');
+  const kids = T.aud === 'kids' && KIDLV.length, L = lv(kids ? T.kidLvl : T.unitLvl), here = S.groups.filter((g) => g.lvl === L.id);
+  const chips = kids ? KIDLV.map((l) => `<button class="${l.id === T.kidLvl ? 'on' : ''}" style="${gv(l.id)}" data-kidlvl="${l.id}">${esc(l.name)}</button>`).join('')
+    : C.levels.map((l) => `<button class="${l.id === T.unitLvl ? 'on' : ''}" style="${gv(l.id)}" data-unitlvl="${l.id}">${esc(LVNAME(l.id))}</button>`).join('');
+  const aud = KIDLV.length ? `<div class="tp-seg2 slide" data-noswipe style="--n:2"><span class="seg-thumb" style="--i:${kids ? 1 : 0}"></span><button class="${kids ? '' : 'on'}" data-aud="teens">${ic('GraduationCap')} Teens</button><button class="${kids ? 'on' : ''}" data-aud="kids">${ic('Star')} Kids</button></div>` : '';
   const body = !planned(L.id) ? `<div class="tp-empty2">${ic('Hammer')}<b>${esc(LVNAME(L.id))} comes next</b><span>The course is planned one level at a time; the IELTS levels are next.</span></div>`
     : `<div class="tp-list">${L.units.map((u, i) => { const grp = here.filter((g) => g.week === u.n).map((g) => g.name);
       return `<button class="tp-wrow" data-push="week" data-lvl="${L.id}" data-w="${u.n}">${u.final ? `<span class="tp-tile" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i)}
-        <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${grp.length ? ` · <em>${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</span><b>${esc(u.title)}</b><span>${u.lessons.map((l) => esc(l.subtopic)).join(' · ')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('')}</div>`;
-  return `<div class="tp-hdr"><div><div class="tp-eyebrow">Teen course</div><div class="tp-lt">Units</div></div></div>
-    <div class="tp-segs" data-noswipe>${chips}</div>
-    <div class="lv-pane" data-lvpane><div class="tp-lvlcard" style="${gv(L.id)}"><div><div class="k">${esc(L.cefr)} · ${L.weeks} weeks</div><b>${esc(LVNAME(L.id))}</b><span>${planned(L.id) ? esc(L.focus) : 'Planned next'}</span></div>${here.length ? `<span class="n">${here.length}<small>group${here.length > 1 ? 's' : ''}</small></span>` : ''}</div>
+        <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${grp.length ? ` · <em>${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</span><b>${esc(kids ? u.lessons.map((l) => l.subtopic.split(' · ')[0]).join(' · ') : u.title)}</b><span>${kids ? u.lessons.map((l) => esc(l.subtopic.split(' · ')[1] || '')).filter(Boolean).join(' · ') : u.lessons.map((l) => esc(l.subtopic)).join(' · ')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('')}</div>`;
+  return `<div class="tp-hdr"><div><div class="tp-eyebrow">${kids ? 'Kids course' : 'Teen course'}</div><div class="tp-lt">Units</div></div></div>
+    ${aud}<div class="tp-segs" data-noswipe>${chips}</div>
+    <div class="lv-pane"${kids ? '' : ' data-lvpane'}><div class="tp-lvlcard" style="${gv(L.id)}"><div><div class="k">${esc(L.cefr)} · ${L.weeks} weeks</div><b>${esc(LVNAME(L.id))}</b><span>${planned(L.id) ? esc(L.focus) : 'Planned next'}</span></div>${here.length ? `<span class="n">${here.length}<small>group${here.length > 1 ? 's' : ''}</small></span>` : ''}</div>
     ${body}</div>`;
 }
 function scWeek(f) {
@@ -145,13 +149,14 @@ function scWeek(f) {
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Units</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i, true)}<div><div class="tp-eyebrow">${esc(LVNAME(L.id))} · ${u.final ? 'One lesson' : 'Week ' + u.n}</div><div class="tp-lt" style="font-size:28px">${esc(u.title)}</div></div></div>
-      <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : 'By the end of the week they can say'}</small>${u.final ? esc(u.goal) : `“${esc(u.goal)}”`}</div></div>
-      <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${esc(l.skill || l.grammarTopic || l.grammar)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
+      <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : L.kids ? 'This week' : 'By the end of the week they can say'}</small>${u.final || L.kids ? esc(u.goal) : `“${esc(u.goal)}”`}</div></div>
+      <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${esc(l.skill || l.grammarTopic || l.grammar || (l.kd && l.kd.goal) || '')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
       ${u.skill ? `<div class="tp-card2"><div class="h">${ic('MessageCircle')}Speaking</div><p>${esc(u.skill)}</p>${u.writing ? `<div class="h" style="margin-top:10px">${ic('PenLine')}Writing</div><p>${esc(u.writing)}</p>` : ''}${u.eew ? `<div class="h" style="margin-top:10px">${ic('BookA')}Word book</div><p>${esc(u.eew)}</p>` : ''}${u.reading ? `<div class="h" style="margin-top:10px">${ic('BookOpen')}Reader</div><p>${esc(u.reading)}</p>` : ''}${u.mock ? `<div class="h" style="margin-top:10px">${ic('ClipboardCheck')}Mock test</div><p>${esc(u.mock)}</p>` : ''}</div>` : ''}
     </div>`;
 }
 const chips = (arr, cls) => `<div class="tp-words${cls ? ' ' + cls : ''}">${arr.map((w) => `<span>${esc(w)}</span>`).join('')}</div>`;
 function scLesson(f) {
+  if (lv(f.lvl).kids) return scKids(f);
   const L = lv(f.lvl), u = weekOf(f.lvl, f.w), l = u.lessons[f.l - 1], key = `${L.id}-${u.n}-${l.n}`, ed = S.edits[key] || {};
   const g = f.g && gById(f.g), t = g && taughtOn(g, TODAY);
   const isTaught = t && t.w === f.w && t.l === f.l, isNext = g && g.week === f.w && g.les === f.l && !t;
@@ -184,6 +189,28 @@ function scLesson(f) {
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
         <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `Marking it taught moves ${esc(g.name)} to the next lesson. To repeat a lesson or jump ahead, use Edit group.`}</p>`
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Lesson ${g.les}.</p>` : ''}
+    </div>`;
+}
+/* ===================== Kids: one day of the kids course (Family and Friends) ===================== */
+function scKids(f) {
+  const L = lv(f.lvl), u = weekOf(f.lvl, f.w), l = u.lessons[f.l - 1], k = l.kd, key = `${L.id}-${u.n}-${l.n}`, ed = S.edits[key] || {};
+  const g = f.g && gById(f.g), t = g && taughtOn(g, TODAY), show = T.open['tr-' + key];
+  const isTaught = t && t.w === f.w && t.l === f.l, isNext = g && g.week === f.w && g.les === f.l && !t;
+  return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="lesson" data-key="${key}">${ic('Pencil')} Edit</button></div>
+    <div class="tp-inner" style="${gv(L.id)}">
+      <div class="tp-whead">${unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}Week ${u.n} · Day ${l.n}</div><div class="tp-lt" style="font-size:26px">${esc(k.label)}</div></div></div>
+      ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
+      <div class="tp-goal2">${ic('Target')}<div><small>By the end they can say</small>“${esc(k.goal)}”</div></div>
+      <div class="tp-card2">${k.cb.length ? `<div class="h" style="color:#147EFB">${ic('BookOpen')}Class Book today</div>${chips(k.cb.map(([p, x]) => `p. ${p} · ${x}`))}<div class="h" style="color:#5C6378;margin-top:10px">${ic('ListChecks')}Homework</div>` : `<div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>`}<p class="hw">${ic('Square')}${esc(k.wb)}</p>${ed.hw ? `<p class="hw">${ic('Square')}${esc(ed.hw)}</p>` : ''}</div>
+      ${packBlock(L, u, l)}
+      <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do today</div>${k.steps.map((s, i) => `<p class="rt-row"><b>${i + 1}</b><span>${esc(s)}</span></p>`).join('')}</div>
+      ${k.copy.length ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('PenLine')}Copybook words</div>${chips(k.copy)}</div>` : ''}
+      ${k.us.length ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Globe')}The book says → we say</div>${k.us.map(([a, b]) => `<p><s>${esc(a)}</s> → <b>${esc(b)}</b></p>`).join('')}</div>` : ''}
+      <div class="tp-card2"><div class="h" style="color:#E5484D">${ic('MessageCircle')}Translation check</div>${[...k.tr, ...k.ch].map(([ru, en], i) => `<p class="rt-row"><b>${i + 1}</b><span>${i >= k.tr.length ? '★ ' : ''}${esc(ru)}${show ? `<small>${esc(en)}</small>` : ''}</span></p>`).join('')}<button class="tp-pill" data-kshow="${key}">${show ? 'Hide answers' : 'Show answers'}</button></div>
+      ${matsBlock(key)}
+      ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
+        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `Marking it taught moves ${esc(g.name)} to the next day.`}</p>`
+        : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>` : ''}
     </div>`;
 }
 function scOwn(f) {
@@ -315,10 +342,10 @@ function sheetGroup(s) {
   const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null;
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
     <label class="tp-f"><span>Group name</span><input id="f-name" value="${esc(F.name)}" placeholder="e.g. Group D" autocomplete="off"></label>
-    <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), 'own'].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
+    <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), ...KIDLV.map((l) => l.id), 'own'].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
     <div class="tp-f"><span>Colour</span><div class="tp-swatches" id="f-colors"><button class="auto${F.color ? '' : ' on'}" data-f-color="" aria-label="Automatic colour">A</button>${Object.entries(COLORS).map(([k, c]) => `<button class="${F.color === k ? 'on' : ''}" style="--g1:${c[0]};--g2:${c[1]}" data-f-color="${k}" aria-label="${k}"></button>`).join('')}</div></div>
     <div class="f-prog">${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
-      : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${[1, 2, 3].map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>Lesson ${n}</option>`).join('')}</select></div></div>`
+      : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${[1, 2, 3].map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>${dayWord(F.lvl)} ${n}</option>`).join('')}</select></div></div>`
       : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
     <div class="tp-f"><span>Days</span><div class="tp-chips2 days">${DAYS.map((d, i) => `<button class="${F.days.includes(i) ? 'on' : ''}" data-f-day="${i}">${d}</button>`).join('')}</div></div>
     <label class="tp-f"><span>Time</span><input id="f-time" type="time" value="${esc(F.time)}"></label>
@@ -410,7 +437,7 @@ const STRIPS = ['tp-segs', 'tp-seg2', 'tp-chips2'];
 function sameStrip(o, n) {
   const k = STRIPS.find((c) => o.classList.contains(c)); if (!k || !n.classList.contains(k)) return false;
   const a = o.children, b = n.children; if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i].tagName !== b[i].tagName || a[i].dataset.unitlvl !== b[i].dataset.unitlvl || a[i].dataset.booklvl !== b[i].dataset.booklvl || a[i].dataset.bookseg !== b[i].dataset.bookseg) return false;
+  for (let i = 0; i < a.length; i++) if (a[i].tagName !== b[i].tagName || a[i].dataset.unitlvl !== b[i].dataset.unitlvl || a[i].dataset.booklvl !== b[i].dataset.booklvl || a[i].dataset.bookseg !== b[i].dataset.bookseg || a[i].dataset.kidlvl !== b[i].dataset.kidlvl || a[i].dataset.aud !== b[i].dataset.aud) return false;
   return true;
 }
 function syncStrip(o, n) {
@@ -591,7 +618,8 @@ function bindSegSlide() {
     if (!st || e.pointerId !== st.id) return; const k = st; st = null;
     if (!k.on) return;
     k.sw.classList.remove('sliding'); k.th.style.transform = ''; k.sw._slid = Date.now();
-    const seg = k.btns[k.i].dataset.bookseg;
+    const seg = k.btns[k.i].dataset.bookseg, au = k.btns[k.i].dataset.aud;
+    if (au) { if (au !== T.aud) { T.aud = au; keepUi(); } return draw(); }
     if (seg && seg !== T.bookSeg) { T.bookSeg = seg; R.anim = 3; draw(); } else draw();
   };
   root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
@@ -835,6 +863,9 @@ function onClick(e) {
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
   if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
   if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
+  if (d.aud) { if (d.aud === T.aud) return; T.aud = d.aud; keepUi(); return draw(); }
+  if (d.kidlvl) { if (d.kidlvl === T.kidLvl) return; T.kidLvl = d.kidlvl; keepUi(); return draw(); }
+  if (d.kshow) { T.open['tr-' + d.kshow] = !T.open['tr-' + d.kshow]; return draw(); }
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.gcell !== undefined) {
