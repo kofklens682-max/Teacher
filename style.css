@@ -772,3 +772,5 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .bg-nav button.next{color:#fff;background:linear-gradient(135deg,var(--g1),var(--g2))}.bg-nav button:disabled{opacity:.4}
 .bg-nav svg{width:22px;height:22px;flex:none}
 .bg-nav button{font-size:18px}
+.tp-card2.story .st-pic{width:100%;border-radius:12px;margin:6px 0 8px;display:block}
+.tp-card2.story .st-p{line-height:1.5;margin:0 0 8px}

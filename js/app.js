@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 2.7';
+const VERSION_LABEL = 'Teacher 2.8';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -13,7 +13,7 @@ const NEXT = { here: 'absent', absent: 'late', late: 'here' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
-const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : [])];
+const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : []), ...(typeof KIDS4 !== 'undefined' ? KIDS4 : [])];
 const lv = (id) => C.levels.find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
 const dayWord = (id) => (lv(id) && lv(id).kids ? 'Day' : 'Lesson');
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
@@ -206,6 +206,7 @@ function scKids(f) {
       ${k.rule ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}The rule · ${esc(k.rule.title)}</div>${k.rule.lines.map((x) => `<p>${esc(x)}</p>`).join('')}<p class="sub"><b>Signal words:</b> ${esc(k.rule.signal)}</p><p class="sub"><b>Russian and English:</b> ${esc(k.rule.ru)}</p><div class="h" style="color:#E5484D;margin-top:8px">${ic('TriangleAlert')}We often say</div>${k.rule.oops.map((x) => `<p><s>${esc(x.split(' → ')[0])}</s> → <b>${esc(x.split(' → ')[1] || '')}</b></p>`).join('')}</div>` : ''}
       ${k.big && k.big.length ? `<button class="tp-cta" data-push="big" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}">${ic('Play')} Big screen · ${k.big.length} slides</button>` : ''}
       ${k.rwords && k.rwords.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Reading words</div>${chips(k.rwords)}${k.retell && k.retell.length ? `<div class="h" style="color:#0FA37F;margin-top:10px">${ic('MessageCircle')}Retell with</div>${chips(k.retell)}` : ''}</div>` : ''}
+      ${(k.story || []).map((st) => `<div class="tp-card2 story"><div class="h" style="color:#C46BF5">${ic('BookOpen')}Story · ${esc(st.title)}</div><img class="st-pic" src="media/k/${st.pic}.jpg" alt="">${st.paras.map((p) => `<p class="st-p">${esc(p)}</p>`).join('')}<div class="h" style="color:#147EFB;margin-top:10px">${ic('BookA')}New words</div>${st.words.map((w) => `<p class="rt-row"><b>${esc(w[0])}</b><span>${esc(w[2])}<small>${esc(w[1] ? '[' + w[1] + '] ' : '')}${esc(w[3])}</small></span></p>`).join('')}${st.phrases.length ? `<div class="h" style="color:#0FA37F;margin-top:10px">${ic('Link')}Useful phrases</div>${st.phrases.map((p) => `<p><b>${esc(p[0])}</b> — ${esc(p[1])}</p>`).join('')}` : ''}<div class="h" style="color:#E8770E;margin-top:10px">${ic('MessageCircle')}Retell with</div>${chips(st.retell)}</div>`).join('')}
       <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do today</div>${k.steps.map((s, i) => `<p class="rt-row"><b>${i + 1}</b><span>${esc(s)}</span></p>`).join('')}</div>
       ${k.copy.length ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('PenLine')}Copybook words</div>${chips(k.copy)}</div>` : ''}
       ${k.us.length ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Globe')}The book says → we say</div>${k.us.map(([a, b]) => `<p><s>${esc(a)}</s> → <b>${esc(b)}</b></p>`).join('')}</div>` : ''}
