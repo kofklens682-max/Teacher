@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 3.0';
+const VERSION_LABEL = 'Teacher 3.1';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -360,8 +360,9 @@ function pgBooks() {
 /* ===================== sheets ===================== */
 function sheetGroup(s) {
   const g = s.g ? gById(s.g) : null;
-  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })) }
-    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', color: '', week: 1, les: 1, students: [] };
+  const pl = g && S.pay.plan[g.id];
+  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })), feeKind: pl ? pl.kind : 'group', fee: pl ? (pl.kind === 'single' ? pl.rate : pl.fee) : '' }
+    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', color: '', week: 1, les: 1, students: [], feeKind: 'group', fee: '' };
   const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null;
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
     <label class="tp-f"><span>Group name</span><input id="f-name" value="${esc(F.name)}" placeholder="e.g. Group D" autocomplete="off"></label>
@@ -374,6 +375,7 @@ function sheetGroup(s) {
     <label class="tp-f"><span>Time</span><input id="f-time" type="time" value="${esc(F.time)}"></label>
     <div class="tp-f"><span>Students · ${F.students.length}</span><div class="tp-stulist">${F.students.map((x, i) => `<span>${esc(x.name)}<button data-f-rm="${i}" aria-label="Remove ${esc(x.name)}">${ic('X')}</button></span>`).join('')}</div>
       <div class="tp-addrow"><input id="f-stu" placeholder="Student's name" autocomplete="off" enterkeyhint="done"><button data-f-add aria-label="Add student">${ic('UserPlus')}</button></div></div>
+    ${feeForm(F)}
     ${g ? `<button class="tp-danger" data-delgroup="${g.id}">Remove this group</button>` : ''}`;
 }
 function sheetLesson(s) {
@@ -420,9 +422,9 @@ function sheetCopies(s) {
       : list.map((c) => `<button class="tp-lrow" data-usecopy="${esc(c.key)}">${ic('History')}<span class="tx"><b>${esc(new Date(c.at).toLocaleString('en-GB', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</b><span>${c.groups} groups · ${c.students} students${c.why === 'before' ? ' · before ' + esc(c.note || 'a restore') : ''}</span></span></button>`).join('')}
     <p class="tp-small">Tap a copy to bring it back. What is in the app now is kept as a copy first.</p>`;
 }
-const PAGES = [pgHome, pgUnits, pgAtt, pgBooks];
-const PUSH = { week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
-const SHEETS = { group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
+const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
+const PUSH = { pay: (f) => scPay(f), week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
+const SHEETS = { payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
    The app is drawn into a fixed frame (4 pages, a screen on top, the tab bar, a sheet). draw() rebuilds only the parts
@@ -685,7 +687,7 @@ function bindSwipe() {
     if (!st.on) {
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; }
       st.on = true; st.W = vp.offsetWidth; R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ }
-      const page = R.pages[T.tab], pane = (T.tab === 1 || T.tab === 3) && page.querySelector('[data-lvpane]'), cur = pane ? lvIndex(T.tab) : -1, n = cur + (dx < 0 ? 1 : -1);
+      const page = R.pages[T.tab], pane = false && page.querySelector('[data-lvpane]') // user: a swipe only moves between the tabs; levels are chosen by tapping, cur = pane ? lvIndex(T.tab) : -1, n = cur + (dx < 0 ? 1 : -1);
       if (pane && n >= 0 && n < C.levels.length) { if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT); const p = page.querySelector('[data-lvpane]'); p.style.transition = 'none'; st.lv = { page, pane: p, cur: lvIndex(T.tab), dir: 0, peek: null, w: p.offsetWidth + LV_GAP }; }
       else tr.classList.remove('settle');
     }
@@ -855,6 +857,7 @@ function keepForm() {
   const F = T.sheet && T.sheet.form; if (!F) return;
   [['f-name', 'name'], ['f-book', 'book'], ['f-time', 'time']].forEach(([id, k]) => { if (root.querySelector('#' + id)) F[k] = val(id) || (k === 'time' ? F.time : ''); });
   if (root.querySelector('#f-week')) F.week = +val('f-week'); if (root.querySelector('#f-les')) F.les = +val('f-les');
+  if (root.querySelector('#f-fee')) F.fee = +String(val('f-fee')).replace(/\D/g, '') || '';
 }
 
 // ---------- attendance taps: updated in place (no redraw), saved at once ----------
@@ -883,6 +886,7 @@ function onClick(e) {
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();
   if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }
+  if (feesClick(b, d)) return;
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
   if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
   if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
@@ -921,7 +925,7 @@ function onClick(e) {
     save(); const p = lastLesson(g); top.date = p ? iso(p) : null; if (R.screen) R.screen._swap = true; toast('Register removed'); return draw();
   }
   if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
-  if (d.addstu) { const n = val('tp-newstu'); if (!n) return toast('Type the name first'); gById(d.addstu).students.push({ id: uid(), name: n }); save(); draw(); return toast(n + ' added'); }
+  if (d.addstu) { const n = val('tp-newstu'); if (!n) return toast('Type the name first'); gById(d.addstu).students.push({ id: uid(), name: n, added: Date.now() }); save(); draw(); return toast(n + ' added'); }
   if (d.taught) {
     const g = gById(d.taught), k = iso(TODAY), t = taughtOn(g, TODAY);
     if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(); return toast('Undone'); }
@@ -940,7 +944,7 @@ function onClick(e) {
   if (d.rmmat) { if (!confirmTwice(b, '')) return; S.mats[d.key] = (S.mats[d.key] || []).filter((a) => a.id !== d.rmmat); if (!S.mats[d.key].length) delete S.mats[d.key]; save(); delFile('mat:' + d.rmmat).catch(() => {}); draw(); return toast('Removed'); }
   if (d.rmaudio) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.audio[id] = (S.audio[id] || []).filter((a) => a.id !== d.rmaudio); save(); delFile('audio:' + d.rmaudio).catch(() => {}); draw(); return toast('Removed'); }
   if (d.rmlink) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.links[id] = (S.links[id] || []).filter((a) => a.id !== d.rmlink); save(); draw(); return toast('Removed'); }
-  if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind });
+  if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind, sid: d.sid });
   if (d.closesheet !== undefined) return closeSheetNow();
   if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(); }
   if (d.fColor !== undefined) { keepForm(); T.sheet.form.color = d.fColor; b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return; }
@@ -968,18 +972,19 @@ function confirmTwice(b, msg) {
 }
 function addFormStudent() {
   const n = val('f-stu'); if (!n) return;
-  T.sheet.form.students.push({ id: uid(), name: n }); draw();
+  T.sheet.form.students.push({ id: uid(), name: n, added: Date.now() }); draw();
   const inp = root.querySelector('#f-stu'); if (inp) inp.focus();
 }
 function saveGroup() {
   keepForm(); const F = T.sheet.form; if (!F.name) return toast('Give the group a name');
-  const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending });
+  const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
   const old = T.sheet.g && gById(T.sheet.g);
   const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: F.time || '15:00', color: F.color || '', week: +F.week || 1, les: +F.les || 1 });
   if (old) { const keep = new Set(F.students.map((s) => s.id)); g.gone = [...(g.gone || []), ...old.students.filter((s) => !keep.has(s.id))]; }
   g.students = F.students;
   if (planned(g.lvl)) { const p = advance(g, 0); g.week = p.w; g.les = p.l; }
   if (!old) S.groups.push(g);
+  if (+F.fee > 0) S.pay.plan[g.id] = F.feeKind === 'single' ? { kind: 'single', rate: +F.fee } : { kind: 'group', fee: +F.fee }; else delete S.pay.plan[g.id];
   save(); closeSheetNow(); toast(old ? 'Group saved' : `${g.name} added`);
 }
 async function saveMedia(kind) {

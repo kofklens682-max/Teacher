@@ -9,7 +9,9 @@
 
 const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS = 12;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, created: Date.now() });
+// Fees: see js/fees.js. start = the first month the app counts fees (months before it are never shown as unpaid).
+const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, pays: [] });
+const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, pay: blankPay(), created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
 function normalize(d) {
@@ -20,9 +22,12 @@ function normalize(d) {
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
-    students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || '') })).filter((s) => s.name),
+    students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}) })).filter((s) => s.name),
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(),
   }));
+  const P = out.pay && typeof out.pay === 'object' && !Array.isArray(out.pay) ? out.pay : {}, bp = blankPay();
+  out.pay = { start: /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
+  for (const k of ['plan', 'stuFee', 'disc', 'sdisc']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
   out.rev = +out.rev || 0;
   return out;
 }
