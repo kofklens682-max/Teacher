@@ -10,7 +10,7 @@
 const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS = 12;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Fees: see js/fees.js. start = the first month the app counts fees (months before it are never shown as unpaid).
-const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, pays: [] });
+const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, pays: [], extras: [], xpaid: {} });
 const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, pay: blankPay(), created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
@@ -26,8 +26,10 @@ function normalize(d) {
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(),
   }));
   const P = out.pay && typeof out.pay === 'object' && !Array.isArray(out.pay) ? out.pay : {}, bp = blankPay();
-  out.pay = { start: /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
-  for (const k of ['plan', 'stuFee', 'disc', 'sdisc']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
+  const first = /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start; // 27 Oct 2026: fees count from September (once; after that the saved start is kept)
+  out.pay = { start: P.sep26 ? first : (first > '2026-09' ? '2026-09' : first), sep26: 1, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
+  for (const k of ['plan', 'stuFee', 'disc', 'sdisc', 'xpaid']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
+  out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
   out.rev = +out.rev || 0;
   return out;
 }

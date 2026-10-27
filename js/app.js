@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 3.1';
+const VERSION_LABEL = 'Teacher 3.2';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -186,8 +186,8 @@ function scLesson(f) {
       ${matsBlock(key)}
       <div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>${[...(l.homework || []), ...(ed.hw ? [ed.hw] : [])].map((h) => `<p class="hw">${ic('Square')}${esc(h)}</p>`).join('') || '<p>None</p>'}</div>
       ${l.check ? `<div class="tp-card2 warn">${ic('ClipboardList')}<p><b>Check today:</b> ${esc(l.check)}</p></div>` : ''}
-      ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
-        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `Marking it taught moves ${esc(g.name)} to the next lesson. To repeat a lesson or jump ahead, use Edit group.`}</p>`
+      ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
+        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `Saving the attendance marks this lesson as taught and moves ${esc(g.name)} to the next one.`}</p>`
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Lesson ${g.les}.</p>` : ''}
     </div>`;
 }
@@ -213,8 +213,8 @@ function scKids(f) {
       ${k.us.length ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Globe')}The book says → we say</div>${k.us.map(([a, b]) => `<p><s>${esc(a)}</s> → <b>${esc(b)}</b></p>`).join('')}</div>` : ''}
       ${k.tr.length ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('MessageCircle')}Translation check</div>${[...k.tr, ...k.ch].map(([ru, en], i) => `<p class="rt-row"><b>${i + 1}</b><span>${i >= k.tr.length ? '★ ' : ''}${esc(ru)}${show ? `<small>${esc(en)}</small>` : ''}</span></p>`).join('')}<button class="tp-pill" data-kshow="${key}">${show ? 'Hide answers' : 'Show answers'}</button></div>` : ''}
       ${matsBlock(key)}
-      ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
-        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `Marking it taught moves ${esc(g.name)} to the next day.`}</p>`
+      ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
+        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `Saving the attendance marks this day as taught and moves ${esc(g.name)} to the next one.`}</p>`
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>` : ''}
     </div>`;
 }
@@ -246,7 +246,8 @@ function scOwn(f) {
       ${ed.hw ? `<div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div><p class="hw">${ic('Square')}${esc(ed.hw)}</p></div>` : ''}
       ${matsBlock(key)}
       <p class="tp-small">${n} lesson${n === 1 ? '' : 's'} taught so far</p>
-      <button class="tp-cta ${done ? 'done' : ''}" data-owndone="${g.id}">${done ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
+      <button class="tp-cta ${done ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${done ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
+      <p class="tp-small">Saving the attendance marks the day as taught.</p>
     </div>`;
 }
 // Your own files for one lesson (worksheets, pictures, slides, recordings): kept on this phone, listed in S.mats[key]
@@ -280,8 +281,8 @@ function pgAtt() {
   if (!S.groups.length) return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div></div><div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div>
     ${today.map((g) => { const r = rec(g, TODAY), n = g.students.length, open = !!T.open[g.id];
-      return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="${gvg(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${esc(g.time)} · ${n} student${n === 1 ? '' : 's'}${r.saved ? ' · taken ✓' : lessonOpen(g, TODAY) ? '' : ' · opens ' + esc(g.time)}</span></span><span class="tl-chev">${ic('ChevronDown')}</span></button><button class="tp-iconbtn" data-push="register" data-g="${g.id}" aria-label="History and other lessons">${ic('History')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, TODAY)}</div></div></div>`; }).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
-    ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="tp-list">${others.map((g) => `<button class="tp-lrow" data-push="register" data-g="${g.id}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}${nextLessonText(g)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
+      return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="${gvg(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${esc(g.time)} · ${n} student${n === 1 ? '' : 's'}${r.saved ? ' · taken ✓' : lessonOpen(g, TODAY) ? '' : ' · opens ' + esc(g.time)}</span></span><span class="tl-chev">${ic('ChevronDown')}</span></button><button class="tp-iconbtn" data-push="group" data-g="${g.id}" aria-label="Students, table and fees">${ic('Users')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, TODAY)}</div></div></div>`; }).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
+    ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="tp-list">${others.map((g) => `<button class="tp-lrow" data-push="group" data-g="${g.id}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}${nextLessonText(g)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
 }
 const GSYM = { here: '✓', late: 'L', absent: '✕' };
 function tableDates(g) { // the last lessons taken, then the lessons still to come (today included)
@@ -423,8 +424,8 @@ function sheetCopies(s) {
     <p class="tp-small">Tap a copy to bring it back. What is in the app now is kept as a copy first.</p>`;
 }
 const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
-const PUSH = { pay: (f) => scPay(f), week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
-const SHEETS = { payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
+const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
+const SHEETS = { owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
    The app is drawn into a fixed frame (4 pages, a screen on top, the tab bar, a sheet). draw() rebuilds only the parts
@@ -886,6 +887,7 @@ function onClick(e) {
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();
   if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }
+  if (home2Click(b, d)) return;
   if (feesClick(b, d)) return;
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
   if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
@@ -914,14 +916,14 @@ function onClick(e) {
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
     const r = rec(g, dt, true);
     g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
-    (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; save();
+    (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; autoTaught(g, d.date); save();
     const here = g.students.filter((s) => r.get(s.id) !== 'absent').length, hw = g.students.filter((s) => r.get(s.id) !== 'absent' && r.hwOf(s.id)).length;
     draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework`);
   }
   if (d.lessonday) { top.date = d.lessonday; if (R.screen) R.screen._swap = true; return draw(); }
   if (d.rmreg) {
     const g = gById(d.g); if (!g) return;
-    [S.rec, S.hw, S.saved].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; });
+    [S.rec, S.hw, S.saved].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; }); undoTaught(g, d.rmreg);
     save(); const p = lastLesson(g); top.date = p ? iso(p) : null; if (R.screen) R.screen._swap = true; toast('Register removed'); return draw();
   }
   if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
@@ -1069,6 +1071,7 @@ async function useCopy(key) {
 }
 function onChange(e) {
   const t = e.target;
+  if (home2Change(t)) return;
   if (t.dataset.pickbook) return pickBook(t);
   if (t.dataset.pickmat) return pickMat(t);
   if (t.dataset.restore !== undefined) return restore(t);
