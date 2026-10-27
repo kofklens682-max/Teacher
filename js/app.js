@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 2.8';
+const VERSION_LABEL = 'Teacher 2.9';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -13,7 +13,7 @@ const NEXT = { here: 'absent', absent: 'late', late: 'here' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
-const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : []), ...(typeof KIDS4 !== 'undefined' ? KIDS4 : [])];
+const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : []), ...(typeof KIDS4 !== 'undefined' ? KIDS4 : []), ...(typeof KIDS5 !== 'undefined' ? KIDS5 : [])];
 const lv = (id) => C.levels.find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
 const dayWord = (id) => (lv(id) && lv(id).kids ? 'Day' : 'Lesson');
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
@@ -202,6 +202,7 @@ function scKids(f) {
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       <div class="tp-goal2">${ic('Target')}<div><small>By the end they can say</small>“${esc(k.goal)}”</div></div>
       <div class="tp-card2">${k.cb.length ? `<div class="h" style="color:#147EFB">${ic('BookOpen')}Class Book today</div>${chips(k.cb.map(([p, x]) => `p. ${p} · ${x}`))}<div class="h" style="color:#5C6378;margin-top:10px">${ic('ListChecks')}Homework</div>` : `<div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>`}<p class="hw">${ic('Square')}${esc(k.wb)}</p>${ed.hw ? `<p class="hw">${ic('Square')}${esc(ed.hw)}</p>` : ''}</div>
+      ${k.murphy && k.murphy.length ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('BookOpen')}Murphy red · Essential Grammar in Use</div>${k.murphy.map((m) => `<div class="mu-row"><b>${m.u ? 'Unit ' + m.u + ' · ' : ''}${esc(m.title)}</b><span>${esc(m.pages)}</span>${m.cls ? `<p><em>In class:</em> ${esc(m.cls)}</p>` : ''}${m.hw ? `<p><em>Homework:</em> ${esc(m.hw)}</p>` : ''}</div>`).join('')}${k.note ? `<p class="sub">${esc(k.note)}</p>` : ''}<p class="sub">American English: skip “have got” and “shall”; say vacation, movie theater, store, Mom.</p></div>` : ''}
       ${packBlock(L, u, l)}
       ${k.rule ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}The rule · ${esc(k.rule.title)}</div>${k.rule.lines.map((x) => `<p>${esc(x)}</p>`).join('')}<p class="sub"><b>Signal words:</b> ${esc(k.rule.signal)}</p><p class="sub"><b>Russian and English:</b> ${esc(k.rule.ru)}</p><div class="h" style="color:#E5484D;margin-top:8px">${ic('TriangleAlert')}We often say</div>${k.rule.oops.map((x) => `<p><s>${esc(x.split(' → ')[0])}</s> → <b>${esc(x.split(' → ')[1] || '')}</b></p>`).join('')}</div>` : ''}
       ${k.big && k.big.length ? `<button class="tp-cta" data-push="big" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}">${ic('Play')} Big screen · ${k.big.length} slides</button>` : ''}
@@ -210,7 +211,7 @@ function scKids(f) {
       <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do today</div>${k.steps.map((s, i) => `<p class="rt-row"><b>${i + 1}</b><span>${esc(s)}</span></p>`).join('')}</div>
       ${k.copy.length ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('PenLine')}Copybook words</div>${chips(k.copy)}</div>` : ''}
       ${k.us.length ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Globe')}The book says → we say</div>${k.us.map(([a, b]) => `<p><s>${esc(a)}</s> → <b>${esc(b)}</b></p>`).join('')}</div>` : ''}
-      <div class="tp-card2"><div class="h" style="color:#E5484D">${ic('MessageCircle')}Translation check</div>${[...k.tr, ...k.ch].map(([ru, en], i) => `<p class="rt-row"><b>${i + 1}</b><span>${i >= k.tr.length ? '★ ' : ''}${esc(ru)}${show ? `<small>${esc(en)}</small>` : ''}</span></p>`).join('')}<button class="tp-pill" data-kshow="${key}">${show ? 'Hide answers' : 'Show answers'}</button></div>
+      ${k.tr.length ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('MessageCircle')}Translation check</div>${[...k.tr, ...k.ch].map(([ru, en], i) => `<p class="rt-row"><b>${i + 1}</b><span>${i >= k.tr.length ? '★ ' : ''}${esc(ru)}${show ? `<small>${esc(en)}</small>` : ''}</span></p>`).join('')}<button class="tp-pill" data-kshow="${key}">${show ? 'Hide answers' : 'Show answers'}</button></div>` : ''}
       ${matsBlock(key)}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-taught="${g.id}" data-w="${f.w}" data-l="${f.l}">${isTaught ? 'Taught ✓ · tap to undo' : 'Mark as taught'}</button>
         <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `Marking it taught moves ${esc(g.name)} to the next day.`}</p>`

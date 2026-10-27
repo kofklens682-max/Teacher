@@ -774,3 +774,10 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .bg-nav button{font-size:18px}
 .tp-card2.story .st-pic{width:100%;border-radius:12px;margin:6px 0 8px;display:block}
 .tp-card2.story .st-p{line-height:1.5;margin:0 0 8px}
+/* Family and Friends 5: the Murphy card */
+.mu-row{border-top:1px solid var(--sep);padding:9px 0 2px}
+.mu-row:first-of-type{border-top:0;padding-top:2px}
+.mu-row b{display:block;font-size:15px}
+.mu-row>span{display:block;font-size:12.5px;color:var(--text2);margin-bottom:3px}
+.mu-row p{margin:2px 0;font-size:14px}
+.mu-row em{font-style:normal;font-weight:700;color:var(--text2)}
