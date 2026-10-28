@@ -84,7 +84,8 @@ function secOwe() { // groups, not people: tap a group to see who has not paid
 function sheetOweGrp(s) {
   const g = gById(s.g), ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1]; if (!g) return '';
   const rows = oweRows(g, ym), late = rows.filter((r) => r.m.length >= 2), now = rows.filter((r) => r.m.length < 2);
-  const row = (r) => `<button class="h2-ow ${r.m.length >= 3 ? 'bad' : r.m.length === 2 ? 'late' : 'new'}" data-sheet="payrec" data-g="${r.g.id}" data-sid="${r.s.id}"><span class="bar"></span><span class="tx"><b>${esc(r.s.name)}</b><span class="mo">${r.m.map((x) => `<u>${SHORT(x.m)}</u>`).join('')}</span></span><span class="amt"><b>${dMoney(r.L.debt)}</b><em>so'm</em></span><span class="ok">${ic('Check')}</span></button>`;
+  // the row opens the student's months; the tick records a payment in Budget with this student chosen
+  const row = (r) => `<div class="h2-ow ${r.m.length >= 3 ? 'bad' : r.m.length === 2 ? 'late' : 'new'}"><button class="h2-owm" data-sheet="payrec" data-g="${r.g.id}" data-sid="${r.s.id}"><span class="bar"></span><span class="tx"><b>${esc(r.s.name)}</b><span class="mo">${r.m.map((x) => `<u>${SHORT(x.m)}</u>`).join('')}</span></span><span class="amt"><b>${dMoney(r.L.debt)}</b><em>so'm</em></span></button><button class="ok" data-bpopen="${r.s.id}|${r.g.id}" aria-label="Record ${esc(r.s.name)}'s payment in Budget">${ic('Check')}</button></div>`;
   return `<div class="tp-sh-h"><span></span><b>${esc(g.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
     ${rows.length ? '' : `<div class="tp-empty2">${ic('Check')}<b>Everybody has paid</b><span>Nothing is owed in ${mn}.</span></div>`}
     ${late.length ? `<div class="h2-grp"><span class="d bad"></span>Overdue · 2 months or more<em>${late.length}</em></div><div class="h2-ows">${late.map(row).join('')}</div>` : ''}
@@ -119,7 +120,7 @@ function pgHomeNew() {
   const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, cfg = homeCfg();
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
-  const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark a payment</button><button data-sheet="extra">${ic('Package')}Extra charge</button><button data-sheet="homecfg">${ic('Sliders')}Arrange Home</button></div>`;
+  const quick = `<div class="h2-quick"><button data-bpopen="|">${ic('Wallet')}Record a payment</button><button data-sheet="extra">${ic('Package')}Extra charge</button><button data-sheet="homecfg">${ic('Sliders')}Arrange Home</button></div>`;
   return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => SECS[id]()).join('');
 }
 function sheetHomeCfg() {

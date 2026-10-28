@@ -22,17 +22,32 @@ function firstMonth(g, s) {
   return [S.pay.start, joined].sort().pop();
 }
 
-/* ---------- reading Budget's payments ---------- */
-function bpAll() {
+/* ---------- reading Budget's payments ----------
+   Read and checked once, then kept until Budget writes a new list (one page draw used to read it 378 times: that was the lag). */
+let bpRaw = null, bpList = [], bpBy = new Map(), omRaw = null, omKey = null, omMap = new Map();
+function bpLoad() {
+  let raw = null; try { raw = localStorage.getItem(BP_KEY); } catch (e) { /* no storage */ }
+  if (raw === bpRaw) return;
+  bpRaw = raw; bpList = []; bpBy = new Map();
   try {
-    const d = JSON.parse(localStorage.getItem(BP_KEY) || 'null');
-    return d && Array.isArray(d.pays) ? d.pays.filter((p) => p && p.sid && +p.amount > 0 && /^\d{4}-\d\d-\d\d$/.test(p.date || '')) : [];
-  } catch (e) { return []; }
+    const d = JSON.parse(raw || 'null');
+    if (d && Array.isArray(d.pays)) bpList = d.pays.filter((p) => p && p.sid && +p.amount > 0 && /^\d{4}-\d\d-\d\d$/.test(p.date || ''));
+  } catch (e) { /* a broken list counts as empty; Budget still has everything */ }
+  bpList.forEach((p) => { if (!bpBy.has(p.sid)) bpBy.set(p.sid, []); bpBy.get(p.sid).push(p); });
 }
+function bpAll() { bpLoad(); return bpList; }
+const bpOf = (sid) => { bpLoad(); return bpBy.get(sid) || []; };
 // An old Teacher payment that was also added in Budget (through the old "Add income" popup) must not count twice:
 // it is matched to a Budget payment of the same student with the same amount, made within 7 days. Each Budget payment absorbs one.
 function oldMoved(sid) {
-  const bp = bpAll().filter((p) => p.sid === sid), used = new Set(), moved = new Set();
+  bpLoad();
+  const key = JSON.stringify(S.pay.pays); // the answer is kept until either list changes
+  if (bpRaw !== omRaw || key !== omKey) { omRaw = bpRaw; omKey = key; omMap = new Map(); }
+  if (!omMap.has(sid)) omMap.set(sid, findMoved(sid));
+  return omMap.get(sid);
+}
+function findMoved(sid) {
+  const bp = bpOf(sid), used = new Set(), moved = new Set();
   const days = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) / 864e5;
   S.pay.pays.filter((p) => p.sid === sid).sort((a, b) => a.date.localeCompare(b.date)).forEach((o) => {
     const m = bp.filter((p) => !used.has(p.id) && +p.amount === +o.amount && days(p.date, o.date) <= 7).sort((a, b) => days(a.date, o.date) - days(b.date, o.date))[0];
@@ -43,7 +58,7 @@ function oldMoved(sid) {
 const oldLeft = () => S.pay.pays.filter((p) => !oldMoved(p.sid).has(p.id));
 function payRows(sid) { // every payment of one student, from both places, oldest first
   const out = [], moved = oldMoved(sid);
-  bpAll().forEach((p) => { if (p.sid === sid) out.push({ id: p.id, sid, date: p.date, amount: +p.amount, by: p.by || '', alloc: Array.isArray(p.alloc) && p.alloc.length ? p.alloc.map((a) => ({ m: a.m, amount: +a.amount })) : [{ m: p.date.slice(0, 7), amount: +p.amount }], src: 'budget', batch: p.batch || '', acc: p.acc || '' }); });
+  bpOf(sid).forEach((p) => out.push({ id: p.id, sid, date: p.date, amount: +p.amount, by: p.by || '', alloc: Array.isArray(p.alloc) && p.alloc.length ? p.alloc.map((a) => ({ m: a.m, amount: +a.amount })) : [{ m: p.date.slice(0, 7), amount: +p.amount }], src: 'budget', batch: p.batch || '', acc: p.acc || '' }));
   S.pay.pays.forEach((p) => { if (p.sid === sid && !moved.has(p.id)) out.push({ ...p, src: 'old', alloc: null }); });
   return out.sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
 }
@@ -101,7 +116,7 @@ const owedNow = (L) => L.debt;
 function monthLines(g, st, ym) {
   // from the first month to next month, and further only as far as money has been paid ahead
   const cur = ymOf(TODAY); let top = ymAdd(cur, 1); if (ym > top) top = ym;
-  bpAll().forEach((p) => { if (p.sid === st.id) (p.alloc || []).forEach((a) => { if (a.m > top) top = a.m; }); });
+  bpOf(st.id).forEach((p) => (p.alloc || []).forEach((a) => { if (a.m > top) top = a.m; }));
   const L = ledger(g, st, top), single = isSingle(g);
   return L.rows.filter((r) => single ? r.charge || r.covered : true).map((r) => {
     const left = r.charge - r.covered, future = r.m > cur;
@@ -138,9 +153,10 @@ function sheetPayRec(s) {
     ${L.mine.some((p) => p.src === 'old') ? `<p class="tp-small" style="text-align:left">"Old" = saved in the Teacher app before Budget took over. They still count. To fix one, remove it here and add it in Budget.</p>${L.mine.filter((p) => p.src === 'old').map((p) => `<div class="dr-hist"><span>${dDate(p.date)} · old</span><b>${dMoney(p.amount)}</b><button class="dr-del${s.del === p.id ? ' sure' : ''}" data-paydel="${p.id}" aria-label="Remove this old payment">${s.del === p.id ? 'Tap again to remove' : ic('X')}</button></div>`).join('')}` : ''}
     ${single ? '' : `<div class="tp-sec"><h4>Discount for ${SHORT(ym)}</h4></div><label class="tp-f"><span>This student, this month only (so'm)</span><input id="f-paydisc" inputmode="numeric" value="${sd || ''}" placeholder="0" autocomplete="off"></label><button class="tp-pill" data-discgo="${st.id}|${g.id}" style="margin:4px 0 10px">Save discount</button>`}`;
 }
-function openBudgetFor(sid, gid) {
+// sid = that student's form; no sid = a new student fee (you choose the student in Budget); mode 'fix' = the payments with no student
+function openBudgetFor(sid, gid, mode) {
   const ym = payState().ym;
-  try { localStorage.setItem(OPEN_KEY, JSON.stringify({ sid, gid, ym, at: Date.now() })); } catch (e) { toast('Could not hand over to Budget'); return; }
+  try { localStorage.setItem(OPEN_KEY, JSON.stringify({ sid: sid || '', gid: gid || '', ym, mode: mode || '', at: Date.now() })); } catch (e) { toast('Could not hand over to Budget'); return; }
   publishRoster();
   const w = window.open(BUDGET_URL, '_blank'); if (!w) location.href = BUDGET_URL;
 }
@@ -149,9 +165,9 @@ function openBudgetFor(sid, gid) {
 function attentionCard() {
   let loose = 0; try { loose = +(JSON.parse(localStorage.getItem(BP_KEY) || '{}').loose) || 0; } catch (e) { /* none */ }
   const old = oldLeft().length, bits = [];
-  if (loose) bits.push(`<p><b>${loose} payment${loose === 1 ? '' : 's'} in Budget ${loose === 1 ? 'has' : 'have'} no student.</b> They are not counted here. In Budget, tap the payment and choose the student.</p>`);
-  if (old) bits.push(`<p><b>${old} old payment${old === 1 ? '' : 's'} saved in this app.</b> They still count. Open the student, and move each one to Budget when you have time.</p>`);
-  return bits.length ? `<div class="tp-card2 warn" style="margin-bottom:12px"><div class="h">${ic('CalendarX2')}Needs attention</div>${bits.join('')}</div>` : '';
+  if (loose) bits.push(`<p><b>${loose} payment${loose === 1 ? '' : 's'} in Budget ${loose === 1 ? 'has' : 'have'} no student, so ${loose === 1 ? 'it is' : 'they are'} not counted here.</b> That is why some students look unpaid. Choose whose each payment is, once.</p>`);
+  if (old) bits.push(`<p><b>${old} payment${old === 1 ? '' : 's'} saved in this app before Budget took over.</b> They still count. When the same payment has a student in Budget, it is counted once, by itself.</p>`);
+  return bits.length ? `<div class="tp-card2 attn" style="margin-bottom:12px"><div class="h">${ic('CalendarX2')}Needs attention</div>${bits.join('')}${loose ? `<button class="tp-pill" data-bpopen="fix">${ic('Wallet')}Choose the students in Budget</button>` : ''}</div>` : '';
 }
 { const _home = pgHomeNew; pgHomeNew = function () { const h = _home(), at = attentionCard(); return at ? h.replace('<div class="h2-quick">', at + '<div class="h2-quick">') : h; }; }
 
@@ -159,7 +175,7 @@ function attentionCard() {
 {
   const _h = home2Click, _f = feesClick;
   const mine = (b, d) => {
-    if (d.bpopen) { const [sid, gid] = d.bpopen.split('|'); openBudgetFor(sid, gid); return true; }
+    if (d.bpopen) { if (d.bpopen === 'fix') openBudgetFor('', '', 'fix'); else { const [sid, gid] = d.bpopen.split('|'); openBudgetFor(sid, gid); } return true; }
     if (d.discgo) { const [sid] = d.discgo.split('|'), k = sid + '|' + payState().ym, v = numVal('f-paydisc'); if (v) S.pay.sdisc[k] = v; else delete S.pay.sdisc[k]; save(); toast(v ? 'Discount saved' : 'Discount removed'); draw(); return true; }
     if (d.payfrom) { const [sid, m] = d.payfrom.split('|'); S.pay.from[sid] = m; save(); draw(); return true; }
     if (d.paygo) return true; // typing payments here is gone: they are recorded in Budget

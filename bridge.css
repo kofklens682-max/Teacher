@@ -16,3 +16,13 @@
 .bp-h .m { flex: 1; font-size: 12.5px; color: var(--text2, #6B7088); }
 .bp-h .m u { text-decoration: none; background: rgba(247,144,9,.16); color: #B25E00; border-radius: 6px; padding: 1px 6px; font-weight: 700; }
 .bp-h b { font-variant-numeric: tabular-nums; }
+/* "Needs attention" on Home: title on top, text under it, full width */
+.tp-card2.attn { background: #FFF6E0; gap: 8px; }
+.tp-card2.attn .h { color: #B54708; }
+.tp-card2.attn .h svg { color: #B54708; }
+.tp-card2.attn p { line-height: 1.45; }
+.tp-card2.attn .tp-pill { justify-self: start; margin-top: 2px; }
+/* a not-paid row: the row opens the months, the tick opens Budget */
+.h2-ow > .h2-owm { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; margin: -12px 0; padding: 12px 0; text-align: left; color: inherit; background: none; border: 0; font: inherit; }
+.h2-ow > button.ok { border: 0; padding: 0; cursor: pointer; }
+.h2-ow > button.ok:active { background: rgba(18,183,106,.28); }
