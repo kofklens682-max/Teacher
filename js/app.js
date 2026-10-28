@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 3.2';
+const VERSION_LABEL = 'Teacher 3.3';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -590,7 +590,12 @@ function bindSheetDrag(el) {
     p.style.transform = `translateY(${st.dy}px)`;
     s.style.opacity = String(Math.max(0.1, 1 - st.dy / (p.offsetHeight || 600)));
   };
-  const start = (x, y) => { st = { x0: x, y0: y, mode: null, dy: 0, last: y, lt: performance.now(), v: 0 }; };
+  // Closing by pulling down only counts when the finger LANDED on a sheet that was already at the top (or on its top bar), and not while
+  // you are typing. Scrolling back up to reach Save can then never turn into "close the sheet" halfway through the same swipe.
+  const start = (x, y, t) => {
+    const ae = document.activeElement, typing = !!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && p.contains(ae));
+    st = { x0: x, y0: y, mode: null, dy: 0, last: y, lt: performance.now(), v: 0, top0: p.scrollTop, head: !!(t && t.closest && t.closest('.tp-sh-h')), typing };
+  };
   const follow = (x, y, e) => {
     if (!st) return;
     if (st.mode === null) {
@@ -600,7 +605,7 @@ function bindSheetDrag(el) {
     }
     if (st.mode === 'none') return;
     if (st.mode === 'wait') {
-      if (p.scrollTop <= 0 && y > st.last) { st.mode = 'drag'; st.y0 = st.last; el.classList.add('dragging'); if (document.activeElement && p.contains(document.activeElement)) document.activeElement.blur(); }
+      if (((st.top0 <= 0 && !st.typing) || st.head) && p.scrollTop <= 0 && y > st.last) { st.mode = 'drag'; st.y0 = st.last; el.classList.add('dragging'); if (document.activeElement && p.contains(document.activeElement)) document.activeElement.blur(); }
       else { st.last = y; st.lt = performance.now(); return; } // the content scrolls back up first
     }
     if (e && e.cancelable) e.preventDefault();
@@ -613,12 +618,12 @@ function bindSheetDrag(el) {
     if (k.dy > Math.min(110, p.offsetHeight * 0.2) || (k.v > 0.35 && k.dy > 16)) closeSheetNow();
     else { p.style.transform = ''; s.style.opacity = ''; }
   };
-  p.addEventListener('touchstart', (e) => start(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+  p.addEventListener('touchstart', (e) => start(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
   p.addEventListener('touchmove', (e) => follow(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
   p.addEventListener('touchend', release); p.addEventListener('touchcancel', release);
   p.addEventListener('pointerdown', (e) => { // a mouse can pull the top bar
     if (e.pointerType !== 'mouse' || !e.target.closest('.tp-sh-h') || e.target.closest('button')) return;
-    start(e.clientX, e.clientY);
+    start(e.clientX, e.clientY, e.target);
     const mv = (ev) => follow(ev.clientX, ev.clientY, ev), up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); release(); };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
   });
@@ -739,7 +744,7 @@ function bindTabSlide() {
     if (!st || e.pointerId !== st.id) return;
     if (!st.on) { if (Math.abs(e.clientX - st.x0) < 8) return; st.on = true; R.sliding = true; bar.classList.add('sliding'); try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
     const r = bar.getBoundingClientRect(), w = (r.width - 10) / 4, x = Math.max(0, Math.min(w * 3, e.clientX - r.left - 5 - w / 2));
-    ind.style.transform = `translateX(${x}px) scale(1.06)`; st.over = Math.round(x / w); bar.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === st.over));
+    ind.style.transform = `translateX(${x}px)`; st.over = Math.round(x / w); bar.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === st.over));
   });
   const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = Date.now(); R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
   bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);

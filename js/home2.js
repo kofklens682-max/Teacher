@@ -14,7 +14,7 @@ Object.assign(ICONS, {
 
 const SHORT = (ym) => MONTHS[+ym.slice(5) - 1].slice(0, 3);
 const PIE = ['#3D5AFE', '#12B76A', '#F79009', '#E5484D', '#8E3BD9', '#14B8A6', '#FF6B9A', '#32ADE6', '#C9A400', '#7B61FF', '#FF8A4C', '#0F766E'];
-const MAXAHEAD = 6; // months into the future you can look at and pay for
+const MAXAHEAD = 24; // months into the future you can look at and pay for
 
 /* ---------- small changes to the payment rules ---------- */
 function firstMonth(g, s) { // private students pay per lesson, so every month since the start counts (an empty month costs nothing)
