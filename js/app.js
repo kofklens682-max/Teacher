@@ -2,8 +2,8 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 3.4';
-const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
+const VERSION_LABEL = 'Teacher 3.5';
+const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -14,10 +14,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
 const gv = (id) => `--g1:${(GRAD[id] || GRAD.own)[0]};--g2:${(GRAD[id] || GRAD.own)[1]}`;
 const KIDLV = [...(typeof KIDS !== 'undefined' ? KIDS : []), ...(typeof KIDS3 !== 'undefined' ? KIDS3 : []), ...(typeof KIDS4 !== 'undefined' ? KIDS4 : []), ...(typeof KIDS5 !== 'undefined' ? KIDS5 : [])];
-const lv = (id) => C.levels.find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
+// Units shows the teen levels and then IELTS Turbo (js/turbo.js); Books keeps only the teen levels
+const UNIT_LV = () => (typeof TURBO_LV !== 'undefined' ? [...C.levels, TURBO_LV] : C.levels);
+const lvList = (tab) => (tab === 1 ? UNIT_LV() : C.levels);
+const lv = (id) => UNIT_LV().find((l) => l.id === id) || KIDLV.find((l) => l.id === id);
 const dayWord = (id) => (lv(id) && lv(id).kids ? 'Day' : 'Lesson');
 const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-6.5' : id === 'I2' ? 'IELTS 7+' : lv(id) ? lv(id).name : id);
-const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2'].includes(id) || KIDLV.some((l) => l.id === id);
+const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2', 'IT'].includes(id) || KIDLV.some((l) => l.id === id);
 const avColor = (s) => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
 const gById = (id) => S.groups.find((g) => g.id === id);
 const weekOf = (lid, n) => { const u = lv(lid).units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
@@ -133,7 +136,7 @@ function pgHome() {
 function pgUnits() {
   const kids = T.aud === 'kids' && KIDLV.length, L = lv(kids ? T.kidLvl : T.unitLvl), here = S.groups.filter((g) => g.lvl === L.id);
   const chips = kids ? KIDLV.map((l) => `<button class="${l.id === T.kidLvl ? 'on' : ''}" style="${gv(l.id)}" data-kidlvl="${l.id}">${esc(l.name)}</button>`).join('')
-    : C.levels.map((l) => `<button class="${l.id === T.unitLvl ? 'on' : ''}" style="${gv(l.id)}" data-unitlvl="${l.id}">${esc(LVNAME(l.id))}</button>`).join('');
+    : UNIT_LV().map((l) => `<button class="${l.id === T.unitLvl ? 'on' : ''}" style="${gv(l.id)}" data-unitlvl="${l.id}">${esc(LVNAME(l.id))}</button>`).join('');
   const aud = KIDLV.length ? `<div class="tp-seg2 slide" data-noswipe style="--n:2"><span class="seg-thumb" style="--i:${kids ? 1 : 0}"></span><button class="${kids ? '' : 'on'}" data-aud="teens">${ic('GraduationCap')} Teens</button><button class="${kids ? 'on' : ''}" data-aud="kids">${ic('Star')} Kids</button></div>` : '';
   const body = !planned(L.id) ? `<div class="tp-empty2">${ic('Hammer')}<b>${esc(LVNAME(L.id))} comes next</b><span>The course is planned one level at a time; the IELTS levels are next.</span></div>`
     : `<div class="tp-list">${L.units.map((u, i) => { const grp = here.filter((g) => g.week === u.n).map((g) => g.name);
@@ -424,7 +427,7 @@ function sheetCopies(s) {
     <p class="tp-small">Tap a copy to bring it back. What is in the app now is kept as a copy first.</p>`;
 }
 const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
-const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: scWeek, lesson: scLesson, own: scOwn, register: scRegister, big: scBig };
+const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: (f) => (f.lvl === 'IT' ? turboWeek(f) : scWeek(f)), lesson: (f) => (f.lvl === 'IT' ? turboLesson(f) : scLesson(f)), own: scOwn, register: scRegister, big: scBig };
 const SHEETS = { owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
@@ -694,12 +697,12 @@ function bindSwipe() {
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; }
       st.on = true; st.W = vp.offsetWidth; R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ }
       const page = R.pages[T.tab], pane = false && page.querySelector('[data-lvpane]') // user: a swipe only moves between the tabs; levels are chosen by tapping, cur = pane ? lvIndex(T.tab) : -1, n = cur + (dx < 0 ? 1 : -1);
-      if (pane && n >= 0 && n < C.levels.length) { if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT); const p = page.querySelector('[data-lvpane]'); p.style.transition = 'none'; st.lv = { page, pane: p, cur: lvIndex(T.tab), dir: 0, peek: null, w: p.offsetWidth + LV_GAP }; }
+      if (pane && n >= 0 && n < lvList(T.tab).length) { if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT); const p = page.querySelector('[data-lvpane]'); p.style.transition = 'none'; st.lv = { page, pane: p, cur: lvIndex(T.tab), dir: 0, peek: null, w: p.offsetWidth + LV_GAP }; }
       else tr.classList.remove('settle');
     }
     st.pts.push([e.timeStamp, e.clientX]); if (st.pts.length > 6) st.pts.shift();
     if (st.lv) { // paging through the levels: the pane follows the finger, the next level comes in beside it
-      const L = st.lv, dir = dx < 0 ? 1 : -1, n = L.cur + dir, has = n >= 0 && n < C.levels.length;
+      const L = st.lv, dir = dx < 0 ? 1 : -1, n = L.cur + dir, has = n >= 0 && n < lvList(T.tab).length;
       if (dir !== L.dir) { lvHide(L.peek); L.peek = has ? lvPeek(T.tab, dir) : null; if (L.peek) { L.at = lvPlace(L.page, L.pane, L.peek); L.peek.style.transition = 'none'; L.peek.classList.add('on'); } L.dir = dir; }
       st.dx = has ? dx : dx / 3;
       L.pane.style.transform = `translate3d(${st.dx}px,0,0)`; if (L.peek) lvMove(L.peek, L.at.x + st.dx + dir * L.w, L.at.y);
@@ -757,12 +760,12 @@ function bindTabSlide() {
 // For smoothness the two neighbouring levels are drawn ahead of time, out of sight, in a layer over the pages; a swipe
 // then only moves pictures that are ready. The page itself is redrawn once the slide has finished.
 const LV_GAP = 16;
-const lvIndex = (tab) => (tab === 1 ? C.levels.findIndex((l) => l.id === T.unitLvl) : T.bookLvl);
-function lvSet(tab, i) { if (tab === 1) T.unitLvl = C.levels[i].id; else T.bookLvl = i; keepUi(); }
+const lvIndex = (tab) => (tab === 1 ? UNIT_LV().findIndex((l) => l.id === T.unitLvl) : T.bookLvl);
+function lvSet(tab, i) { if (tab === 1) T.unitLvl = UNIT_LV()[i].id; else T.bookLvl = i; keepUi(); }
 function lvLayer() { if (!R.lvLayer) { R.lvLayer = document.createElement('div'); R.lvLayer.className = 'lv-layer'; R.vp.appendChild(R.lvLayer); } return R.lvLayer; }
 function lvBuild(tab, i, w, side) { // the pane of another level, drawn and parked just off the screen, ready to slide in
   const k = tab === 1 ? 'unitLvl' : 'bookLvl', was = T[k];
-  T[k] = tab === 1 ? C.levels[i].id : i;
+  T[k] = tab === 1 ? UNIT_LV()[i].id : i;
   let el;
   try { const t = document.createElement('template'); t.innerHTML = safe(PAGES[tab]); el = t.content.querySelector('[data-lvpane]'); } finally { T[k] = was; }
   el.removeAttribute('data-lvpane'); el.classList.add('lv-float'); el.setAttribute('aria-hidden', 'true'); el.inert = true; el.style.width = w + 'px';
@@ -774,7 +777,7 @@ function lvDrop(tab) { const c = R.lvc && R.lvc[tab]; if (c) { Object.values(c.e
 // most one of them, so the work is done in small pieces while the phone is idle.
 function lvSide(tab, dir) { // the drawn neighbour on one side, drawing it now if needed (build = false: only if ready)
   const page = R.pages[tab], pane = page.querySelector('[data-lvpane]'), n = lvIndex(tab) + dir;
-  if (!pane || n < 0 || n >= C.levels.length) return null;
+  if (!pane || n < 0 || n >= lvList(tab).length) return null;
   const w = pane.offsetWidth, key = page._html + '|' + w; let c = (R.lvc || (R.lvc = {}))[tab];
   if (!c || c.key !== key) { lvDrop(tab); c = R.lvc[tab] = { key, els: {} }; }
   // parked well past the edge of the screen (shadows included). Measured on screen, not with offsetLeft: that counts
@@ -786,7 +789,7 @@ function lvPrep(tab, one) {
   if (R.lvEnd || !R.pages[tab].querySelector('[data-lvpane]')) return false;
   for (const dir of [1, -1]) {
     if (lvSide(tab, dir, false)) continue;
-    const n = lvIndex(tab) + dir; if (n < 0 || n >= C.levels.length) continue;
+    const n = lvIndex(tab) + dir; if (n < 0 || n >= lvList(tab).length) continue;
     lvSide(tab, dir);
     if (one) return true; // more to do next time
   }
@@ -823,7 +826,7 @@ function lvGo(tab, i, d = 0, v = 0, ready) {
   if (R.lvEnd) R.lvEnd(); // a slide still running finishes at once
   clearTimeout(R.lvBackT);
   const page = R.pages[tab], pane = page.querySelector('[data-lvpane]'), from = lvIndex(tab);
-  if (!pane || i === from || i < 0 || i >= C.levels.length) return;
+  if (!pane || i === from || i < 0 || i >= lvList(tab).length) return;
   const dir = i > from ? 1 : -1, W = pane.offsetWidth + LV_GAP;
   const peek = (ready && ready.peek) || (Math.abs(i - from) === 1 ? lvSide(tab, dir, false) : null);
   if (!peek) { // a far level (or a neighbour not drawn yet): draw it in place; it glides in from the side it lies on
@@ -895,7 +898,7 @@ function onClick(e) {
   if (home2Click(b, d)) return;
   if (feesClick(b, d)) return;
   if (d.push) return pushScreen({ s: d.push, lvl: d.lvl, w: +d.w, l: +d.l, g: d.g, date: d.date });
-  if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, C.levels.findIndex((l) => l.id === d.unitlvl)); }
+  if (d.unitlvl) { if (d.unitlvl === T.unitLvl) return; return lvGo(1, UNIT_LV().findIndex((l) => l.id === d.unitlvl)); }
   if (d.booklvl) { if (+d.booklvl === T.bookLvl) return; return lvGo(3, +d.booklvl); }
   if (d.bgshow) { const st = T.big[d.bgshow]; if (st) { st.shown = true; draw(); } return; }
   if (d.bgpick) { const [key, j] = d.bgpick.split('|'), st = T.big[key]; if (st && st.sel < 0) { st.sel = +j; draw(); } return; }
