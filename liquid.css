@@ -75,3 +75,6 @@ html .wstrip.press .ws-ind::before, html .wstrip.moving .ws-ind::before {
 .wstrip b { transition: color .2s, transform .3s cubic-bezier(.3,1.5,.5,1); }
 .wstrip.press button.sel b, .wstrip.moving button.lit b { transform: scale(1.2) !important; }
 .wstrip.moving button.sel:not(.lit) b { transform: none !important; }
+/* Every part of a sheet keeps its full height and the sheet scrolls (30 Oct: long lists were squeezed into the screen,
+   cut off, and could not be scrolled). */
+.tp-sheet .panel { grid-auto-rows: max-content; }

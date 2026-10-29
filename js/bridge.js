@@ -146,17 +146,21 @@ function sheetPayRec(s) {
     <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
 
+// A row of someone who owes: the name opens every month; a month = that month is paid; the tick = all of it is paid.
+const oweLine = (g, st, L, i) => { const ms = L.rows.filter((r) => r.charge - r.covered > 0);
+  return `<div class="pl-row"><span class="pl-n">${i + 1}</span><div class="pl-main"><button class="pl-name" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}">${esc(st.name)}</button><span class="pl-mo">${ms.map((r) => `<button class="${r.covered ? 'pt' : ''}" data-paym="${st.id}|${g.id}|${r.m}" aria-label="${esc(st.name)} paid ${ymName(r.m)}">${ymLabel(r.m)}</button>`).join('')}</span></div><span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-payall="${st.id}|${g.id}|${L.cur.m}" aria-label="${esc(st.name)} paid everything: ${dMoney(L.debt)}">${ic('Check')}</button></div>`; };
+const HOW = '<p class="tp-small pm-how">Tap a month = that month is paid. The tick = everything on the row is paid. Tap a name to see every month.</p>';
+
 /* ---------- the group's page: numbered lists, who has not paid and who paid ---------- */
 function sheetOweGrp(s) {
   const g = gById(s.g), ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1]; if (!g) return '';
   const all = g.students.map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free');
   const owe = all.filter((x) => x.L.debt > 0).sort((a, b) => b.L.rows.filter((r) => r.charge > r.covered).length - a.L.rows.filter((r) => r.charge > r.covered).length || b.L.debt - a.L.debt);
   const paid = all.filter((x) => !(x.L.debt > 0));
-  const oweRow = ({ st, L }, i) => { const ms = L.rows.filter((r) => r.charge - r.covered > 0);
-    return `<div class="pl-row"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span class="pl-mo">${ms.map((r) => `<u class="${r.covered ? 'pt' : ''}">${ymLabel(r.m)}</u>`).join('')}</span></button><span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-paym="${st.id}|${g.id}|${ms[0].m}" aria-label="${esc(st.name)} paid ${ymName(ms[0].m)}">${ic('Check')}</button></div>`; };
+  const oweRow = ({ st, L }, i) => oweLine(g, st, L, i);
   const paidRow = ({ st, L }, i) => `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button><span class="pl-done">${ic('Check')}</span></div>`;
   return `<div class="tp-sh-h"><span></span><b>${esc(g.name)} · ${mn}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    <p class="tp-small pm-how">The tick = paid for the first month shown. Tap a name to see every month.</p>
+    ${HOW}
     <div class="pl-h"><span class="d no"></span>Not paid<em>${owe.length}</em></div>${owe.length ? `<div class="pl-list">${owe.map(oweRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Everybody has paid for ${mn}.</p>`}
     <div class="pl-h"><span class="d ok"></span>Paid<em>${paid.length}</em></div>${paid.length ? `<div class="pl-list">${paid.map(paidRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Nobody yet.</p>`}`;
 }
@@ -164,9 +168,9 @@ function sheetOweGrp(s) {
 /* ---------- "Mark who paid" on Home: every group, numbered ---------- */
 function sheetPayPick(s) {
   const gs = feeGroups(), ym = ymOf(TODAY);
-  return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>
+  return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
     ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${g.students.length}</em></div><div class="pl-list">${g.students.map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
-      return `<div class="pl-row${ms.length ? '' : ' ok'}"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b>${ms.length ? `<span class="pl-mo">${ms.map((r) => `<u class="${r.covered ? 'pt' : ''}">${ymLabel(r.m)}</u>`).join('')}</span>` : '<span>Paid</span>'}</button>${ms.length ? `<span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-paym="${st.id}|${g.id}|${ms[0].m}" aria-label="${esc(st.name)} paid ${ymName(ms[0].m)}">${ic('Check')}</button>` : `<span class="pl-done">${ic('Check')}</span>`}</div>`; }).join('')}</div>`).join('')}`;
+      return ms.length ? oweLine(g, st, L, i) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button><span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
 }
 
 /* ---------- taps ---------- */
@@ -180,6 +184,13 @@ function sheetPayPick(s) {
       if (paid || !charge) { if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } else { T.sheet = { s: 'payrec', g: gid, sid, open: m }; draw(); } return true; }
       const p = addPay(sid, m, charge - Math.min(charge, ledger(g, st, m).rows.find((r) => r.m === m).covered)); save(); draw();
       payToast(`${st.name} · ${ymName(m)} · ${dMoney(p.amount)} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => x !== p); tbSend('del', p); });
+      return true;
+    }
+    if (d.payall) { // the tick: everything owed until this month is paid, each month with its own amount
+      const [sid, gid, upTo] = d.payall.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const rows = ledger(g, st, upTo).rows.filter((r) => r.charge - r.covered > 0);
+      const made = rows.map((r) => addPay(sid, r.m, r.charge - r.covered)); save(); draw();
+      payToast(`${st.name} · ${rows.map((r) => ymLabel(r.m)).join(' + ')} · ${dMoney(made.reduce((q, p) => q + p.amount, 0))} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => !made.includes(x)); made.forEach((p) => tbSend('del', p)); });
       return true;
     }
     if (d.pmsave) {

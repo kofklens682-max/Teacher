@@ -27,7 +27,7 @@
 .pl-h { display: flex; align-items: center; gap: 8px; margin: 6px 4px -6px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--text2, #6B7088); }
 .pl-h .d { width: 9px; height: 9px; border-radius: 50%; background: #C7CAD6; } .pl-h .d.no { background: #F04438; } .pl-h .d.ok { background: #12B76A; }
 .pl-h em { margin-left: auto; font-style: normal; }
-.pl-list { background: var(--card, #fff); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+.pl-list { background: var(--card, #fff); border-radius: 18px; box-shadow: var(--shadow); overflow: clip; min-height: min-content; } /* clip, not hidden: "hidden" let the sheet squeeze the list and cut off the last names */
 .pl-row { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 0; min-height: 56px; }
 .pl-row + .pl-row { box-shadow: inset 44px .5px 0 -44px transparent, 0 -.5px 0 rgba(14,19,37,.1); }
 .pl-n { width: 34px; flex: none; text-align: right; font-size: 13px; font-weight: 700; color: var(--text3, #A3A7B7); font-variant-numeric: tabular-nums; }
@@ -44,3 +44,9 @@
 /* the message with Undo */
 .tp-toast { display: flex; align-items: center; gap: 10px; } .tp-toast > span { flex: 1; }
 .tp-undo { background: none; border: 0; color: #9DB0FF; font: inherit; font-weight: 800; padding: 2px 4px; }
+/* the name and the month buttons of a row (30 Oct: a month = that month paid, the tick = all of it) */
+.pl-main { display: grid; gap: 5px; }
+.pl-name { text-align: left; background: none; border: 0; padding: 0; font: inherit; font-size: 15.5px; font-weight: 700; color: inherit; }
+.pl-mo button { font: inherit; font-size: 12.5px; font-weight: 800; border-radius: 9px; padding: 5px 10px; border: 1.5px solid rgba(192,40,28,.35); background: #FDECEA; color: #C0281C; transition: transform .15s; }
+.pl-mo button.pt { border-color: rgba(178,94,0,.35); background: #FFF4E2; color: #B25E00; }
+.pl-mo button:active { transform: scale(.92); background: #12B76A; border-color: #12B76A; color: #fff; }
