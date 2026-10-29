@@ -117,29 +117,36 @@ function monthsOf(g, st) { // from the first month to two months ahead, and furt
   return out;
 }
 const ymLabel = (m) => SHORT(m) + (m.slice(0, 4) !== ymOf(TODAY).slice(0, 4) ? ' ' + m.slice(2, 4) : '');
+// A month's discount, shown on the month (30 Oct 2026: a hidden discount made October "No charge", and its payment went to November)
+const discOf = (g, st, m) => ({ grp: S.pay.disc[g.id + '|' + m] || 0, own: S.pay.sdisc[st.id + '|' + m] || 0 });
+const baseFee = (g, st) => S.pay.stuFee[st.id] ?? (planOf(g) || {}).fee ?? 0;
 function monthGrid(g, st, open) {
   const L = ledger(g, st, monthsOf(g, st).slice(-1)[0]), cur = ymOf(TODAY);
   return `<div class="pm-grid">${L.rows.map((r) => {
     const left = r.charge - r.covered, fut = r.m > cur;
     const cls = r.charge === 0 && !r.covered ? 'free' : left <= 0 ? 'ok' : r.covered > 0 ? 'part' : fut ? 'fut' : 'owe';
-    const sub = r.charge === 0 && !r.covered ? 'No charge' : left <= 0 ? 'Paid' : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
-    return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
+    const D = isSingle(g) ? { grp: 0, own: 0 } : discOf(g, st, r.m), dsc = D.grp + D.own;
+    const sub = r.charge === 0 && !r.covered ? (dsc ? 'Free: discount' : 'No charge') : left <= 0 ? 'Paid' : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
+    return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${dsc ? `<small>−${dMoney(dsc)} discount</small>` : ''}${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
   }).join('')}</div>`;
 }
-function editPanel(g, st, m) { // a paid or part-paid month: change it
-  const charge = chargeOf(g, st, m), paid = paidIn(st.id, m), ps = S.pay.pays.filter((p) => p.sid === st.id && p.m === m);
-  return `<div class="pm-edit"><b>${ymName(m)}</b><p>${paid ? `${dMoney(paid)} of ${dMoney(charge)} so'm paid${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : `${dMoney(charge)} so'm to pay`}</p>
-    <label class="tp-f"><span>How much was paid for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || charge || ''}" autocomplete="off"></label>
+function editPanel(g, st, m) { // one month: what it costs, its discount, what was paid
+  const charge = chargeOf(g, st, m), paid = paidIn(st.id, m), ps = S.pay.pays.filter((p) => p.sid === st.id && p.m === m), single = isSingle(g);
+  const D = single ? { grp: 0, own: 0 } : discOf(g, st, m), fee = single ? charge : baseFee(g, st);
+  const cost = single ? `${dMoney(charge)} so'm for the lessons` : `Fee ${dMoney(fee)}${D.grp ? ` − ${dMoney(D.grp)} group discount` : ''}${D.own ? ` − ${dMoney(D.own)} discount` : ''} = <b>${dMoney(charge)} so'm</b>`;
+  return `<div class="pm-edit"><b>${ymName(m)}</b><p>${cost}</p><p>${paid ? `Paid: ${dMoney(paid)} so'm${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : 'Not paid yet'}</p>
+    <label class="tp-f"><span>How much was paid for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || charge || fee || ''}" autocomplete="off"></label>
+    ${single ? '' : `<label class="tp-f"><span>Discount for ${esc(st.name.split(' ')[0])} in ${ymName(m)} only (so'm, empty = none)</span><input id="f-pmdisc" inputmode="numeric" value="${D.own || ''}" placeholder="0" autocomplete="off"></label>${D.grp ? `<p class="tp-small" style="text-align:left">The whole group has −${dMoney(D.grp)} in ${ymName(m)}. <button class="tp-pill" data-sheet="gdisc" data-g="${g.id}">Change the group discount</button></p>` : ''}`}
     <div class="pm-btns"><button class="tp-cta" data-pmsave="${st.id}|${g.id}|${m}">Save</button>${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div></div>`;
 }
 function sheetPayRec(s) {
   const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
-  const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id];
+  const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id], fee = baseFee(g, st);
   const owe = L.rows.filter((r) => r.charge - r.covered > 0);
   const firsts = []; for (let m = S.pay.start; m <= ymAdd(ym, 3); m = ymAdd(m, 1)) firsts.push(m);
   return `<div class="tp-sh-h"><span></span><b>${esc(st.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${dMoney(L.debt > 0 ? L.debt : L.credit)} so'm</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(chargeOf(g, st, ym)) + ' a month'}</em></div>
-    <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it (part payment or not paid). Budget asks you to add the money.</p>
+    <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(fee) + " so'm a month"}</em></div>
+    <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it: part payment, a discount, or not paid. Budget asks you to add the money.</p>
     ${monthGrid(g, st, s.open)}
     ${s.open ? editPanel(g, st, s.open) : ''}
     ${single ? '' : `<div class="pm-fee"><label class="tp-f"><span>${esc(st.name.split(' ')[0])}'s monthly fee (so'm)${own ? '' : ' · the group fee'}</span><input id="f-ownfee" inputmode="numeric" value="${dMoney(own ?? (planOf(g) || {}).fee ?? 0)}" autocomplete="off"></label><button class="tp-pill" data-ownfee="${st.id}|${g.id}">Save fee</button></div>`}
@@ -195,7 +202,8 @@ function sheetPayPick(s) {
     }
     if (d.pmsave) {
       const [sid, gid, m] = d.pmsave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), v = numVal('f-pmamt'); if (!st) return true;
-      const old = delPays(sid, m); if (v > 0) addPay(sid, m, v);
+      if (document.getElementById('f-pmdisc')) { const k = sid + '|' + m, dv = numVal('f-pmdisc'); if (dv) S.pay.sdisc[k] = dv; else delete S.pay.sdisc[k]; } // the discount first: it changes what the month costs
+      if (v !== paidIn(sid, m)) { delPays(sid, m); if (v > 0) addPay(sid, m, v); } // unchanged amount: Budget is not asked again
       if (T.sheet) T.sheet.open = null; save(); draw();
       toast(v > 0 ? `${st.name} · ${ymName(m)} · ${dMoney(v)} so'm${v < chargeOf(g, st, m) ? ' (part)' : ''}` : `${st.name} · ${ymName(m)} · not paid`);
       return true;
