@@ -29,6 +29,7 @@ function normalize(d) {
   const first = /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start; // 27 Oct 2026: fees count from September (once; after that the saved start is kept)
   out.pay = { start: P.sep26 ? first : (first > '2026-09' ? '2026-09' : first), sep26: 1, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
   for (const k of ['plan', 'stuFee', 'disc', 'sdisc', 'xpaid', 'from']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
+  out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026) is done: never again
   out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
   out.rev = +out.rev || 0;
   return out;

@@ -120,7 +120,7 @@ function pgHomeNew() {
   const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, cfg = homeCfg();
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
-  const quick = `<div class="h2-quick"><button data-bpopen="|">${ic('Wallet')}Record a payment</button><button data-sheet="extra">${ic('Package')}Extra charge</button><button data-sheet="homecfg">${ic('Sliders')}Arrange Home</button></div>`;
+  const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark who paid</button><button data-sheet="extra">${ic('Package')}Extra charge</button><button data-sheet="homecfg">${ic('Sliders')}Arrange Home</button></div>`;
   return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => SECS[id]()).join('');
 }
 function sheetHomeCfg() {

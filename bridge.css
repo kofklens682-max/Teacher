@@ -1,28 +1,46 @@
-/* Payment sheet of the bridge draft: month by month + payments */
-.bp-ms, .bp-hs { background: var(--card, #fff); border-radius: 18px; padding: 2px 14px; box-shadow: var(--shadow, 0 1px 2px rgba(14,19,37,.06)); }
-.bp-m { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: .5px solid rgba(14,19,37,.08); font-size: 14.5px; background: none; color: var(--text, #0E1325); }
-.bp-m:last-child, .bp-h:last-child { border-bottom: 0; }
-.bp-m .d { width: 10px; height: 10px; border-radius: 50%; background: #C7CAD6; flex: none; }
-.bp-m.bp-ok .d { background: #12B76A; } .bp-m.bp-part .d { background: #F79009; } .bp-m.bp-owe .d { background: #F04438; }
-.bp-m b { font-weight: 700; flex: 1; }
-.bp-m .t { color: var(--text2, #6B7088); font-size: 13px; }
-.bp-m em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 84px; text-align: right; font-size: 13.5px; color: var(--text2, #6B7088); }
-.bp-m.bp-owe em, .bp-m.bp-part em { color: #E5484D; }
-.bp-m.bp-ok em { color: #0F9D5E; }
-.bp-m.bp-fut b { font-weight: 600; color: var(--text2, #6B7088); }
-.bp-m.sel b::after { content: ' ·'; opacity: .4; }
-.bp-h { display: flex; align-items: baseline; gap: 10px; padding: 11px 0; border-bottom: .5px solid rgba(14,19,37,.08); font-size: 13.5px; }
-.bp-h > span:first-child { color: var(--text2, #6B7088); min-width: 50px; }
-.bp-h .m { flex: 1; font-size: 12.5px; color: var(--text2, #6B7088); }
-.bp-h .m u { text-decoration: none; background: rgba(247,144,9,.16); color: #B25E00; border-radius: 6px; padding: 1px 6px; font-weight: 700; }
-.bp-h b { font-variant-numeric: tabular-nums; }
-/* "Needs attention" on Home: title on top, text under it, full width */
-.tp-card2.attn { background: #FFF6E0; gap: 8px; }
-.tp-card2.attn .h { color: #B54708; }
-.tp-card2.attn .h svg { color: #B54708; }
-.tp-card2.attn p { line-height: 1.45; }
-.tp-card2.attn .tp-pill { justify-self: start; margin-top: 2px; }
-/* a not-paid row: the row opens the months, the tick opens Budget */
-.h2-ow > .h2-owm { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; margin: -12px 0; padding: 12px 0; text-align: left; color: inherit; background: none; border: 0; font: inherit; }
-.h2-ow > button.ok { border: 0; padding: 0; cursor: pointer; }
-.h2-ow > button.ok:active { background: rgba(18,183,106,.28); }
+/* Payments, marked in Teacher (30 Oct 2026). iPhone-style: white grouped lists, thin lines, numbers on the left. */
+/* the student's page */
+.pm-top { border-radius: 20px; padding: 14px 16px; display: grid; gap: 2px; background: var(--card, #fff); box-shadow: var(--shadow); }
+.pm-top span { font-size: 12.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text2, #6B7088); }
+.pm-top b { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.pm-top em { font-style: normal; font-size: 13.5px; color: var(--text2, #6B7088); }
+.pm-top.owe b { color: #D92D20; } .pm-top.ok b { color: #0F9D5E; }
+.pm-how { text-align: left !important; margin: -4px 2px 0 !important; }
+.pm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pm { position: relative; display: grid; gap: 2px; text-align: left; padding: 11px 12px; border-radius: 16px; background: var(--card, #fff); box-shadow: var(--shadow); border: 0; font: inherit; color: inherit; transition: transform .15s; }
+.pm:active { transform: scale(.96); }
+.pm b { font-size: 15.5px; font-weight: 800; }
+.pm span { font-size: 12px; color: var(--text2, #6B7088); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm i { position: absolute; right: 9px; top: 9px; width: 20px; height: 20px; border-radius: 50%; background: #12B76A; color: #fff; display: grid; place-items: center; }
+.pm i svg { width: 13px; height: 13px; stroke-width: 3; }
+.pm.ok { background: #E9F8F0; } .pm.ok span { color: #0F8A52; }
+.pm.part { background: #FFF4E2; } .pm.part span { color: #B25E00; }
+.pm.owe { background: #FDECEA; } .pm.owe span { color: #C0281C; }
+.pm.fut span, .pm.free span { color: var(--text3, #A3A7B7); }
+.pm.sel { outline: 2.5px solid #3D5AFE; outline-offset: 1px; }
+.pm-edit { background: var(--card, #fff); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); display: grid; gap: 8px; }
+.pm-edit > b { font-size: 16px; } .pm-edit > p { margin: 0; font-size: 13.5px; color: var(--text2, #6B7088); }
+.pm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .pm-btns .tp-cta { width: 100%; margin: 0; }
+.pm-fee { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; } .pm-fee .tp-pill { margin-bottom: 2px; }
+.pm-from select { width: 100%; font: inherit; font-size: 15px; padding: 12px 14px; border-radius: 14px; border: 0; background: var(--card, #fff); box-shadow: var(--shadow); color: inherit; }
+/* numbered lists: who has not paid, who paid */
+.pl-h { display: flex; align-items: center; gap: 8px; margin: 6px 4px -6px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--text2, #6B7088); }
+.pl-h .d { width: 9px; height: 9px; border-radius: 50%; background: #C7CAD6; } .pl-h .d.no { background: #F04438; } .pl-h .d.ok { background: #12B76A; }
+.pl-h em { margin-left: auto; font-style: normal; }
+.pl-list { background: var(--card, #fff); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+.pl-row { display: flex; align-items: center; gap: 10px; padding: 0 12px 0 0; min-height: 56px; }
+.pl-row + .pl-row { box-shadow: inset 44px .5px 0 -44px transparent, 0 -.5px 0 rgba(14,19,37,.1); }
+.pl-n { width: 34px; flex: none; text-align: right; font-size: 13px; font-weight: 700; color: var(--text3, #A3A7B7); font-variant-numeric: tabular-nums; }
+.pl-main { flex: 1; min-width: 0; display: grid; gap: 3px; text-align: left; padding: 9px 0; background: none; border: 0; font: inherit; color: inherit; }
+.pl-main b { font-size: 15.5px; font-weight: 700; } .pl-main > span { font-size: 12.5px; color: var(--text2, #6B7088); }
+.pl-mo { display: flex; flex-wrap: wrap; gap: 4px; }
+.pl-mo u { text-decoration: none; font-size: 11.5px; font-weight: 800; border-radius: 7px; padding: 2px 7px; background: #FDECEA; color: #C0281C; }
+.pl-mo u.pt { background: #FFF4E2; color: #B25E00; }
+.pl-amt { font-size: 14.5px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pl-tick { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #C9CDDB; background: none; color: #A3A7B7; display: grid; place-items: center; padding: 0; transition: transform .2s, background .2s; }
+.pl-tick svg { width: 18px; height: 18px; } .pl-tick:active { transform: scale(.88); background: #12B76A; border-color: #12B76A; color: #fff; }
+.pl-done { flex: none; width: 36px; height: 36px; border-radius: 50%; background: #12B76A; color: #fff; display: grid; place-items: center; } .pl-done svg { width: 18px; height: 18px; }
+.pl-row.ok .pl-main b { color: var(--text2, #6B7088); }
+/* the message with Undo */
+.tp-toast { display: flex; align-items: center; gap: 10px; } .tp-toast > span { flex: 1; }
+.tp-undo { background: none; border: 0; color: #9DB0FF; font: inherit; font-weight: 800; padding: 2px 4px; }

@@ -1,20 +1,20 @@
 'use strict';
-/* THE BRIDGE (draft, 29 Oct 2026). One owner for every fact; the other app only reads it.
-     Teacher owns: groups, students, fees, discounts          -> publishes localStorage "teacher-roster"   (Budget reads it)
-     Budget owns:  payments (amount, date, cash/card, months)  -> publishes localStorage "budget-payments" (Teacher reads it)
-   Payments are NEVER typed in the Teacher app any more. "Record a payment" opens Budget with the student already chosen.
-   A payment tells exactly which months it pays for (alloc: [{m: '2026-09', amount}]), so the Teacher app no longer guesses.
-   Payments saved in the Teacher app before this version ("old") still count; they are shown with an "old" tag.
-   Loaded after home2.js: it replaces ledger() and the payment sheet. */
+/* PAYMENTS (user, 29 Oct 2026, second version). The user found "Budget owns the payments" confusing, so:
+     Teacher owns groups, students, fees AND who paid. You mark payments here, month by month: tap a month = paid in full,
+     tap a paid month = part payment or not paid. Nothing is guessed: every payment says which month it is for (p.m).
+     Budget only gets the money: each payment you mark waits in localStorage "teacher-to-budget"; when you open Budget it
+     pops up "Nikolay paid 200 000 for October" with Add to my balance / Already counted. Removing a payment here asks
+     Budget to take it out again (or simply drops it if Budget has not added it yet).
+   Teacher still publishes "teacher-roster" (groups, students, monthly charges) so Budget knows the names.
+   Fresh start (user's choice): once, the old payment marks are cleared (an automatic copy is kept first); groups,
+   students, fees and discounts stay. Loaded after home2.js: it replaces ledger() and the payment sheets. */
 
-const RS_KEY = 'teacher-roster', BP_KEY = 'budget-payments', OPEN_KEY = 'teacher-open-budget';
-const BUDGET_URL = (() => { const m = location.pathname.match(/^(.*\/)Teacher(\d*)\//); return m ? m[1] + 'Budget' + m[2] + '/' : '../Budget/'; })();
-const FUTURE = 24; // months ahead you can look at (was 6)
+const RS_KEY = 'teacher-roster', TB_KEY = 'teacher-to-budget';
+const FUTURE = 24; // months ahead you can look at
 
 /* ---------- the first month a student owes ----------
-   Everybody owes from the month the app started counting fees (September 2026), so September is always there to look at.
-   The day a group or student was typed into the app no longer matters (that hid September for groups added in October).
-   Only a student added after 1 Nov 2026 starts in the month they joined. You can change it for anyone: "Pays from" on the student. */
+   Everybody owes from the month the app started counting fees (September 2026). Only a student added after 1 Nov 2026
+   starts in the month they joined. You can change it on the student's page ("Starts paying from"). */
 const NEW_RULE = Date.parse('2026-11-01');
 function firstMonth(g, s) {
   const f = S.pay.from && S.pay.from[s.id]; if (/^\d{4}-\d\d$/.test(f || '')) return f;
@@ -22,49 +22,16 @@ function firstMonth(g, s) {
   return [S.pay.start, joined].sort().pop();
 }
 
-/* ---------- reading Budget's payments ----------
-   Read and checked once, then kept until Budget writes a new list (one page draw used to read it 378 times: that was the lag). */
-let bpRaw = null, bpList = [], bpBy = new Map(), omRaw = null, omKey = null, omMap = new Map();
-function bpLoad() {
-  let raw = null; try { raw = localStorage.getItem(BP_KEY); } catch (e) { /* no storage */ }
-  if (raw === bpRaw) return;
-  bpRaw = raw; bpList = []; bpBy = new Map();
-  try {
-    const d = JSON.parse(raw || 'null');
-    if (d && Array.isArray(d.pays)) bpList = d.pays.filter((p) => p && p.sid && +p.amount > 0 && /^\d{4}-\d\d-\d\d$/.test(p.date || ''));
-  } catch (e) { /* a broken list counts as empty; Budget still has everything */ }
-  bpList.forEach((p) => { if (!bpBy.has(p.sid)) bpBy.set(p.sid, []); bpBy.get(p.sid).push(p); });
+/* ---------- the payments of one student ---------- */
+const YM = /^\d{4}-\d\d$/;
+function payRows(sid) {
+  return S.pay.pays.filter((p) => p.sid === sid).map((p) => ({ ...p, alloc: YM.test(p.m || '') ? [{ m: p.m, amount: +p.amount }] : null }))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
 }
-function bpAll() { bpLoad(); return bpList; }
-const bpOf = (sid) => { bpLoad(); return bpBy.get(sid) || []; };
-// An old Teacher payment that was also added in Budget (through the old "Add income" popup) must not count twice:
-// it is matched to a Budget payment of the same student with the same amount, made within 7 days. Each Budget payment absorbs one.
-function oldMoved(sid) {
-  bpLoad();
-  const key = JSON.stringify(S.pay.pays); // the answer is kept until either list changes
-  if (bpRaw !== omRaw || key !== omKey) { omRaw = bpRaw; omKey = key; omMap = new Map(); }
-  if (!omMap.has(sid)) omMap.set(sid, findMoved(sid));
-  return omMap.get(sid);
-}
-function findMoved(sid) {
-  const bp = bpOf(sid), used = new Set(), moved = new Set();
-  const days = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) / 864e5;
-  S.pay.pays.filter((p) => p.sid === sid).sort((a, b) => a.date.localeCompare(b.date)).forEach((o) => {
-    const m = bp.filter((p) => !used.has(p.id) && +p.amount === +o.amount && days(p.date, o.date) <= 7).sort((a, b) => days(a.date, o.date) - days(b.date, o.date))[0];
-    if (m) { used.add(m.id); moved.add(o.id); }
-  });
-  return moved;
-}
-const oldLeft = () => S.pay.pays.filter((p) => !oldMoved(p.sid).has(p.id));
-function payRows(sid) { // every payment of one student, from both places, oldest first
-  const out = [], moved = oldMoved(sid);
-  bpOf(sid).forEach((p) => out.push({ id: p.id, sid, date: p.date, amount: +p.amount, by: p.by || '', alloc: Array.isArray(p.alloc) && p.alloc.length ? p.alloc.map((a) => ({ m: a.m, amount: +a.amount })) : [{ m: p.date.slice(0, 7), amount: +p.amount }], src: 'budget', batch: p.batch || '', acc: p.acc || '' }));
-  S.pay.pays.forEach((p) => { if (p.sid === sid && !moved.has(p.id)) out.push({ ...p, src: 'old', alloc: null }); });
-  return out.sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
-}
+const paidIn = (sid, m) => S.pay.pays.filter((p) => p.sid === sid && p.m === m).reduce((a, p) => a + +p.amount, 0);
 
-/* ---------- the rule: what covers what ---------- */
-// A Budget payment says which months it pays for. An old Teacher payment has no months: it goes to the oldest unpaid month first.
+/* ---------- the rule: what covers what ----------
+   A payment pays the month it was marked for. More than that month's fee is credit (it is used for the oldest unpaid month). */
 function ledger(g, s, ym) {
   const all = payRows(s.id), end = ymAdd(ym, 1) + '-01', first = firstMonth(g, s);
   const cov = {}; let money = 0, future = 0;
@@ -75,10 +42,10 @@ function ledger(g, s, ym) {
   const rows = [];
   for (let m = first; m <= ym; m = ymAdd(m, 1)) {
     const charge = chargeOf(g, s, m), have = cov[m] || 0;
-    let covered = Math.min(have, charge); money += have - covered; // more than the fee for that month = credit
-    const use = Math.min(money, charge - covered); money -= use; covered += use;
+    let covered = Math.min(have, charge); money += have - covered;
     rows.push({ m, charge, covered });
   }
+  rows.forEach((r) => { const use = Math.min(money, r.charge - r.covered); money -= use; r.covered += use; }); // credit pays the oldest month first
   const c = rows.length ? rows[rows.length - 1] : { m: ym, charge: 0, covered: 0 };
   const debt = rows.reduce((a, r) => a + r.charge - r.covered, 0), older = debt - (c.charge - c.covered);
   const credit = money + future, nextFee = isSingle(g) ? c.charge : chargeOf(g, s, ymAdd(ym, 1));
@@ -92,7 +59,7 @@ function ledger(g, s, ym) {
   return { rows, cur: c, debt, older, credit, st, last, mine };
 }
 
-/* ---------- publishing the roster for Budget ---------- */
+/* ---------- Teacher -> Budget ---------- */
 function publishRoster() {
   try {
     const to = ymAdd(ymOf(TODAY), FUTURE), groups = [], charges = {};
@@ -106,85 +73,138 @@ function publishRoster() {
     if (json !== localStorage.getItem(RS_KEY)) localStorage.setItem(RS_KEY, json);
   } catch (e) { /* the app still works; Budget keeps the last list */ }
 }
-{ const _save = save; save = function () { _save(); publishRoster(); }; }
-{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); publishRoster(); } }, 500); } // once, when the app has opened
-window.addEventListener('storage', (e) => { if (e.key === BP_KEY && typeof draw === 'function') draw(); }); // Budget saved a payment: redraw
-document.addEventListener('visibilitychange', () => { if (!document.hidden && typeof draw === 'function') { publishRoster(); draw(); } });
+// The list Budget pops up: { op: 'add' | 'del', id, person, group, gid, sid, m, amount, date }
+const tbRead = () => { try { const l = JSON.parse(localStorage.getItem(TB_KEY) || '[]'); return Array.isArray(l) ? l.filter((x) => x && x.op) : []; } catch (e) { return []; } };
+function tbSend(op, p) {
+  const g = S.groups.find((x) => x.students.some((t) => t.id === p.sid)), st = g && g.students.find((t) => t.id === p.sid);
+  let l = tbRead();
+  if (op === 'del' && l.some((x) => x.op === 'add' && x.id === p.id)) l = l.filter((x) => x.id !== p.id); // Budget never saw it: just drop it
+  else l.push({ op, id: p.id, person: st ? st.name : '', group: g ? g.name : '', gid: g ? g.id : '', sid: p.sid, m: p.m, amount: +p.amount, date: p.date, at: Date.now() });
+  try { if (l.length) localStorage.setItem(TB_KEY, JSON.stringify(l)); else localStorage.removeItem(TB_KEY); } catch (e) { toast('Could not tell Budget. Add it there by hand.'); }
+}
+function addPay(sid, m, amount) { const p = { id: uid(), sid, m, amount: Math.round(amount), date: iso(TODAY) }; S.pay.pays.push(p); tbSend('add', p); return p; }
+function delPays(sid, m) { const gone = S.pay.pays.filter((p) => p.sid === sid && p.m === m); S.pay.pays = S.pay.pays.filter((p) => !gone.includes(p)); gone.forEach((p) => tbSend('del', p)); return gone; }
 
-/* ---------- the payment sheet: a clear picture, no typing ---------- */
-const owedNow = (L) => L.debt;
-function monthLines(g, st, ym) {
-  // from the first month to next month, and further only as far as money has been paid ahead
-  const cur = ymOf(TODAY); let top = ymAdd(cur, 1); if (ym > top) top = ym;
-  bpOf(st.id).forEach((p) => (p.alloc || []).forEach((a) => { if (a.m > top) top = a.m; }));
-  const L = ledger(g, st, top), single = isSingle(g);
-  return L.rows.filter((r) => single ? r.charge || r.covered : true).map((r) => {
-    const left = r.charge - r.covered, future = r.m > cur;
-    const cls = r.charge === 0 ? 'free' : left <= 0 ? 'ok' : r.covered > 0 ? 'part' : future ? 'fut' : 'owe';
-    const txt = r.charge === 0 ? 'No charge' : left <= 0 ? (future ? 'Paid ahead' : 'Paid') : r.covered > 0 ? `${dMoney(r.covered)} of ${dMoney(r.charge)}` : (future ? 'Not due yet' : 'Not paid');
-    return `<div class="bp-m bp-${cls}"><span class="d"></span><b>${SHORT(r.m)} ${r.m.slice(0, 4)}</b><span class="t">${txt}</span><em>${r.charge ? (left > 0 ? (future ? dMoney(r.charge) : dMoney(left) + ' left') : dMoney(r.charge)) : ''}</em></div>`;
-  }).join('');
+{ const _save = save; save = function () { _save(); publishRoster(); }; }
+{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); freshStart(); publishRoster(); } }, 500); } // once, when the app has opened
+document.addEventListener('visibilitychange', () => { if (!document.hidden) publishRoster(); });
+
+// The fresh start the user asked for (30 Oct 2026): the payment marks made with the old ways are cleared once, after a copy.
+async function freshStart() {
+  if (S.pay.fresh1) return;
+  const n = S.pay.pays.length;
+  if (n) { try { await makeCopy('before', 'the fresh start of payments'); } catch (e) { /* the daily copy and the second copy still exist */ } }
+  S.pay.pays = []; S.pay.fresh1 = Date.now();
+  try { localStorage.removeItem(TB_KEY); localStorage.removeItem('budget-payments'); } catch (e) { /* nothing waiting */ }
+  save(); if (typeof draw === 'function') draw();
+  if (n) toast('Fresh start: mark who paid again. A copy of the old marks is kept in Automatic copies.');
 }
-function fromChips(st, ym) {
-  const g = S.groups.find((x) => x.students.some((t) => t.id === st.id)), cur = firstMonth(g, st), out = [];
-  for (let m = S.pay.start; m <= ymAdd(ymOf(TODAY), 3); m = ymAdd(m, 1)) out.push(`<button class="${m === cur ? 'on' : ''}" data-payfrom="${st.id}|${m}">${SHORT(m)}${m.slice(0, 4) !== ymOf(TODAY).slice(0, 4) ? ' ' + m.slice(2, 4) : ''}</button>`);
-  return out.join('');
+
+/* ---------- a small "Undo" next to the message ---------- */
+let undoFn = null, undoT = 0;
+function payToast(msg, fn) {
+  toast(msg); undoFn = fn;
+  const el = root && root.querySelector('.tp-toast'); if (!el) return;
+  el.innerHTML = `<span>${esc(msg)}</span><button class="tp-undo" data-payundo>Undo</button>`;
+  clearTimeout(undoT); undoT = setTimeout(() => { undoFn = null; }, 4000);
 }
-function payHistory(L) {
-  if (!L.mine.length) return '<p class="tp-small" style="text-align:left">No payments yet.</p>';
-  return L.mine.slice().reverse().slice(0, 12).map((p) => {
-    const months = p.alloc ? p.alloc.map((a) => SHORT(a.m) + (p.alloc.length > 1 ? ' ' + dMoney(a.amount) : '')).join(' · ') : 'oldest month first';
-    return `<div class="bp-h"><span>${dDate(p.date)}</span><span class="m">${months}${p.by ? ' · by ' + esc(String(p.by).toLowerCase()) : ''}${p.batch ? ' · with sibling' : ''}${p.src === 'old' ? ' · <u>old</u>' : ''}</span><b>${dMoney(p.amount)}</b></div>`;
-  }).join('');
+
+/* ---------- the student's page: the months, tap to mark ---------- */
+function monthsOf(g, st) { // from the first month to two months ahead, and further if something was paid ahead
+  const cur = ymOf(TODAY); let top = ymAdd(cur, 2);
+  S.pay.pays.forEach((p) => { if (p.sid === st.id && YM.test(p.m || '') && p.m > top) top = p.m; });
+  const out = []; for (let m = firstMonth(g, st); m <= top; m = ymAdd(m, 1)) out.push(m);
+  return out;
+}
+const ymLabel = (m) => SHORT(m) + (m.slice(0, 4) !== ymOf(TODAY).slice(0, 4) ? ' ' + m.slice(2, 4) : '');
+function monthGrid(g, st, open) {
+  const L = ledger(g, st, monthsOf(g, st).slice(-1)[0]), cur = ymOf(TODAY);
+  return `<div class="pm-grid">${L.rows.map((r) => {
+    const left = r.charge - r.covered, fut = r.m > cur;
+    const cls = r.charge === 0 && !r.covered ? 'free' : left <= 0 ? 'ok' : r.covered > 0 ? 'part' : fut ? 'fut' : 'owe';
+    const sub = r.charge === 0 && !r.covered ? 'No charge' : left <= 0 ? 'Paid' : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
+    return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
+  }).join('')}</div>`;
+}
+function editPanel(g, st, m) { // a paid or part-paid month: change it
+  const charge = chargeOf(g, st, m), paid = paidIn(st.id, m), ps = S.pay.pays.filter((p) => p.sid === st.id && p.m === m);
+  return `<div class="pm-edit"><b>${ymName(m)}</b><p>${paid ? `${dMoney(paid)} of ${dMoney(charge)} so'm paid${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : `${dMoney(charge)} so'm to pay`}</p>
+    <label class="tp-f"><span>How much was paid for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || charge || ''}" autocomplete="off"></label>
+    <div class="pm-btns"><button class="tp-cta" data-pmsave="${st.id}|${g.id}|${m}">Save</button>${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div></div>`;
 }
 function sheetPayRec(s) {
   const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
-  const ym = payState().ym, L = ledger(g, st, ym), c = L.cur, sd = S.pay.sdisc[st.id + '|' + ym] || 0, gd = S.pay.disc[g.id + '|' + ym] || 0;
-  const single = isSingle(g), own = S.pay.stuFee[st.id];
-  const left = L.debt > 0 ? L.debt : 0;
+  const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id];
+  const owe = L.rows.filter((r) => r.charge - r.covered > 0);
+  const firsts = []; for (let m = S.pay.start; m <= ymAdd(ym, 3); m = ymAdd(m, 1)) firsts.push(m);
   return `<div class="tp-sh-h"><span></span><b>${esc(st.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    <div class="dr-sum small"><div class="dr-s3"><div><span>${single ? lessonsCame(g, st, ym) + ' lessons' : 'Fee'} · ${SHORT(ym)}</span><b>${dMoney(c.charge)}</b></div><div><span>Paid</span><b>${dMoney(c.covered)}</b></div><div><span>${left ? 'Owes' : 'Credit'}</span><b>${dMoney(left || L.credit)}</b></div></div>
-    ${own && !single ? `<div class="dr-s4">${esc(st.name)} has their own fee: ${dMoney(own)} a month</div>` : ''}${gd || sd ? `<div class="dr-s4">Discount in ${SHORT(ym)}: −${dMoney(gd + sd)}${gd ? ' (group)' : ''}</div>` : ''}</div>
-    <button class="tp-cta" data-bpopen="${st.id}|${g.id}" style="width:100%;margin:12px 0 4px">${ic('Wallet')}Record a payment in Budget</button>
-    <p class="tp-small" style="margin:0 0 6px">Payments are typed in Budget only, so the money is counted once. ${st.name} is already chosen there.</p>
-    <div class="tp-sec"><h4>Month by month</h4></div><div class="bp-ms">${monthLines(g, st, ym)}</div>
-    <div class="tp-f" style="margin-top:12px"><span>Pays from (the first month ${esc(st.name.split(' ')[0])} owes)</span><div class="tp-chips2 dr-flt">${fromChips(st, ym)}</div></div>
-    <div class="tp-sec"><h4>Payments</h4></div><div class="bp-hs">${payHistory(L)}</div>
-    ${L.mine.some((p) => p.src === 'old') ? `<p class="tp-small" style="text-align:left">"Old" = saved in the Teacher app before Budget took over. They still count. To fix one, remove it here and add it in Budget.</p>${L.mine.filter((p) => p.src === 'old').map((p) => `<div class="dr-hist"><span>${dDate(p.date)} · old</span><b>${dMoney(p.amount)}</b><button class="dr-del${s.del === p.id ? ' sure' : ''}" data-paydel="${p.id}" aria-label="Remove this old payment">${s.del === p.id ? 'Tap again to remove' : ic('X')}</button></div>`).join('')}` : ''}
-    ${single ? '' : `<div class="tp-sec"><h4>Discount for ${SHORT(ym)}</h4></div><label class="tp-f"><span>This student, this month only (so'm)</span><input id="f-paydisc" inputmode="numeric" value="${sd || ''}" placeholder="0" autocomplete="off"></label><button class="tp-pill" data-discgo="${st.id}|${g.id}" style="margin:4px 0 10px">Save discount</button>`}`;
-}
-// sid = that student's form; no sid = a new student fee (you choose the student in Budget); mode 'fix' = the payments with no student
-function openBudgetFor(sid, gid, mode) {
-  const ym = payState().ym;
-  try { localStorage.setItem(OPEN_KEY, JSON.stringify({ sid: sid || '', gid: gid || '', ym, mode: mode || '', at: Date.now() })); } catch (e) { toast('Could not hand over to Budget'); return; }
-  publishRoster();
-  const w = window.open(BUDGET_URL, '_blank'); if (!w) location.href = BUDGET_URL;
+    <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${dMoney(L.debt > 0 ? L.debt : L.credit)} so'm</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(chargeOf(g, st, ym)) + ' a month'}</em></div>
+    <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it (part payment or not paid). Budget asks you to add the money.</p>
+    ${monthGrid(g, st, s.open)}
+    ${s.open ? editPanel(g, st, s.open) : ''}
+    ${single ? '' : `<div class="pm-fee"><label class="tp-f"><span>${esc(st.name.split(' ')[0])}'s monthly fee (so'm)${own ? '' : ' · the group fee'}</span><input id="f-ownfee" inputmode="numeric" value="${dMoney(own ?? (planOf(g) || {}).fee ?? 0)}" autocomplete="off"></label><button class="tp-pill" data-ownfee="${st.id}|${g.id}">Save fee</button></div>`}
+    <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
 
-/* ---------- "Needs attention" on Home: nothing is left unexplained ---------- */
-function attentionCard() {
-  let loose = 0; try { loose = +(JSON.parse(localStorage.getItem(BP_KEY) || '{}').loose) || 0; } catch (e) { /* none */ }
-  const old = oldLeft().length, bits = [];
-  if (loose) bits.push(`<p><b>${loose} payment${loose === 1 ? '' : 's'} in Budget ${loose === 1 ? 'has' : 'have'} no student, so ${loose === 1 ? 'it is' : 'they are'} not counted here.</b> That is why some students look unpaid. Choose whose each payment is, once.</p>`);
-  if (old) bits.push(`<p><b>${old} payment${old === 1 ? '' : 's'} saved in this app before Budget took over.</b> They still count. When the same payment has a student in Budget, it is counted once, by itself.</p>`);
-  return bits.length ? `<div class="tp-card2 attn" style="margin-bottom:12px"><div class="h">${ic('CalendarX2')}Needs attention</div>${bits.join('')}${loose ? `<button class="tp-pill" data-bpopen="fix">${ic('Wallet')}Choose the students in Budget</button>` : ''}</div>` : '';
+/* ---------- the group's page: numbered lists, who has not paid and who paid ---------- */
+function sheetOweGrp(s) {
+  const g = gById(s.g), ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1]; if (!g) return '';
+  const all = g.students.map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free');
+  const owe = all.filter((x) => x.L.debt > 0).sort((a, b) => b.L.rows.filter((r) => r.charge > r.covered).length - a.L.rows.filter((r) => r.charge > r.covered).length || b.L.debt - a.L.debt);
+  const paid = all.filter((x) => !(x.L.debt > 0));
+  const oweRow = ({ st, L }, i) => { const ms = L.rows.filter((r) => r.charge - r.covered > 0);
+    return `<div class="pl-row"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span class="pl-mo">${ms.map((r) => `<u class="${r.covered ? 'pt' : ''}">${ymLabel(r.m)}</u>`).join('')}</span></button><span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-paym="${st.id}|${g.id}|${ms[0].m}" aria-label="${esc(st.name)} paid ${ymName(ms[0].m)}">${ic('Check')}</button></div>`; };
+  const paidRow = ({ st, L }, i) => `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button><span class="pl-done">${ic('Check')}</span></div>`;
+  return `<div class="tp-sh-h"><span></span><b>${esc(g.name)} · ${mn}</b><button class="tp-back strong" data-closesheet>Done</button></div>
+    <p class="tp-small pm-how">The tick = paid for the first month shown. Tap a name to see every month.</p>
+    <div class="pl-h"><span class="d no"></span>Not paid<em>${owe.length}</em></div>${owe.length ? `<div class="pl-list">${owe.map(oweRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Everybody has paid for ${mn}.</p>`}
+    <div class="pl-h"><span class="d ok"></span>Paid<em>${paid.length}</em></div>${paid.length ? `<div class="pl-list">${paid.map(paidRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Nobody yet.</p>`}`;
 }
-{ const _home = pgHomeNew; pgHomeNew = function () { const h = _home(), at = attentionCard(); return at ? h.replace('<div class="h2-quick">', at + '<div class="h2-quick">') : h; }; }
+
+/* ---------- "Mark who paid" on Home: every group, numbered ---------- */
+function sheetPayPick(s) {
+  const gs = feeGroups(), ym = ymOf(TODAY);
+  return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>
+    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${g.students.length}</em></div><div class="pl-list">${g.students.map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
+      return `<div class="pl-row${ms.length ? '' : ' ok'}"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b>${ms.length ? `<span class="pl-mo">${ms.map((r) => `<u class="${r.covered ? 'pt' : ''}">${ymLabel(r.m)}</u>`).join('')}</span>` : '<span>Paid</span>'}</button>${ms.length ? `<span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-paym="${st.id}|${g.id}|${ms[0].m}" aria-label="${esc(st.name)} paid ${ymName(ms[0].m)}">${ic('Check')}</button>` : `<span class="pl-done">${ic('Check')}</span>`}</div>`; }).join('')}</div>`).join('')}`;
+}
 
 /* ---------- taps ---------- */
 {
   const _h = home2Click, _f = feesClick;
   const mine = (b, d) => {
-    if (d.bpopen) { if (d.bpopen === 'fix') openBudgetFor('', '', 'fix'); else { const [sid, gid] = d.bpopen.split('|'); openBudgetFor(sid, gid); } return true; }
-    if (d.discgo) { const [sid] = d.discgo.split('|'), k = sid + '|' + payState().ym, v = numVal('f-paydisc'); if (v) S.pay.sdisc[k] = v; else delete S.pay.sdisc[k]; save(); toast(v ? 'Discount saved' : 'Discount removed'); draw(); return true; }
-    if (d.payfrom) { const [sid, m] = d.payfrom.split('|'); S.pay.from[sid] = m; save(); draw(); return true; }
-    if (d.paygo) return true; // typing payments here is gone: they are recorded in Budget
-    if (d.paydel) { // only old Teacher payments can be removed here
-      if (T.sheet.del !== d.paydel) { T.sheet.del = d.paydel; draw(); return true; }
-      S.pay.pays = S.pay.pays.filter((p) => p.id !== d.paydel); T.sheet.del = null; save(); draw(); toast('Old payment removed'); return true;
+    if (d.payundo !== undefined) { if (undoFn) { const f = undoFn; undoFn = null; f(); save(); draw(); toast('Undone'); } return true; }
+    if (d.paym) {
+      const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const charge = chargeOf(g, st, m), paid = paidIn(sid, m);
+      if (paid || !charge) { if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } else { T.sheet = { s: 'payrec', g: gid, sid, open: m }; draw(); } return true; }
+      const p = addPay(sid, m, charge - Math.min(charge, ledger(g, st, m).rows.find((r) => r.m === m).covered)); save(); draw();
+      payToast(`${st.name} · ${ymName(m)} · ${dMoney(p.amount)} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => x !== p); tbSend('del', p); });
+      return true;
     }
+    if (d.pmsave) {
+      const [sid, gid, m] = d.pmsave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), v = numVal('f-pmamt'); if (!st) return true;
+      const old = delPays(sid, m); if (v > 0) addPay(sid, m, v);
+      if (T.sheet) T.sheet.open = null; save(); draw();
+      toast(v > 0 ? `${st.name} · ${ymName(m)} · ${dMoney(v)} so'm${v < chargeOf(g, st, m) ? ' (part)' : ''}` : `${st.name} · ${ymName(m)} · not paid`);
+      return true;
+    }
+    if (d.pmnone) {
+      const [sid, gid, m] = d.pmnone.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const gone = delPays(sid, m); if (T.sheet) T.sheet.open = null; save(); draw();
+      payToast(`${st.name} · ${ymName(m)} · not paid`, () => { gone.forEach((p) => { const q = { ...p, id: uid() }; S.pay.pays.push(q); tbSend('add', q); }); });
+      return true;
+    }
+    if (d.ownfee) { // a student who pays less (or more) than the group
+      const [sid, gid] = d.ownfee.split('|'), g = gById(gid), v = numVal('f-ownfee'), gf = (planOf(g) || {}).fee || 0;
+      if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v;
+      save(); draw(); toast(!v || v === gf ? 'Back to the group fee' : `Own fee saved: ${dMoney(v)} so'm a month`); return true;
+    }
+    if (d.paygo) return true; // the old "Save" of Mark paid is gone
     return false;
   };
   home2Click = function (b, d) { return mine(b, d) || _h(b, d); };
   feesClick = function (b, d) { return mine(b, d) || _f(b, d); };
+  // "Starts paying from" is a list, chosen in place
+  document.addEventListener('change', (e) => { const el = e.target.closest && e.target.closest('[data-payfromsel]'); if (!el) return; S.pay.from[el.dataset.payfromsel] = el.value; save(); draw(); toast('Starts paying from ' + ymName(el.value)); });
 }
