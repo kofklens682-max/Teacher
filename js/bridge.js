@@ -62,14 +62,22 @@ function ledger(g, s, ym) {
 /* ---------- Teacher -> Budget ---------- */
 function publishRoster() {
   try {
-    const to = ymAdd(ymOf(TODAY), FUTURE), groups = [], charges = {};
+    const to = ymAdd(ymOf(TODAY), FUTURE), groups = [], charges = {}, cov = {}, paid = {}, st = {};
     S.groups.forEach((g) => {
       const p = planOf(g) || {};
       groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })) });
       if (!hasFee(g)) return;
-      g.students.forEach((s) => { const o = charges[s.id] = {}; for (let m = firstMonth(g, s); m <= to; m = ymAdd(m, 1)) o[m] = chargeOf(g, s, m); });
+      g.students.forEach((s) => {
+        const o = charges[s.id] = {}, c = cov[s.id] = {}, pd = paid[s.id] = {}, t = st[s.id] = {}, cur = ymOf(TODAY);
+        for (let m = firstMonth(g, s); m <= to; m = ymAdd(m, 1)) { o[m] = chargeOf(g, s, m); if (m <= ymAdd(cur, 3)) t[m] = ledger(g, s, m).st; }
+        ledger(g, s, to).rows.forEach((r) => { if (r.covered) c[r.m] = r.covered; });
+        S.pay.pays.forEach((p) => { if (p.sid === s.id && YM.test(p.m || '')) pd[p.m] = (pd[p.m] || 0) + +p.amount; });
+      });
     });
-    const json = JSON.stringify({ v: 1, at: Date.now(), start: S.pay.start, groups, charges });
+    // st = Teacher's own answer for each month (paid / part / unpaid / free, as on Home: a month counts as paid only when
+    // nothing is owed up to it); cov = how much of each month is covered; paid = the money marked for each month.
+    // Budget shows these, so both apps always say the same thing.
+    const json = JSON.stringify({ v: 2, at: Date.now(), start: S.pay.start, groups, charges, cov, paid, st });
     if (json !== localStorage.getItem(RS_KEY)) localStorage.setItem(RS_KEY, json);
   } catch (e) { /* the app still works; Budget keeps the last list */ }
 }
@@ -87,7 +95,7 @@ function delPays(sid, m) { const gone = S.pay.pays.filter((p) => p.sid === sid &
 
 { const _save = save; save = function () { _save(); publishRoster(); }; }
 { let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); freshStart(); publishRoster(); } }, 500); } // once, when the app has opened
-document.addEventListener('visibilitychange', () => { if (!document.hidden) publishRoster(); });
+document.addEventListener('visibilitychange', () => publishRoster()); // also when you leave for Budget
 
 // The fresh start the user asked for (30 Oct 2026): the payment marks made with the old ways are cleared once, after a copy.
 async function freshStart() {
