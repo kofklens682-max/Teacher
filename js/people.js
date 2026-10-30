@@ -18,8 +18,19 @@ function sheetStu(s) {
 /* ---------- individual students: a calendar of lesson days ---------- */
 // S.cal[group] = { st: { 'YYYY-MM-DD': 'done' | 'cancel' | 'moved' }, add: { date: true }, off: { date: true } }
 const calOf = (g) => { S.cal = S.cal || {}; const c = S.cal[g.id] || (S.cal[g.id] = {}); c.st = c.st || {}; c.add = c.add || {}; c.off = c.off || {}; return c; };
-const isLessonDay = (g, d) => { const c = calOf(g), k = iso(d); return !c.off[k] && (!!c.add[k] || hasLesson(g, d) || !!(S.saved[g.id] || {})[k]); };
-const calSt = (g, k) => calOf(g).st[k] || ((S.saved[g.id] || {})[k] ? 'done' : '');
+const isLessonDay = (g, d) => { const c = calOf(g), k = iso(d); return !c.off[k] && (!!c.add[k] || onWeekday(g, d) || !!(S.saved[g.id] || {})[k]); };
+const calSt = (g, k) => calOf(g).st[k] || ((S.saved[g.id] || {})[k] || (S.taught[g.id] || {})[k] || (S.ownDone[g.id] || {})[k] ? 'done' : '');
+// A lesson that did not happen (canceled or postponed) does not move the plan: the topic waits for the next lesson.
+// Any day can be marked, also one in the past (a lesson you forgot to mark), and un-marking takes the plan one lesson back.
+function soloTaught(g, k) {
+  if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
+  if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
+  (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l;
+}
+function soloUntaught(g, k) {
+  if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }
+  if ((S.taught[g.id] || {})[k]) { delete S.taught[g.id][k]; const p = advance(g, -1); g.week = p.w; g.les = p.l; }
+}
 const CST = { done: ['Done', '#34C759', 'Check'], cancel: ['Canceled', '#FF3B30', 'X'], moved: ['Postponed', '#FF9500', 'Clock'] };
 function soloCal(g, ym) { // the month of lesson days, with arrows, "Add a lesson" and the totals (the calendar screen and the group page)
   const cur = ymOf(TODAY); ym = ym || cur; const [y, m] = ym.split('-').map(Number), first = new Date(y, m - 1, 1), pad = wd(first);
@@ -46,18 +57,20 @@ function scSolo(f) {
 }
 function sheetSoloDay(s) {
   const g = gById(s.g), k = s.key, d = fromIso(k), les = isLessonDay(g, d), cur = calSt(g, k), c = calOf(g), open = lessonOpen(g, d);
-  const opt = (v, sub) => `<button class="sd-opt ${cur === v ? 'on' : ''}" style="--c:${CST[v][1]}" data-soloset="${g.id}|${k}|${v}" ${open ? '' : 'disabled'}><span class="sd-ic">${ic(CST[v][2])}</span><span><b>${CST[v][0]}</b><small>${sub}</small></span>${cur === v ? ic('Check') : ''}</button>`;
+  const opt = (v, sub) => `<button class="sd-opt ${cur === v ? 'on' : ''}" style="--c:${CST[v][1]}" data-soloset="${g.id}|${k}|${v}" ${open || v !== 'done' ? '' : 'disabled'}><span class="sd-ic">${ic(CST[v][2])}</span><span><b>${CST[v][0]}</b><small>${sub}</small></span>${cur === v ? ic('Check') : ''}</button>`;
   return `<div class="tp-sh-h"><span></span><b>${DAYS_LONG[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    ${les ? `${open ? '' : `<div class="tp-note2 sd-lock">${ic('Clock')}<span>This lesson hasn't started yet. You can mark it once it starts.</span></div>`}<div class="sd-list">${opt('done', 'The lesson happened: it counts, and the plan moves on')}${opt('cancel', 'No lesson, nothing is owed for it')}${opt('moved', 'Moved to another day: the same topic waits')}</div>
+    ${les ? `${open ? '' : `<div class="tp-note2 sd-lock">${ic('Clock')}<span>This lesson hasn't started yet. Done opens when it starts; you can cancel or postpone it now.</span></div>`}<div class="sd-list">${opt('done', 'The lesson happened: it counts, and the plan moves on')}${opt('cancel', 'No lesson, nothing is owed. The plan does not move: the same topic comes next lesson')}${opt('moved', 'Moved to another day: the same topic waits')}</div>
       ${cur ? `<button class="tp-cta ghost" data-soloset="${g.id}|${k}|">${ic('RotateCcw')}Clear the mark</button>` : ''}
-      ${c.add[k] ? `<button class="tp-danger" data-soloadd="${g.id}|${k}|0">Remove this added day</button>` : hasLesson(g, d) ? `<button class="tp-danger" data-solooff="${g.id}|${k}">No lesson on this day</button>` : ''}`
+      ${c.add[k] ? `<button class="tp-danger" data-soloadd="${g.id}|${k}|0">Remove this added day</button>` : onWeekday(g, d) ? `<button class="tp-danger" data-solooff="${g.id}|${k}">No lesson on this day</button>` : ''}`
       : `<p class="tp-small">${c.off[k] ? 'You took this lesson day away.' : 'This is not one of the lesson days.'}</p><button class="tp-cta" data-soloadd="${g.id}|${k}|1">${ic('Plus')}Add a lesson on this day</button>`}`;
 }
 function soloSet(g, k, v) {
   const c = calOf(g), was = calSt(g, k), st = g.students[0];
-  if (v && !lessonOpen(g, fromIso(k))) return notOpenToast(g, fromIso(k)); // an upcoming lesson can't be marked yet
-  if (v === 'done') { const r = rec(g, fromIso(k), true); if (st) { r.att[st.id] = 'here'; r.hw[st.id] = true; } (S.saved[g.id] = S.saved[g.id] || {})[k] = true; autoTaught(g, k); c.st[k] = 'done'; }
-  else { if (was === 'done' && (S.saved[g.id] || {})[k]) { [S.rec, S.hw, S.saved].forEach((x) => { if (x[g.id]) delete x[g.id][k]; }); undoTaught(g, k); } if (v) c.st[k] = v; else delete c.st[k]; }
+  if (v === 'done' && !lessonOpen(g, fromIso(k))) return notOpenToast(g, fromIso(k)); // an upcoming lesson can't be done yet (it can be canceled or postponed)
+  if (v === 'done') { const r = rec(g, fromIso(k), true); if (st) { r.att[st.id] = 'here'; r.hw[st.id] = true; } (S.saved[g.id] = S.saved[g.id] || {})[k] = true; soloTaught(g, k); c.st[k] = 'done'; }
+  else { // canceled, postponed or cleared: nothing was taught that day, so the plan goes back if it had moved
+    if (was === 'done' || (S.saved[g.id] || {})[k]) [S.rec, S.hw, S.saved].forEach((x) => { if (x[g.id]) delete x[g.id][k]; });
+    soloUntaught(g, k); if (v) c.st[k] = v; else delete c.st[k]; }
   save(); closeSheetNow(); toast(v ? `${fromIso(k).getDate()} ${MONTHS[fromIso(k).getMonth()]}: ${CST[v][0].toLowerCase()}` : 'Mark cleared');
 }
 

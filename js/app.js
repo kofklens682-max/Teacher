@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 4.7';
+const VERSION_LABEL = 'Teacher 4.8';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -35,7 +35,14 @@ const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); r
 const dayName = (d) => (iso(d) === iso(TODAY) ? 'Today' : iso(d) === iso(addDays(TODAY, -1)) ? 'Yesterday' : `${DAYS[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}`);
 
 // ---------- groups ----------
-const hasLesson = (g, d) => g.days.includes(wd(d));
+const onWeekday = (g, d) => g.days.includes(wd(d));
+// an individual student's calendar wins: a day taken away, or a lesson canceled / postponed, is not a lesson today; an added day is
+const hasLesson = (g, d) => {
+  if (!g.solo) return onWeekday(g, d);
+  const c = S.cal && S.cal[g.id], k = iso(d); if (!c) return onWeekday(g, d);
+  const gone = (c.st && (c.st[k] === 'cancel' || c.st[k] === 'moved')) || (c.off && c.off[k]);
+  return !gone && ((c.add && c.add[k]) || onWeekday(g, d));
+};
 const taughtOn = (g, d) => (S.taught[g.id] || {})[iso(d)];
 // taught: a book course moved on, an own-program lesson marked, the register saved, or an individual's calendar day marked done
 const doneOn = (g, d) => { const k = iso(d); return !!(taughtOn(g, d) || (S.ownDone[g.id] || {})[k] || (S.saved[g.id] || {})[k] || ((S.cal && S.cal[g.id] && S.cal[g.id].st) || {})[k] === 'done'); };
@@ -83,7 +90,8 @@ const nowMin = () => { const n = new Date(); return n.getHours() * 60 + n.getMin
 const timeOn = (g, d) => (g.times && g.times[wd(d)]) || g.time;
 const toMin = (t) => { const [h, m] = String(t || '15:00').split(':').map(Number); return h * 60 + (m || 0); };
 const startMin = (g, d) => toMin(d ? timeOn(g, d) : g.time);
-const endMin = (g, d) => startMin(g, d) + (g.len || 80);
+const lenOn = (g, d) => (d && g.lens && g.lens[wd(d)]) || g.len || 80; // a lesson day made in Budget can have its own length
+const endMin = (g, d) => startMin(g, d) + lenOn(g, d);
 function timesText(g) { // "Mon, Wed, Fri · 15:00", or "Tue 14:00 · Thu 18:00" when the times differ
   const ds = [...g.days].sort((a, b) => a - b), ts = ds.map((d) => (g.times && g.times[d]) || g.time);
   if (!ds.length) return 'No days set';
@@ -416,7 +424,7 @@ function pgBooks() {
 function sheetGroup(s) {
   const g = s.g ? gById(s.g) : null;
   const pl = g && S.pay.plan[g.id];
-  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, times: { ...(g.times || {}) }, len: g.len || 80, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })), solo: !!g.solo, feeKind: pl ? pl.kind : 'group', fee: pl ? (pl.kind === 'single' ? pl.rate : pl.fee) : '' }
+  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, times: { ...(g.times || {}) }, len: g.len || 80, len0: g.len || 80, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })), solo: !!g.solo, feeKind: pl ? pl.kind : 'group', fee: pl ? (pl.kind === 'single' ? pl.rate : pl.fee) : '' }
     : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', times: {}, len: 80, color: '', week: 1, les: 1, students: [], feeKind: 'group', fee: '' };
   const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null;
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
@@ -429,7 +437,7 @@ function sheetGroup(s) {
       : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
     <div class="tp-f"><span>Days</span><div class="tp-chips2 days">${DAYS.map((d, i) => `<button class="${F.days.includes(i) ? 'on' : ''}" data-f-day="${i}">${d}</button>`).join('')}</div></div>
     <div class="tp-f"><span>Time · each day can have its own</span><div class="f-times">${F.days.length ? [...F.days].sort((a, b) => a - b).map((d) => `<label class="f-trow"><b>${DAYS_LONG[d]}</b><input id="f-time-${d}" type="time" value="${esc((F.times || {})[d] || F.time)}"></label>`).join('') : '<div class="tp-note2">Tick the days first.</div>'}</div>
-      <div class="tp-note2">Budget shows these lessons in its schedule by itself. Lesson times are changed only here.</div></div>
+      <div class="tp-note2">Groups, days and times are one list shared with Budget: change them here or in Budget's schedule, both always show the same.</div></div>
     <label class="tp-f"><span>Lesson length (minutes)</span><input id="f-len" type="number" inputmode="numeric" min="20" max="240" step="5" value="${F.len || 80}"></label>
     <div class="tp-f"><span>Students · ${F.students.length}</span><div class="tp-stulist">${F.students.map((x, i) => `<span>${esc(x.name)}<button data-f-rm="${i}" aria-label="Remove ${esc(x.name)}">${ic('X')}</button></span>`).join('')}</div>
       <div class="tp-addrow"><input id="f-stu" placeholder="Student's name" autocomplete="off" enterkeyhint="done"><button data-f-add aria-label="Add student">${ic('UserPlus')}</button></div></div>
@@ -1049,6 +1057,8 @@ function saveGroup() {
   const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
   const old = T.sheet.g && gById(T.sheet.g);
   const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: (F.times || {})[[...F.days].sort((a, b) => a - b)[0]] || F.time || '15:00', times: Object.fromEntries(F.days.map((d) => [d, (F.times || {})[d] || F.time || '15:00'])), len: +F.len || 80, color: F.color || '', week: +F.week || 1, les: +F.les || 1, solo: !!F.solo });
+  if (old && g.lens && !(+F.len === (T.sheet.form.len0 || +F.len))) delete g.lens; // a new length for all days replaces the per-day lengths from Budget
+  if (g.lens) Object.keys(g.lens).forEach((d) => { if (!g.days.includes(+d)) delete g.lens[d]; });
   if (old) { const keep = new Set(F.students.map((s) => s.id)); g.gone = [...(g.gone || []), ...old.students.filter((s) => !keep.has(s.id))]; }
   g.students = F.students;
   if (planned(g.lvl)) { const p = advance(g, 0); g.week = p.w; g.les = p.l; }

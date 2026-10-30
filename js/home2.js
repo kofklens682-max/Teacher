@@ -314,14 +314,15 @@ function pastToggle(g, sid, k) {
 
 /* ---------- taught = the attendance was saved ---------- */
 function autoTaught(g, k) {
-  if (k !== iso(TODAY)) return;
+  const ago = Math.round((TODAY - fromIso(k)) / 864e5); if (ago < 0 || ago > 7) return; // today, or a register you forgot this week
   if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
-  if (!planned(g.lvl) || taughtOn(g, TODAY)) return;
+  if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
+  if (g.solo) return soloTaught(g, k);
   (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l;
 }
 function undoTaught(g, k) {
   if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }
-  const t = (S.taught[g.id] || {})[k]; if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; }
+  const t = (S.taught[g.id] || {})[k]; if (t) { if (k === iso(TODAY)) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; } else soloUntaught(g, k); }
 }
 
 /* ---------- taps and typing ---------- */

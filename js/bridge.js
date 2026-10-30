@@ -67,7 +67,7 @@ function publishRoster() {
       const p = planOf(g) || {};
       groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })),
         // 30 Oct (user): the lessons too; Budget paints them into its schedule and they can be changed only here
-        slots: [...g.days].sort((a, b) => a - b).map((d) => ({ d, from: toMin((g.times && g.times[d]) || g.time), len: g.len || 80 })) });
+        slots: slotsOf(g) });
       if (!hasFee(g)) return;
       g.students.forEach((s) => {
         const o = charges[s.id] = {}, c = cov[s.id] = {}, pd = paid[s.id] = {}, t = st[s.id] = {}, cur = ymOf(TODAY);
@@ -95,8 +95,57 @@ function tbSend(op, p) {
 function addPay(sid, m, amount) { const p = { id: uid(), sid, m, amount: Math.round(amount), date: iso(TODAY) }; S.pay.pays.push(p); tbSend('add', p); return p; }
 function delPays(sid, m) { const gone = S.pay.pays.filter((p) => p.sid === sid && p.m === m); S.pay.pays = S.pay.pays.filter((p) => !gone.includes(p)); gone.forEach((p) => tbSend('del', p)); return gone; }
 
-{ const _save = save; save = function () { _save(); publishRoster(); }; }
-{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); freshStart(); publishRoster(); } }, 500); } // once, when the app has opened
+/* ---------- one lesson record for both apps (31 Oct 2026, user) ----------
+   localStorage "lesson-sync" = { g: { <group id>: { name, slots: [{d, from, len}], at, by, gone? } } }: every work group's name,
+   days, time of each day and length. Teacher and Budget both read and write it; the newer change wins. S.lsm[id] = { at, sig }
+   remembers what both sides last agreed on, so only real changes are sent. A group made in Budget appears here with no students. */
+const LS_KEY = 'lesson-sync';
+const lsRead = () => { try { const o = JSON.parse(localStorage.getItem(LS_KEY) || ''); return o && o.g && typeof o.g === 'object' ? o : { v: 1, g: {} }; } catch (e) { return { v: 1, g: {} }; } };
+const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const slotsOf = (g) => [...g.days].sort((a, b) => a - b).map((d) => ({ d, from: toMin((g.times && g.times[d]) || g.time), len: (g.lens && g.lens[d]) || g.len || 80 }));
+const lsSig = (g) => JSON.stringify([g.name, slotsOf(g)]);
+function lsApply(g, e) { // a change made in Budget
+  const sl = (e.slots || []).filter((x) => x.d >= 0 && x.d <= 6 && x.len > 0 && x.from >= 0 && x.from < 1440).sort((a, b) => a.d - b.d);
+  if (e.name) g.name = String(e.name).slice(0, 60);
+  g.days = sl.map((x) => x.d); g.times = Object.fromEntries(sl.map((x) => [x.d, hhmm(x.from)]));
+  if (sl.length) { g.time = g.times[sl[0].d]; g.len = Math.min(240, Math.max(20, sl[0].len)); }
+  if (sl.some((x) => x.len !== g.len)) g.lens = Object.fromEntries(sl.map((x) => [x.d, x.len])); else delete g.lens;
+}
+function lessonPush() { // Teacher -> Budget: what changed here
+  const L = lsRead(); let wrote = false; S.lsm = S.lsm || {};
+  S.groups.forEach((g) => {
+    const cs = lsSig(g), m = S.lsm[g.id]; if (m && m.sig === cs) return;
+    const now = Date.now(); L.g[g.id] = { name: g.name, slots: slotsOf(g), at: now, by: 'T' }; S.lsm[g.id] = { at: now, sig: cs }; wrote = true;
+  });
+  Object.keys(S.lsm).forEach((id) => { // a group removed here
+    if (S.groups.some((g) => g.id === id) || (L.g[id] && L.g[id].gone)) return;
+    const now = Date.now(); L.g[id] = { name: (L.g[id] && L.g[id].name) || '', slots: [], gone: true, at: now, by: 'T' }; S.lsm[id] = { at: now, sig: '' }; wrote = true;
+  });
+  try { if (wrote) localStorage.setItem(LS_KEY, JSON.stringify(L)); } catch (e) { /* the groups themselves are kept */ }
+}
+function lessonPull() { // Budget -> Teacher: what changed there
+  const L = lsRead(); let ch = false; S.lsm = S.lsm || {};
+  Object.entries(L.g).forEach(([id, e]) => {
+    const m = S.lsm[id]; if (!e || !(e.at > (m ? m.at : 0))) return;
+    let g = S.groups.find((x) => x.id === id);
+    if (e.gone) {
+      if (g && !g.students.length) S.groups = S.groups.filter((x) => x !== g); else if (g) lsApply(g, { slots: [] });
+      S.lsm[id] = { at: e.at, sig: g && S.groups.includes(g) ? lsSig(g) : '' }; ch = true; return;
+    }
+    if (!g) { if (m) { S.lsm[id] = { at: e.at, sig: '' }; return; } // removed here earlier
+      g = { id, name: String(e.name || 'Group').slice(0, 60), lvl: 'own', book: 'Own book', days: [], time: '15:00', len: 80, week: 1, les: 1, students: [], color: '', gone: [], created: Date.now() };
+      S.groups.push(g); ch = true; }
+    if (JSON.stringify([e.name || g.name, e.slots]) !== lsSig(g) || !m) { lsApply(g, e); ch = true; }
+    S.lsm[id] = { at: e.at, sig: lsSig(g) };
+  });
+  if (ch) { save(); if (typeof draw === 'function') draw(); }
+  return ch;
+}
+window.addEventListener('storage', (e) => { if (e.key === LS_KEY) lessonPull(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) lessonPull(); });
+
+{ const _save = save; save = function () { lessonPush(); _save(); publishRoster(); }; }
+{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); lessonPull(); freshStart(); publishRoster(); } }, 500); } // once, when the app has opened
 document.addEventListener('visibilitychange', () => publishRoster()); // also when you leave for Budget
 
 // The fresh start the user asked for (30 Oct 2026): the payment marks made with the old ways are cleared once, after a copy.

@@ -22,6 +22,7 @@ function normalize(d) {
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', len: Math.min(240, Math.max(20, +g.len || 80)),
+    ...(g.lens && typeof g.lens === 'object' ? { lens: Object.fromEntries(Object.entries(g.lens).filter(([k, v]) => /^[0-6]$/.test(k) && +v >= 5 && +v <= 600).map(([k, v]) => [k, Math.round(+v)])) } : {}),
     ...(g.times && typeof g.times === 'object' ? { times: Object.fromEntries(Object.entries(g.times).filter(([k, v]) => /^[0-6]$/.test(k) && /^\d\d:\d\d$/.test(v))) } : {}), week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
     students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}) })).filter((s) => s.name),
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
@@ -33,6 +34,7 @@ function normalize(d) {
   out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026) is done: never again
   out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
   out.rev = +out.rev || 0;
+  if (!out.lsm || typeof out.lsm !== 'object' || Array.isArray(out.lsm)) out.lsm = {}; // lesson record: what both apps last agreed on, per group
   return out;
 }
 
