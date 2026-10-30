@@ -277,3 +277,6 @@
 .sc-only .sc-d em { font-style: normal; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 2px; white-space: nowrap; } .sc-only .sc-d em svg { width: 11px; height: 11px; }
 .sc-only .sc-d.soon { color: #007AFF; } .sc-only .sc-d.miss { color: #C93400; }
 .sc-add { margin-top: 10px; width: 100%; }
+
+/* 31 Oct: the calendar card on an individual group page (no box inside a box) */
+.tp-card2 .sc-cal{background:none;box-shadow:none;border:0;padding:0;margin-top:6px}

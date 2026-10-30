@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 4.5';
+const VERSION_LABEL = 'Teacher 4.6';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -39,8 +39,9 @@ const hasLesson = (g, d) => g.days.includes(wd(d));
 const taughtOn = (g, d) => (S.taught[g.id] || {})[iso(d)];
 function advance(g, n) {
   let w = g.week, l = g.les + n; const L = lv(g.lvl);
-  while (l > 3) { l -= 3; w++; }
-  while (l < 1) { l += 3; w--; }
+  const per = (k) => (L.turbo && k >= 1 && k <= L.units.length ? L.units[k - 1].lessons.length : 3); // IELTS Turbo weeks have more lessons
+  while (l > per(w) && w <= L.units.length) { l -= per(w); w++; }
+  while (l < 1) { w--; l += per(w); }
   if (w < 1) { w = 1; l = 1; }
   if (w > L.units.length) { w = L.units.length; l = L.units[w - 1].lessons.length; }
   if (l > weekOf(g.lvl, w).lessons.length) l = weekOf(g.lvl, w).lessons.length; // the level test is one lesson
@@ -407,10 +408,10 @@ function sheetGroup(s) {
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
     <div class="tp-f"><span>Type</span><div class="tp-chips2"><button class="${F.solo ? '' : 'on'}" data-f-solo="0">${ic('Users')} Group</button><button class="${F.solo ? 'on' : ''}" data-f-solo="1">${ic('UserRound')} Individual</button></div>${F.solo ? '<div class="tp-note2">One student. Attendance becomes a calendar: mark each day done, canceled or postponed, and add your own days.</div>' : ''}</div>
     <label class="tp-f"><span>${F.solo ? 'Name (the student or the lesson)' : 'Group name'}</span><input id="f-name" value="${esc(F.name)}" placeholder="${F.solo ? 'e.g. Javlon' : 'e.g. Group D'}" autocomplete="off"></label>
-    <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), ...KIDLV.map((l) => l.id), ...(F.lvl === 'own' ? ['own'] : [])].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
+    <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), ...KIDLV.map((l) => l.id), ...(typeof TURBO_LV !== 'undefined' && TURBO_LV ? ['IT'] : []), ...(F.lvl === 'own' ? ['own'] : [])].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
     <div class="tp-f"><span>Colour</span><div class="tp-swatches" id="f-colors"><button class="auto${F.color ? '' : ' on'}" data-f-color="" aria-label="Automatic colour">A</button>${Object.entries(COLORS).map(([k, c]) => `<button class="${F.color === k ? 'on' : ''}" style="--g1:${c[0]};--g2:${c[1]}" data-f-color="${k}" aria-label="${k}"></button>`).join('')}</div></div>
     <div class="f-prog">${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
-      : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${[1, 2, 3].map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>${dayWord(F.lvl)} ${n}</option>`).join('')}</select></div></div>`
+      : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${(F.lvl === 'IT' ? weekOf('IT', F.week).lessons.map((x) => x.n) : [1, 2, 3]).map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>${F.lvl === 'IT' ? esc(weekOf('IT', F.week).lessons[n - 1].day + ' · ' + weekOf('IT', F.week).lessons[n - 1].title) : dayWord(F.lvl) + ' ' + n}</option>`).join('')}</select></div></div>`
       : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
     <div class="tp-f"><span>Days</span><div class="tp-chips2 days">${DAYS.map((d, i) => `<button class="${F.days.includes(i) ? 'on' : ''}" data-f-day="${i}">${d}</button>`).join('')}</div></div>
     <label class="tp-f"><span>Time</span><input id="f-time" type="time" value="${esc(F.time)}"></label>

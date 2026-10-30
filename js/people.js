@@ -21,23 +21,27 @@ const calOf = (g) => { S.cal = S.cal || {}; const c = S.cal[g.id] || (S.cal[g.id
 const isLessonDay = (g, d) => { const c = calOf(g), k = iso(d); return !c.off[k] && (!!c.add[k] || hasLesson(g, d) || !!(S.saved[g.id] || {})[k]); };
 const calSt = (g, k) => calOf(g).st[k] || ((S.saved[g.id] || {})[k] ? 'done' : '');
 const CST = { done: ['Done', '#34C759', 'Check'], cancel: ['Canceled', '#FF3B30', 'X'], moved: ['Postponed', '#FF9500', 'Clock'] };
-function scSolo(f) {
-  const g = gById(f.g); if (!g) return scGone();
-  const st = g.students[0], cur = ymOf(TODAY), ym = f.ym || cur, [y, m] = ym.split('-').map(Number), first = new Date(y, m - 1, 1), pad = wd(first);
+function soloCal(g, ym) { // the month of lesson days, with arrows, "Add a lesson" and the totals (the calendar screen and the group page)
+  const cur = ymOf(TODAY); ym = ym || cur; const [y, m] = ym.split('-').map(Number), first = new Date(y, m - 1, 1), pad = wd(first);
   const days = []; for (let d = 1; d <= 31; d++) { const dt = new Date(y, m - 1, d); if (dt.getMonth() !== m - 1) break; days.push(dt); }
   const cnt = { done: 0, cancel: 0, moved: 0, open: 0 };
   const cells = days.filter((dt) => isLessonDay(g, dt)).map((dt) => { const k = iso(dt), s = calSt(g, k), past = k < iso(TODAY), today = k === iso(TODAY);
     if (s) cnt[s]++; else if (past) cnt.open++;
     const cls = s || (past ? 'miss' : 'soon'), lab = s ? CST[s][0] : today ? 'Today' : past ? 'Not marked' : 'Coming';
     return `<button class="sc-d ${cls}${today ? ' today' : ''}${calOf(g).add[k] ? ' added' : ''}" data-solod="${g.id}|${k}" aria-label="${DAYS_LONG[wd(dt)]} ${dt.getDate()} ${MONTHS[m - 1]}: ${lab}"><small>${DAYS[wd(dt)]}</small><b>${dt.getDate()}</b><em>${s ? ic(CST[s][2]) : ''}${lab}</em></button>`; }).join('');
+  return `<div class="sc-cal"><div class="sc-nav"><button class="tp-iconbtn" data-solom="${g.id}|${ymAdd(ym, -1)}" aria-label="Previous month">${ic('ChevronLeft')}</button><b>${ymName(ym)}</b><button class="tp-iconbtn" data-solom="${g.id}|${ymAdd(ym, 1)}" aria-label="Next month">${ic('ChevronRight')}</button></div>
+      ${cells ? `<div class="sc-grid sc-only">${cells}</div>` : `<p class="tp-small">No lesson days in ${ymName(ym)}.</p>`}
+      <button class="tp-dashed sc-add" data-sheet="soloadd" data-g="${g.id}">${ic('Plus')} Add a lesson on another day</button></div>
+    <div class="sc-sum"><span><i style="background:#34C759"></i>${cnt.done} done</span><span><i style="background:#FF3B30"></i>${cnt.cancel} canceled</span><span><i style="background:#FF9500"></i>${cnt.moved} postponed</span>${cnt.open ? `<span><i style="background:#C7C7CC"></i>${cnt.open} not marked</span>` : ''}</div>`;
+}
+function scSolo(f) {
+  const g = gById(f.g); if (!g) return scGone();
+  const st = g.students[0];
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit</button></div>`;
   return `${bar}<div class="tp-inner sc-wrap">
     <div><div class="tp-eyebrow">Individual · ${g.days.map((d) => DAYS[d]).join(', ') || 'no days set'} · ${esc(g.time)}</div><div class="tp-lt" style="font-size:28px">${esc(st ? st.name : g.name)}</div></div>
     ${st ? `<button class="sc-prof" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}"><span class="sp-av" style="background:${avColor(st.name)}">${esc(st.name[0].toUpperCase())}</span><span><b>${esc(st.name)}</b><small>${esc(LVNAME(g.lvl))}${planned(g.lvl) ? ` · Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : ''}</small></span>${ic('ChevronRight')}</button>` : ''}
-    <div class="sc-cal"><div class="sc-nav"><button class="tp-iconbtn" data-solom="${g.id}|${ymAdd(ym, -1)}" aria-label="Previous month">${ic('ChevronLeft')}</button><b>${ymName(ym)}</b><button class="tp-iconbtn" data-solom="${g.id}|${ymAdd(ym, 1)}" aria-label="Next month">${ic('ChevronRight')}</button></div>
-      ${cells ? `<div class="sc-grid sc-only">${cells}</div>` : `<p class="tp-small">No lesson days in ${ymName(ym)}.</p>`}
-      <button class="tp-dashed sc-add" data-sheet="soloadd" data-g="${g.id}">${ic('Plus')} Add a lesson on another day</button></div>
-    <div class="sc-sum"><span><i style="background:#34C759"></i>${cnt.done} done</span><span><i style="background:#FF3B30"></i>${cnt.cancel} canceled</span><span><i style="background:#FF9500"></i>${cnt.moved} postponed</span>${cnt.open ? `<span><i style="background:#C7C7CC"></i>${cnt.open} not marked</span>` : ''}</div>
+    ${soloCal(g, f.ym)}
     <p class="tp-small" style="text-align:left">Only the days ${esc(st ? st.name.split(' ')[0] : 'the student')} comes are shown. Tap one to mark it done, canceled or postponed. Marking today's lesson done moves ${esc(st ? st.name.split(' ')[0] : 'the student')} to the next lesson.</p></div>`;
 }
 function sheetSoloDay(s) {
@@ -57,9 +61,13 @@ function soloSet(g, k, v) {
 }
 
 /* ---------- registration: new sheets, the calendar instead of the register for individual students ---------- */
+// IELTS Turbo: changing the week in the group form refreshes its list of lessons
+document.addEventListener('change', (e) => { const F = T.sheet && T.sheet.form; if (e.target && e.target.id === 'f-week' && F && F.lvl === 'IT') { keepForm(); F.les = 1; draw(); } });
 SHEETS.stu = (s) => sheetStu(s);
 SHEETS.soloday = (s) => sheetSoloDay(s);
 { const _reg = PUSH.register; PUSH.register = (f) => ((gById(f.g) || {}).solo ? scSolo(f) : _reg(f)); }
+// the group page of an individual student: the calendar instead of the attendance table
+{ const _hg = histGrid; histGrid = (g, cur) => (g.solo ? `<div class="tp-card2"><div class="h">${ic('CalendarDays')}Lessons · calendar</div>${soloCal(g, (T.push[T.push.length - 1] || {}).ym)}</div>` : _hg(g, cur)); }
 
 /* ---------- taps ---------- */
 {
