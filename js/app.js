@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 4.3';
+const VERSION_LABEL = 'Teacher 4.4';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -138,13 +138,23 @@ function pgUnits() {
   const chips = kids ? KIDLV.map((l) => `<button class="${l.id === T.kidLvl ? 'on' : ''}" style="${gv(l.id)}" data-kidlvl="${l.id}">${esc(l.name)}</button>`).join('')
     : UNIT_LV().map((l) => `<button class="${l.id === T.unitLvl ? 'on' : ''}" style="${gv(l.id)}" data-unitlvl="${l.id}">${esc(LVNAME(l.id))}</button>`).join('');
   const aud = KIDLV.length ? `<div class="tp-seg2 slide" data-noswipe style="--n:2"><span class="seg-thumb" style="--i:${kids ? 1 : 0}"></span><button class="${kids ? '' : 'on'}" data-aud="teens">${ic('GraduationCap')} Teens</button><button class="${kids ? 'on' : ''}" data-aud="kids">${ic('Star')} Kids</button></div>` : '';
+  // 31 Oct: the blue card shows where your group is (like Home), the weeks are an iPhone list: done = green tick, now = blue, later = grey
+  const g0 = [...here].sort((a, b) => a.name.localeCompare(b.name))[0], cur = g0 && planned(L.id) ? weekOf(L.id, g0.week) : null;
+  const wkN = planned(L.id) ? L.units.filter((u) => !u.final).length : 0, doneW = g0 ? Math.min(wkN, g0.week - 1) : 0, RAD = 24, RL = 2 * Math.PI * RAD;
+  const hero = `<div class="hn-next un-hero" data-lvname="${esc(LVNAME(L.id))}"><div class="hn-top"><span class="hn-tag">${esc(L.cefr)} · ${esc(LVNAME(L.id))} · ${L.weeks} weeks</span>${here.length ? `<span class="hn-when">${esc(here.map((g) => g.name).join(', '))}</span>` : ''}</div>
+    ${cur ? `<div class="un-row"><div><b class="hn-name">Week ${g0.week} · ${esc(cur.title)}</b><span class="hn-sub">${here.length > 1 ? esc(g0.name) + ' · ' : ''}Next: ${dayWord(L.id)} ${g0.les} · ${esc((cur.lessons[g0.les - 1] || cur.lessons[0]).subtopic)}</span></div>
+      <div class="un-ring"><svg viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="${RAD}"/><circle class="fg" cx="27" cy="27" r="${RAD}" style="--L:${RL.toFixed(1)};stroke-dasharray:${RL.toFixed(1)};stroke-dashoffset:${(RL * (1 - (wkN ? doneW / wkN : 0))).toFixed(1)}"/></svg><b>${doneW}/${wkN}<small>weeks</small></b></div></div>
+      <div class="hn-btns"><button ${openLessonAttr(g0)}>${ic('BookOpen')}Continue</button><button data-push="register" data-g="${g0.id}">${ic('ClipboardCheck')}Attendance</button></div>`
+      : `<b class="hn-name">${esc(LVNAME(L.id))}</b><span class="hn-sub">${planned(L.id) ? esc(L.focus) : 'Planned next'}${planned(L.id) ? ' · no group at this level yet' : ''}</span>`}</div>`;
+  const state = (u) => (!g0 || u.final ? '' : u.n < g0.week ? 'done' : u.n === g0.week ? 'now' : '');
   const body = !planned(L.id) ? `<div class="tp-empty2">${ic('Hammer')}<b>${esc(LVNAME(L.id))} comes next</b><span>The course is planned one level at a time; the IELTS levels are next.</span></div>`
-    : `<div class="tp-list">${L.units.map((u, i) => { const grp = here.filter((g) => g.week === u.n).map((g) => g.name);
-      return `<button class="tp-wrow" data-push="week" data-lvl="${L.id}" data-w="${u.n}">${u.final ? `<span class="tp-tile" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i)}
-        <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${grp.length ? ` · <em>${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</span><b>${esc(kids ? u.lessons.map((l) => l.subtopic.split(' · ')[0]).join(' · ') : u.title)}</b><span>${kids ? u.lessons.map((l) => esc(l.subtopic.split(' · ')[1] || '')).filter(Boolean).join(' · ') : u.lessons.map((l) => esc(l.subtopic)).join(' · ')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('')}</div>`;
+    : `<div class="tp-sec"><h4>${wkN} weeks</h4><span>${esc(L.focus || '')}</span></div><div class="un-list">${L.units.map((u) => { const grp = here.filter((g) => g.week === u.n).map((g) => g.name), st = state(u);
+      const title = kids ? u.lessons.map((l) => l.subtopic.split(' · ')[0]).join(' · ') : u.title, sub = kids ? u.lessons.map((l) => esc(l.subtopic.split(' · ')[1] || '')).filter(Boolean).join(' · ') : u.lessons.map((l) => esc(l.subtopic)).join(' · ');
+      return `<button class="un-row2 ${st}" data-push="week" data-lvl="${L.id}" data-w="${u.n}"><span class="un-num ${st}">${u.final ? ic('Trophy') : st === 'done' ? ic('Check') : u.n}</span>
+        <span class="tx"><b>${esc(title)}${grp.length ? ` <em class="un-here">${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</b><span>${sub}</span>${st === 'now' ? `<span class="un-dots">${u.lessons.map((l) => `<i class="${l.n < g0.les ? 'd' : l.n === g0.les ? 'n' : ''}"></i>`).join('')}</span>` : ''}</span>${ic('ChevronRight')}</button>`; }).join('')}</div>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">${kids ? 'Kids course' : 'Teen course'}</div><div class="tp-lt">Units</div></div></div>
     ${aud}<div class="tp-segs" data-noswipe>${chips}</div>
-    <div class="lv-pane"${kids ? '' : ' data-lvpane'}><div class="tp-lvlcard" style="${gv(L.id)}"><div><div class="k">${esc(L.cefr)} · ${L.weeks} weeks</div><b>${esc(LVNAME(L.id))}</b><span>${planned(L.id) ? esc(L.focus) : 'Planned next'}</span></div>${here.length ? `<span class="n">${here.length}<small>group${here.length > 1 ? 's' : ''}</small></span>` : ''}</div>
+    <div class="lv-pane"${kids ? '' : ' data-lvpane'}>${hero}
     ${body}</div>`;
 }
 function scWeek(f) {
@@ -263,10 +273,12 @@ const matsBlock = (key) => {
 const scGone = () => `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button></div><div class="tp-inner"><div class="tp-empty2">${ic('Info')}<b>This group was removed</b></div></div>`;
 const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : 'https://' + u.replace(/^[a-z]+:/i, ''));
 
-/* ===================== Attendance: everyone is here, tap who isn't ===================== */
+/* ===================== Attendance: everyone is here; P / L / A on every name (31 Oct) ===================== */
+const MK = [['here', 'P'], ['late', 'L'], ['absent', 'A']];
 function stuRow(g, d, s, r) {
-  const a = r.get(s.id), hw = r.hwOf(s.id);
-  return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-tap="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span><span class="st">${a}</span></button>
+  const a = r.get(s.id), hw = r.hwOf(s.id), i = MK.findIndex((m) => m[0] === a);
+  return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-tap="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span></button>
+    <div class="tp-seg2 slide pla" data-noswipe style="--n:3"><span class="seg-thumb" style="--i:${i}"></span>${MK.map(([k, t], j) => `<button class="${j === i ? 'on' : ''}" data-mark="${s.id}|${k}" aria-label="${esc(s.name)}: ${k}">${t}</button>`).join('')}</div>
     <button class="tl-hw ${hw ? 'on' : ''}" data-taphw="${s.id}" aria-label="Homework: ${esc(s.name)}"${a === 'absent' ? ' hidden' : ''}>${ic(hw ? 'BookCheck' : 'BookX')}</button></div>`;
 }
 function saveLabel(g, d) { const r = rec(g, d), here = g.students.filter((s) => r.get(s.id) !== 'absent').length; return `${r.saved ? 'Saved ✓ · ' : 'Save · '}${here} of ${g.students.length} here`; }
@@ -275,17 +287,39 @@ function tapList(g, d) {
   const r = rec(g, d), open = lessonOpen(g, d);
   return `<div class="tl-lockable${open ? '' : ' locked'}" data-lock="${g.id}" data-dates="${iso(d)}" data-open="${open ? 1 : 0}"><p class="lock-note">${ic('Clock')} The register opens ${whenLabel(g, d)}</p>
     <div class="tl-grid" data-g="${g.id}" data-date="${iso(d)}">${g.students.map((s) => stuRow(g, d, s, r)).join('')}</div>
-    <p class="jr-key">Tap a name: once = absent, twice = late, three times = here again. The book = homework done or not.</p>
+    <p class="jr-key">P = here, L = late, A = absent: tap or slide. Tapping a name works too. The book = homework done or not.</p>
     <button class="tp-cta save-day ${r.saved ? 'done' : ''}" data-saveday="${g.id}" data-date="${iso(d)}">${saveLabel(g, d)}</button></div>`;
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
 function pgAtt() {
-  const today = S.groups.filter((g) => hasLesson(g, TODAY)).sort((a, b) => a.time.localeCompare(b.time)), others = S.groups.filter((g) => !hasLesson(g, TODAY));
-  if (!S.groups.length) return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div></div><div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
-  return `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div>
-    ${today.map((g) => { const r = rec(g, TODAY), n = g.students.length, open = !!T.open[g.id];
-      return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="${gvg(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${esc(g.time)} · ${n} student${n === 1 ? '' : 's'}${r.saved ? ' · taken ✓' : lessonOpen(g, TODAY) ? '' : ' · opens ' + esc(g.time)}</span></span><span class="tl-chev">${ic('ChevronDown')}</span></button><button class="tp-iconbtn" data-push="group" data-g="${g.id}" aria-label="Students, table and fees">${ic('Users')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, TODAY)}</div></div></div>`; }).join('') || `<div class="tp-empty2">${ic('Coffee')}<b>No lessons today</b></div>`}
-    ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="tp-list">${others.map((g) => `<button class="tp-lrow" data-push="group" data-g="${g.id}">${groupTile(g)}<span class="tx"><b>${groupLabel(g)}</b><span>${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}${nextLessonText(g)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
+  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div>${S.groups.length ? `<button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button>` : ''}</div>`;
+  if (!S.groups.length) return `${head}<div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
+  // the week strip: this week, Monday to Sunday; the glass circle slides to the chosen day
+  const mon = addDays(TODAY, -wd(TODAY)), days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(mon, i));
+  if (!T.attDay || !days.some((x) => iso(x) === T.attDay)) T.attDay = iso(TODAY);
+  const D = fromIso(T.attDay), k = T.attDay, isToday = k === iso(TODAY);
+  const strip = `<div class="tp-seg2 slide at-week" data-noswipe style="--n:7"><span class="seg-thumb" style="--i:${wd(D)}"></span>${days.map((x) => `<button class="${iso(x) === k ? 'on' : ''}${S.groups.some((g) => hasLesson(g, x)) ? ' has' : ''}${iso(x) === iso(TODAY) ? ' today' : ''}" data-attday="${iso(x)}" aria-label="${DAYS_LONG[wd(x)]} ${x.getDate()}"><small>${DAYS[wd(x)]}</small><b>${x.getDate()}</b><i></i></button>`).join('')}</div>`;
+  const list = S.groups.filter((g) => hasLesson(g, D) || (S.rec[g.id] || {})[k]).sort((a, b) => a.time.localeCompare(b.time)), others = S.groups.filter((g) => !list.includes(g));
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`;
+  const next = list.find((g) => !rec(g, D).saved);
+  const hero = next ? `<div class="hn-next at-hero"><div class="hn-top"><span class="hn-tag">${isToday ? 'Next to mark' : D < TODAY ? 'Not marked yet' : 'Coming up'}</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + (isToday ? '' : DAYS[wd(D)] + ' ') + esc(next.time)}</span></div>
+      <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(next.time)} · ${stu(next.students.length)}</span>
+      <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
+    : list.length ? `<div class="at-all">${ic('Check')}<b>Every register is taken</b><span>${esc(dayName(D))}</span></div>` : '';
+  const pill = (g) => { const r = rec(g, D), n = g.students.length; if (r.saved) return `<span class="at-pill ok">${g.students.filter((s) => r.get(s.id) !== 'absent').length} of ${n} came</span>`; return lessonOpen(g, D) ? '<span class="at-pill wait">Not marked</span>' : `<span class="at-pill gray">opens ${esc(g.time)}</span>`; };
+  const rows = list.map((g) => { const open = !!T.open[g.id];
+    return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="--c:${hc(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(g.time)} · ${stu(g.students.length)}</span></span>${pill(g)}<span class="tl-chev">${ic('ChevronDown')}</span></button></div><div class="tl-body"><div class="tl-in">${tapList(g, D)}</div></div></div>`; }).join('');
+  // this month, every group: how many came, how many registers were taken
+  const ym = iso(TODAY).slice(0, 7); let here = 0, total = 0, taken = 0;
+  S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { taken++; const r = rec(g, fromIso(x)); g.students.forEach((s) => { total++; if (r.get(s.id) !== 'absent') here++; }); }));
+  const pc = total ? Math.round((here / total) * 100) : null;
+  const minis = `<div class="at-two"><div class="at-mini"><span class="h">${MONTHS[TODAY.getMonth()]}</span><b>${pc === null ? '–' : pc}<small>${pc === null ? '' : '%'}</small></b><span class="s">came to lessons</span><span class="ho-bar"><i style="--w:${pc || 0}%"></i></span></div>
+    <div class="at-mini"><span class="h">Taken</span><b>${taken}<small> register${taken === 1 ? '' : 's'}</small></b><span class="s">this month, all groups</span></div></div>`;
+  return `${head}${strip}${hero}
+    <div class="tp-sec"><h4>${isToday ? 'Today' : esc(dayName(D))}</h4><span>${list.length} lesson${list.length === 1 ? '' : 's'}</span></div>
+    ${list.length ? `<div class="at-list">${rows}</div>` : `<div class="tp-empty2">${ic('Coffee')}<b>No lessons ${isToday ? 'today' : 'on this day'}</b></div>`}
+    ${minis}
+    ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="at-list">${others.map((g) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="group" data-g="${g.id}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${g.days.map((x) => DAYS[x]).join(', ') || 'No days set'} · ${esc(g.time)}${nextLessonText(g)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
 }
 const GSYM = { here: '✓', late: 'L', absent: '✕' };
 function tableDates(g) { // the last lessons taken, then the lessons still to come (today included)
@@ -351,7 +385,9 @@ function pgBooks() {
   const levelChips = C.levels.map((l, i) => `<button class="${i === T.bookLvl ? 'on' : ''}" style="${gv(l.id)}" data-booklvl="${i}">${esc(LVNAME(l.id))}</button>`).join('');
   const seg = [['books', 'Books', files.length, 'Library'], ['audio', 'Audio', audio.length, 'Headphones'], ['video', 'Videos', links.length, 'CirclePlay']];
   let body;
-  if (T.bookSeg === 'books') body = `<div class="tp-shelf">${files.map((f) => { const have = S.files[f[0]];
+  let last = ''; try { last = localStorage.getItem('teacher-lastbook') || ''; } catch (e) { /* none */ }
+  const cont = T.bookSeg === 'books' && last && S.files[last] && files.some((f) => f[0] === last) ? `<div class="hn-next bk-hero"><div class="hn-top"><span class="hn-tag">Continue</span><span class="hn-when">${esc(LVNAME(L.id))}</span></div><b class="hn-name">${esc(bookMeta(last).t)}</b><span class="hn-sub">${esc(bookMeta(last).sub)} · the book you opened last</span><div class="hn-btns"><button data-openbook="${esc(last)}">${ic('BookOpen')}Open</button></div></div>` : '';
+  if (T.bookSeg === 'books') body = cont + `<div class="tp-shelf">${files.map((f) => { const have = S.files[f[0]];
       return `<button class="tp-book" data-book="${esc(f[0])}">${bookCover(f[0])}<span>${esc(bookMeta(f[0]).t)}</span><small>${esc(bookMeta(f[0]).sub)}${have ? ' · on this phone' : ' · tap to add'}</small></button>`; }).join('')}</div>
     <p class="tp-small">Add each PDF from your phone once (from Telegram, Drive or Downloads); it then opens from here, even offline.</p>`;
   else if (T.bookSeg === 'audio') body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings.</div>` : '') + audio.map((a) => `<div class="tp-media"><button class="mi play" style="background:#0FA37F" data-play="${a.id}" aria-label="Play ${esc(a.name)}">${ic('Play')}</button><span class="tx"><b>${esc(a.name)}</b><span>${fmtSize(a.size || 0)}</span></span><button class="tp-iconbtn" data-rmaudio="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button></div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="audio">${ic('Plus')} Add audio</button>`;
@@ -654,7 +690,8 @@ function bindSegSlide() {
     k.sw.classList.remove('sliding'); k.th.style.transform = ''; k.sw._slid = Date.now();
     const seg = k.btns[k.i].dataset.bookseg, au = k.btns[k.i].dataset.aud;
     if (au) { if (au !== T.aud) { T.aud = au; keepUi(); } return draw(); }
-    if (seg && seg !== T.bookSeg) { T.bookSeg = seg; R.anim = 3; draw(); } else draw();
+    if (seg) { if (seg !== T.bookSeg) { T.bookSeg = seg; R.anim = 3; } return draw(); }
+    k.sw._slid = 0; k.btns[k.i].click(); k.sw._slid = Date.now(); // any other switch (P / L / A, the week strip): as if the chosen option was tapped
   };
   root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
 }
@@ -874,7 +911,7 @@ function tapCtx(b) { const grid = b.closest('.tl-grid'); return grid ? { g: gByI
 function refreshRow(grid, g, d, sid) {
   const s = g.students.find((x) => x.id === sid), row = grid.querySelector(`.tl-st[data-sid="${sid}"]`); if (!s || !row) return;
   const r = rec(g, d), a = r.get(sid), hw = r.hwOf(sid), hb = row.querySelector('.tl-hw'); // changed in place, so the colour glides
-  row.className = 'tl-st ' + a; row.querySelector('.st').textContent = a;
+  row.className = 'tl-st ' + a; const sg = row.querySelector('.pla'); if (sg) { const i = MK.findIndex((m) => m[0] === a); sg.querySelector('.seg-thumb').style.setProperty('--i', i); sg.querySelectorAll('button').forEach((x, k) => x.classList.toggle('on', k === i)); }
   hb.hidden = a === 'absent'; hb.classList.toggle('on', hw); hb.innerHTML = ic(hw ? 'BookCheck' : 'BookX');
   const btn = grid.parentElement.querySelector(`[data-saveday="${g.id}"]`); if (btn) btn.textContent = saveLabel(g, d);
 }
@@ -906,6 +943,7 @@ function onClick(e) {
   if (d.aud) { if (d.aud === T.aud) return; T.aud = d.aud; keepUi(); return draw(); }
   if (d.kidlvl) { if (d.kidlvl === T.kidLvl) return; T.kidLvl = d.kidlvl; keepUi(); return draw(); }
   if (d.kshow) { T.open['tr-' + d.kshow] = !T.open['tr-' + d.kshow]; return draw(); }
+  if (d.attday) { if (d.attday === T.attDay) return; T.attDay = d.attday; return draw(); }
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.gcell !== undefined) {
@@ -918,6 +956,7 @@ function onClick(e) {
     const grid = root.querySelector(`.tl-grid[data-g="${g.id}"][data-date="${d.gdate}"]`); if (grid) refreshRow(grid, g, dt, d.gcell);
     return;
   }
+  if (d.mark) { const [sid, m] = d.mark.split('|'), c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) { refreshRow(c.grid, c.g, c.d, sid); return notOpenToast(c.g, c.d); } const r = rec(c.g, c.d, true); r.att[sid] = m; save(); return refreshRow(c.grid, c.g, c.d, sid); }
   if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
   if (d.saveday) {
     const g = gById(d.saveday), dt = fromIso(d.date);
@@ -947,7 +986,7 @@ function onClick(e) {
   if (d.packshareall) return packShareAll(d.packshareall, d.pt);
   if (d.sharelink) return shareLink(d.sharelink, d.pt);
   if (d.book) return openSheet({ s: 'book', book: d.book });
-  if (d.openbook) return openBook(d.openbook);
+  if (d.openbook) { try { localStorage.setItem('teacher-lastbook', d.openbook); } catch (err) { /* not needed */ } return openBook(d.openbook); } // remembered for Continue on Books
   if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
   if (d.play) return playAudio(b, d.play);
   if (d.openmat) return openMat(d.openmat);

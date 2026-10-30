@@ -15,7 +15,7 @@ const TURBO_LV = (typeof TURBO === 'undefined') ? undefined : {
 };
 if (TURBO_LV) {
   TURBO_LV.units.forEach((u) => u.lessons.forEach((l) => { // the PDFs, so Share works like every other lesson file
-    const P = {}; if (l.vocab) P.y = l.vocab; if (l.grammar) P.e = l.grammar; if (l.wordcheck) P.c = l.wordcheck;
+    const P = {}; if (l.vocab) P.y = l.vocab; if (l.grammar) P.e = l.grammar; if (l.wordcheck) P.c = l.wordcheck; if (l.writing) P.w = l.writing; if (l.speaking) P.s = l.speaking;
     if (Object.keys(P).length && typeof PACKS !== 'undefined') PACKS[`it-w${u.n}-l${l.n}`] = P;
   }));
 }
@@ -36,10 +36,10 @@ function turboWeek(f) {
 }
 function turboLesson(f) {
   const u = weekOf('IT', f.w), l = u.lessons[f.l - 1], key = `it-w${u.n}-l${l.n}`, title = `IELTS Turbo W${u.n} - ${l.title}`;
-  const file = (k, name, sub) => { const p = l[{ y: 'vocab', e: 'grammar', c: 'wordcheck' }[k]]; if (!p) return '';
+  const file = (k, name, sub) => { const p = l[{ y: 'vocab', e: 'grammar', c: 'wordcheck', w: 'writing', s: 'speaking' }[k]]; if (!p) return '';
     packLater(p[0]);
     return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${esc(sub)} · ${packSize(p[1])}</span></div><a class="tp-pill" href="media/packs/${p[0]}" target="_blank" rel="noopener">Open</a><button class="tp-pill" data-packshare="${key}|${k}" data-pt="${esc(title + ' - ' + name)}">${ic('Share2')} Share</button></div>`; };
-  const files = file('y', 'Vocabulary', l.vocab_title || 'Article and new words') + file('e', 'Grammar', l.grammar_title || 'Explanation and exercises') + file('c', 'Weekly word check', 'This week\'s words');
+  const files = file('w', 'Writing lesson', 'Question, model answer, vocabulary') + file('s', 'Speaking lesson', 'Questions, model answers, grammar') + file('y', 'Vocabulary', l.vocab_title || 'Article and new words') + file('e', 'Grammar', l.grammar_title || 'Explanation and exercises') + file('c', 'Weekly word check', 'This week\'s words');
   const hw = (u.w.homework || []).find((d) => d.day === TURBO_DAYS[l.day]);
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button></div>
     <div class="tp-inner" style="${gv('IT')}">

@@ -49,9 +49,11 @@ function rowText(g, L) { // used by the Fees screen
 }
 
 /* ---------- Home: you choose what you see, and in which order ---------- */
-const HOME_SECS = [['paid', 'Who paid (pie)'], ['owe', 'Who has not paid (groups)'], ['extras', 'Extra charges'], ['groups', 'Students by group'], ['today', 'Today']];
+// 31 Oct draft: Up next, Overview (students by group + how many paid, no money: money lives in Budget), Today (from Budget's schedule), Who still owes, Extra charges.
+const HOME_SECS = [['next', 'Up next'], ['overview', 'Students and who paid'], ['today', 'Today'], ['owe', 'Who still owes'], ['extras', 'Extra charges']];
 function homeCfg() {
   const c = S.homeCfg || (S.homeCfg = {});
+  if (c.v !== 3) { c.v = 3; c.order = []; c.hide = []; } // the new Home starts in its own order
   if (!Array.isArray(c.order)) c.order = [];
   c.order = c.order.filter((id) => HOME_SECS.some((x) => x[0] === id)); HOME_SECS.forEach((x) => { if (!c.order.includes(x[0])) c.order.push(x[0]); });
   if (!Array.isArray(c.hide)) c.hide = [];
@@ -114,7 +116,62 @@ function secGroups() {
   return card('Students by group', `${total} students`, `<div class="dr-over">${donut(gs.map((g) => [g.students.length, grpColor(g)]), 138, 18, `<b>${total}</b><span>students</span>`)}
     <div class="dr-pl h2-leg">${[...gs].sort((a, b) => b.students.length - a.students.length).map((g) => `<div><i style="background:${grpColor(g)}"></i>${esc(g.name)}<b>${g.students.length}</b></div>`).join('')}</div></div>`);
 }
-const SECS = { paid: secPaid, owe: secOwe, today: secToday, extras: secExtras, groups: secGroups };
+/* ---------- Today's work comes from Budget's schedule (changed only in Budget). Only lessons: no university, travel or home. ---------- */
+function budgetToday() {
+  let d = null; try { d = JSON.parse(localStorage.getItem('budget-schedule') || 'null'); } catch (e) { /* none */ }
+  if (!d || !Array.isArray(d.days)) return null;
+  return (d.days[wd(TODAY)] || []).map((b) => ({ from: b.from, to: b.to, name: b.name, color: b.color, g: (b.tid && gById(b.tid)) || S.groups.find((x) => x.name.toLowerCase() === String(b.name).toLowerCase()) || null }));
+}
+const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+function todayBlocks() { // Budget's schedule when Budget has shared it, else the groups' own days and times
+  const b = budgetToday(); if (b) return { list: b, from: 'budget' };
+  return { list: S.groups.filter((g) => hasLesson(g, TODAY)).map((g) => ({ from: startMin(g), to: startMin(g) + 80, name: g.name, g })).sort((x, y) => x.from - y.from), from: 'teacher' };
+}
+const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
+const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
+// iPhone system colors, one per group (in the order of your groups), used everywhere on Home
+const IOS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#FFCC00', '#5856D6', '#30B0C7', '#A2845E'];
+const hc = (g) => IOS[Math.max(0, S.groups.indexOf(g)) % IOS.length];
+function secNext() { // the one thing that matters right now: the lesson that is on, or the next one today
+  const { list } = todayBlocks(), now = nowMin(), b = list.find((x) => x.to > now); if (!b) return '';
+  const on = b.from <= now, g = b.g, st = g ? g.students.length : 0;
+  // option 6 (31 Oct): a solid blue widget with a soft glow, and today's lessons as small tiles inside it
+  const tiles = list.length > 1 ? `<div class="hn-tl">${list.map((x) => `<span class="${x === b ? 'on' : x.to <= now ? 'done' : ''}">${hm(x.from)}<small>${esc(x.name)}${x === b ? (on ? ' · now' : ' · next') : ''}</small></span>`).join('')}</div>` : '';
+  return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">${on ? 'Now' : 'Up next'}</span><span class="hn-when">${on ? 'ends in ' + inMin(b.to - now) : 'in ' + inMin(b.from - now)}</span></div>
+    <b class="hn-name">${esc(b.name)}</b><span class="hn-sub">${hm(b.from)}–${hm(b.to)} · ${lessonLine(g)}${st ? ` · ${st} student${st === 1 ? '' : 's'}` : ''}</span>${tiles}
+    ${g ? `<div class="hn-btns"><button ${openLessonAttr(g)}>${ic('BookOpen')}Open lesson</button><button data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance</button></div>` : ''}</div>`;
+}
+function secTodayB() { // today only, as a simple timeline
+  const { list, from } = todayBlocks(), now = nowMin();
+  const row = (b) => { const done = b.to <= now, on = b.from <= now && !done, g = b.g;
+    const main = `<span class="ht-t">${hm(b.from)}<small>${hm(b.to)}</small></span><i></i><span class="ht-x"><b>${esc(b.name)}</b><span>${lessonLine(g)}</span></span>${on ? '<em>Now</em>' : ''}`;
+    const side = !g ? '' : taughtOn(g, TODAY) ? `<span class="ht-ok" title="Taught">${ic('Check')}</span>` : `<button class="ht-reg" data-push="register" data-g="${g.id}" aria-label="Attendance for ${esc(g.name)}">${ic('ClipboardCheck')}</button>`; // the tick = really taught
+    return `<div class="ht-row ${done ? 'done' : on ? 'on' : ''}" style="--c:${g ? hc(g) : '#8E8E93'}">${g ? `<button class="ht-main" ${openLessonAttr(g)}>${main}</button>` : `<span class="ht-main">${main}</span>`}${side}</div>`; };
+  const note = from === 'budget' ? 'from Budget' : 'open Budget once to use your schedule';
+  return card('Today', note, list.length ? `<div class="ht-list h-in">${list.map(row).join('')}</div>` : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`);
+}
+function secOverview() { // two halves: how the students are spread over the groups, and how many have paid. No money here: money lives in Budget.
+  const gs = S.groups.filter((g) => g.students.length), total = gs.reduce((n, g) => n + g.students.length, 0); if (!total) return '';
+  const ym = payState().ym, sc = statusCounts(ym), no = sc.part + sc.unpaid, pc = sc.n ? Math.round((sc.ok / sc.n) * 100) : 0;
+  const pie = `<div class="hv-card h-in"><span class="hv-h">Students</span>${donut(gs.map((g) => [g.students.length, hc(g)]), 112, 14, `<b>${total}</b><span>in ${gs.length} groups</span>`, '#E5E5EA')}
+    <div class="hv-leg">${gs.map((g) => `<span><i style="background:${hc(g)}"></i>${esc(g.name)}<b>${g.students.length}</b></span>`).join('')}</div></div>`;
+  const paid = sc.n ? `<button class="hv-card hv-paid h-in" data-sheet="paypick"><span class="hv-h">Paid · ${MONTHS[+ym.slice(5) - 1]}</span>
+    <span class="hv-big"><b>${sc.ok}</b><span>of ${sc.n}</span></span><span class="hv-sub">students paid</span>
+    <span class="ho-bar"><i style="--w:${pc}%"></i></span>
+    <span class="hv-row"><i class="ok"></i>Paid<b>${sc.ok}</b></span><span class="hv-row"><i class="no"></i>Not paid<b>${no}</b></span></button>` : '';
+  return card('Overview', monthNav(), `<div class="hv-two">${pie}${paid}</div>`);
+}
+function secOweB() { // every group on its own row, with up to six names of who still owes; the rest are one tap away
+  const ym = payState().ym, sc = statusCounts(ym), mn = MONTHS[+ym.slice(5) - 1];
+  const gs = feeGroups().map((g) => ({ g, rows: oweRows(g, ym).sort((a, b) => a.s.name.localeCompare(b.s.name)), c: sc.per[g.id] })).filter((x) => x.c && x.c.n);
+  if (!gs.length) return '';
+  const row = ({ g, rows, c }) => { const ok = c.paid + c.credit, pc = c.n ? (ok / c.n) * 100 : 0;
+    return `<button class="ho-row" style="--c:${hc(g)}" data-sheet="owegrp" data-g="${g.id}"><span class="ho-h"><span class="ho-dot"></span><b>${esc(g.name)}</b><span class="ho-n">${ok} of ${c.n} paid</span>${ic('ChevronRight')}</span>
+      <span class="ho-bar"><i style="--w:${pc}%"></i></span>
+      ${rows.length ? `<span class="ho-names">${rows.slice(0, 6).map((r) => `<u class="${r.m.length >= 2 ? 'late' : ''}"><i></i>${esc(r.s.name.split(' ')[0])}${r.m.length >= 2 ? `<small>${r.m.length} mo</small>` : ''}</u>`).join('')}${rows.length > 6 ? `<u class="more">See all ${rows.length}</u>` : ''}</span>` : `<span class="ho-all">${ic('Check')}Everybody has paid for ${mn}</span>`}</button>`; }; // two columns: dot, name, months
+  return card('Who still owes', mn, `<div class="ho-list h-in">${gs.map(row).join('')}</div>`);
+}
+const SECS = { next: secNext, overview: secOverview, today: secTodayB, owe: secOweB, extras: secExtras };
 function pgHomeNew() {
   if (!S.groups.length) return pgHome();
   const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, cfg = homeCfg();
@@ -323,3 +380,7 @@ function home2Click(b, d) {
   if (d.pcell !== undefined) { const g = gById(T.push[T.push.length - 1].g); if (g) pastToggle(g, d.pcell, d.gdate); return true; }
   return false;
 }
+
+// Budget's schedule changed (in another tab, or while Teacher was in the background): show it
+window.addEventListener('storage', (e) => { if (e.key === 'budget-schedule' && typeof draw === 'function') draw(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && typeof draw === 'function') draw(); });

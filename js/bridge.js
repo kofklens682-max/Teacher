@@ -209,8 +209,7 @@ function sheetPayPick(s) {
     if (d.unarm !== undefined) { // "Not paid" on a paid row: first tap asks, second tap does it
       const [sid, gid, m] = d.unarm.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
       if (b.classList.contains('on')) { const gone = delPays(sid, m); save(); draw(); payToast(`${st.name} · ${ymName(m)} · not paid`, () => { gone.forEach((q) => { const c = { ...q, id: uid() }; S.pay.pays.push(c); tbSend('add', c); }); }); return true; }
-      document.querySelectorAll('.pl-unpay.on').forEach((x) => { x.classList.remove('on'); x.textContent = 'Not paid'; });
-      b.classList.add('on'); b.textContent = 'Yes, not paid'; return true;
+      b.classList.add('on'); b.textContent = 'Yes, not paid'; b._t = Date.now(); return true;
     }
     if (d.payarm !== undefined) { // the tick or a month chip: get "Yes" ready, pay nothing yet
       const row = b.closest('.pl-row'), ok = row && row.querySelector('.pl-ok'); if (!ok) return true;
@@ -219,7 +218,7 @@ function sheetPayPick(s) {
       if (m) { delete ok.dataset.payall; ok.dataset.paym = d.payarm; ok.innerHTML = `${ic('Check')}Yes, ${ymLabel(m)} paid`; }
       else { delete ok.dataset.paym; ok.dataset.payall = ok.dataset.all; ok.innerHTML = `${ic('Check')}Yes, paid`; }
       row.querySelectorAll('.pl-mo button').forEach((x) => x.classList.toggle('on', x === b));
-      disarmRows(row); row.classList.add('pl-armed'); row._y = row.getBoundingClientRect().top; ok.tabIndex = 0;
+      disarmRows(row); row.classList.add('pl-armed'); row._y = row.getBoundingClientRect().top; row._t = Date.now(); ok.tabIndex = 0;
       return true;
     }
     if (d.payall) { // "Yes, paid" after the tick: everything owed until this month is paid, each month with its own amount
@@ -253,8 +252,16 @@ function sheetPayPick(s) {
   };
   // A tap anywhere else, or scrolling the list, hides the green "Yes, paid" again
   const disarmRows = (keep) => { if (root) root.querySelectorAll('.pl-row.pl-armed').forEach((r) => { if (r !== keep) { r.classList.remove('pl-armed'); r.querySelectorAll('.pl-mo button.on').forEach((x) => x.classList.remove('on')); const ok = r.querySelector('.pl-ok'); if (ok) ok.tabIndex = -1; } }); };
-  document.addEventListener('click', (e) => { const r = e.target.closest && e.target.closest('.pl-row.pl-armed'); if (!r || !e.target.closest('.pl-act, .pl-mo')) disarmRows(); }, true);
-  document.addEventListener('click', (e) => { if (!e.target.closest('.pl-unpay')) document.querySelectorAll('.pl-unpay.on').forEach((x) => { x.classList.remove('on'); x.textContent = 'Not paid'; }); }, true);
+  const resetUnpay = () => document.querySelectorAll('.pl-unpay.on').forEach((x) => { x.classList.remove('on'); x.textContent = 'Not paid'; });
+  // While a green "Yes" is out, any other tap (the name, a month, the tick, anywhere) only puts the row back and does nothing else.
+  // A "Yes" tapped within 0.4 s of appearing is a double tap, not a decision, so it is ignored too.
+  document.addEventListener('click', (e) => {
+    const t = e.target, armed = root && root.querySelector('.pl-row.pl-armed'), un = root && root.querySelector('.pl-unpay.on'); if (!t.closest || (!armed && !un)) return;
+    const yes = (armed && t.closest('.pl-row.pl-armed .pl-ok')) || (un && t.closest('.pl-unpay.on'));
+    if (yes && Date.now() - ((armed && armed._t) || (un && un._t) || 0) > 400) return;
+    if (yes) { e.stopPropagation(); e.preventDefault(); return; }
+    disarmRows(); resetUnpay(); e.stopPropagation(); e.preventDefault();
+  }, true);
   document.addEventListener('scroll', () => { const r = root && root.querySelector('.pl-row.pl-armed'); if (r && Math.abs(r.getBoundingClientRect().top - r._y) > 12) disarmRows(); }, true); // a real scroll, not a tiny shake
   home2Click = function (b, d) { return mine(b, d) || _h(b, d); };
   feesClick = function (b, d) { return mine(b, d) || _f(b, d); };
