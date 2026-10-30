@@ -28,8 +28,12 @@ html .tp-tabs.press .tp-ind, html .tabs.press .tab-ind {
   html:not([data-theme="light"]) .tp-tabs, html:not([data-theme="light"]) .tabs { box-shadow: inset 0 0 0 .6px rgba(255,255,255,.16), inset 0 1.5px 1px -.5px rgba(255,255,255,.3), 0 12px 30px rgba(0,0,0,.4) !important; }
   html:not([data-theme="light"]) .tp-ind, html:not([data-theme="light"]) .tab-ind { background: linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,.1) 60%, rgba(255,255,255,.18)) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25), inset 2px 2.5px 3px -1px rgba(255,255,255,.4), 0 4px 12px rgba(0,0,0,.4) !important; }
 }
-/* The top bar of a sheet (Cancel / title / Save) stays in view while the form scrolls */
-.tp-sheet .panel > .tp-sh-h:first-child { position: sticky; top: 0; z-index: 8; background: var(--bg); margin: 0 -18px; max-width: none; padding: 8px 18px 12px; }
+/* The top bar of a sheet (Cancel / title / Save) stays in view while the form scrolls.
+   30 Oct: it is glued to the very top of the sheet (before, the sheet's 8px padding let the list show above it, so the bar looked like it floated),
+   it carries the grab handle so the handle never scrolls away, and a thin line marks where the list goes under it. */
+.tp-sheet .panel:has(> .tp-sh-h:first-child)::before { display: none; }
+.tp-sheet .panel > .tp-sh-h:first-child { position: sticky; top: -8px; z-index: 8; background: var(--bg); margin: -8px -18px 0; max-width: none; padding: 22px 18px 12px; box-shadow: 0 .5px 0 rgba(14,19,37,.12); }
+.tp-sheet .panel > .tp-sh-h:first-child::before { content: ""; position: absolute; top: 8px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: rgba(14,19,37,.18); }
 /* Done / Save look like real buttons (a soft round pill), Cancel stays plain text */
 .tp-sh-h .tp-back.strong { background: rgba(61,90,254,.12); border-radius: 999px; padding: 7px 15px; }
 .tp-sh-h .tp-back.strong:active { background: rgba(61,90,254,.22); }

@@ -114,7 +114,8 @@ function payToast(msg, fn) {
   toast(msg); undoFn = fn;
   const el = root && root.querySelector('.tp-toast'); if (!el) return;
   el.innerHTML = `<span>${esc(msg)}</span><button class="tp-undo" data-payundo>Undo</button>`;
-  clearTimeout(undoT); undoT = setTimeout(() => { undoFn = null; }, 4000);
+  clearTimeout(undoT); undoT = setTimeout(() => { undoFn = null; }, 8000);
+  clearTimeout(toastT); toastT = setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 300); }, 8000); // 8 seconds to notice a wrong tap (a plain message goes in 2.6)
 }
 
 /* ---------- the student's page: the months, tap to mark ---------- */
@@ -161,19 +162,23 @@ function sheetPayRec(s) {
     <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
 
-// A row of someone who owes: the name opens every month; a month = that month is paid; the tick = all of it is paid.
-const oweLine = (g, st, L, i) => { const ms = L.rows.filter((r) => r.charge - r.covered > 0);
-  return `<div class="pl-row"><span class="pl-n">${i + 1}</span><div class="pl-main"><button class="pl-name" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}">${esc(st.name)}</button><span class="pl-mo">${ms.map((r) => `<button class="${r.covered ? 'pt' : ''}" data-paym="${st.id}|${g.id}|${r.m}" aria-label="${esc(st.name)} paid ${ymName(r.m)}">${ymLabel(r.m)}</button>`).join('')}</span></div><span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-payall="${st.id}|${g.id}|${L.cur.m}" aria-label="${esc(st.name)} paid everything: ${dMoney(L.debt)}">${ic('Check')}</button></div>`; };
-const HOW = '<p class="tp-small pm-how">Tap a month = that month is paid. The tick = everything on the row is paid. Tap a name to see every month.</p>';
+// A row of someone who owes: the name opens every month. A month or the tick only brings out a green "Yes, …"; that button pays (that month, or all of it), so a wrong tap pays nothing.
+// n = the student's own number: their place in the group A–Z, so it never changes when someone pays.
+const oweLine = (g, st, L, n) => { const ms = L.rows.filter((r) => r.charge - r.covered > 0);
+  return `<div class="pl-row"><span class="pl-n">${n}</span><div class="pl-main"><button class="pl-name" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}">${esc(st.name)}</button><span class="pl-mo">${ms.map((r) => `<button class="${r.covered ? 'pt' : ''}" data-payarm="${st.id}|${g.id}|${r.m}" aria-label="${esc(st.name)} paid ${ymName(r.m)}">${ymLabel(r.m)}</button>`).join('')}</span></div><div class="pl-act"><div class="pl-face"><span class="pl-amt">${dMoney(L.debt)}</span><button class="pl-tick" data-payarm aria-label="${esc(st.name)} paid everything: ${dMoney(L.debt)}">${ic('Check')}</button></div><button class="pl-ok" data-payall="${st.id}|${g.id}|${L.cur.m}" tabindex="-1">${ic('Check')}Yes, paid</button></div></div>`; };
+// A paid row: "Not paid" undoes the latest paid month. One tap shows "Yes, not paid", the next tap does it.
+const latestPaid = (sid) => S.pay.pays.reduce((m, p) => (p.sid === sid && p.m > m ? p.m : m), '');
+const unpayBtn = (g, st) => { const m = latestPaid(st.id); return m ? `<button class="pl-unpay" data-unarm="${st.id}|${g.id}|${m}" aria-label="${esc(st.name)}: not paid for ${ymName(m)}">Not paid</button>` : ''; };
+const HOW = '<p class="tp-small pm-how">Tap a month, then the green <b>Yes</b> = that month is paid. The tick, then <b>Yes, paid</b> = everything on the row is paid. Tap a name to see every month.</p>';
+const abc = (sts) => [...sts].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
 /* ---------- the group's page: numbered lists, who has not paid and who paid ---------- */
 function sheetOweGrp(s) {
   const g = gById(s.g), ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1]; if (!g) return '';
-  const all = g.students.map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free');
-  const owe = all.filter((x) => x.L.debt > 0).sort((a, b) => b.L.rows.filter((r) => r.charge > r.covered).length - a.L.rows.filter((r) => r.charge > r.covered).length || b.L.debt - a.L.debt);
-  const paid = all.filter((x) => !(x.L.debt > 0));
-  const oweRow = ({ st, L }, i) => oweLine(g, st, L, i);
-  const paidRow = ({ st, L }, i) => `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button><span class="pl-done">${ic('Check')}</span></div>`;
+  const all = abc(g.students).map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free').map((x, i) => ({ ...x, n: i + 1 })); // A–Z, each keeps its number
+  const owe = all.filter((x) => x.L.debt > 0), paid = all.filter((x) => !(x.L.debt > 0));
+  const oweRow = ({ st, L, n }) => oweLine(g, st, L, n);
+  const paidRow = ({ st, L, n }) => `<div class="pl-row ok"><span class="pl-n">${n}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`;
   return `<div class="tp-sh-h"><span></span><b>${esc(g.name)} · ${mn}</b><button class="tp-back strong" data-closesheet>Done</button></div>
     ${HOW}
     <div class="pl-h"><span class="d no"></span>Not paid<em>${owe.length}</em></div>${owe.length ? `<div class="pl-list">${owe.map(oweRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Everybody has paid for ${mn}.</p>`}
@@ -184,8 +189,8 @@ function sheetOweGrp(s) {
 function sheetPayPick(s) {
   const gs = feeGroups(), ym = ymOf(TODAY);
   return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
-    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${g.students.length}</em></div><div class="pl-list">${g.students.map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
-      return ms.length ? oweLine(g, st, L, i) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button><span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
+    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${g.students.length}</em></div><div class="pl-list">${abc(g.students).map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
+      return ms.length ? oweLine(g, st, L, i + 1) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
 }
 
 /* ---------- taps ---------- */
@@ -201,7 +206,23 @@ function sheetPayPick(s) {
       payToast(`${st.name} · ${ymName(m)} · ${dMoney(p.amount)} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => x !== p); tbSend('del', p); });
       return true;
     }
-    if (d.payall) { // the tick: everything owed until this month is paid, each month with its own amount
+    if (d.unarm !== undefined) { // "Not paid" on a paid row: first tap asks, second tap does it
+      const [sid, gid, m] = d.unarm.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      if (b.classList.contains('on')) { const gone = delPays(sid, m); save(); draw(); payToast(`${st.name} · ${ymName(m)} · not paid`, () => { gone.forEach((q) => { const c = { ...q, id: uid() }; S.pay.pays.push(c); tbSend('add', c); }); }); return true; }
+      document.querySelectorAll('.pl-unpay.on').forEach((x) => { x.classList.remove('on'); x.textContent = 'Not paid'; });
+      b.classList.add('on'); b.textContent = 'Yes, not paid'; return true;
+    }
+    if (d.payarm !== undefined) { // the tick or a month chip: get "Yes" ready, pay nothing yet
+      const row = b.closest('.pl-row'), ok = row && row.querySelector('.pl-ok'); if (!ok) return true;
+      if (!ok.dataset.all) ok.dataset.all = ok.dataset.payall;
+      const m = d.payarm && d.payarm.split('|')[2];
+      if (m) { delete ok.dataset.payall; ok.dataset.paym = d.payarm; ok.innerHTML = `${ic('Check')}Yes, ${ymLabel(m)} paid`; }
+      else { delete ok.dataset.paym; ok.dataset.payall = ok.dataset.all; ok.innerHTML = `${ic('Check')}Yes, paid`; }
+      row.querySelectorAll('.pl-mo button').forEach((x) => x.classList.toggle('on', x === b));
+      disarmRows(row); row.classList.add('pl-armed'); row._y = row.getBoundingClientRect().top; ok.tabIndex = 0;
+      return true;
+    }
+    if (d.payall) { // "Yes, paid" after the tick: everything owed until this month is paid, each month with its own amount
       const [sid, gid, upTo] = d.payall.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
       const rows = ledger(g, st, upTo).rows.filter((r) => r.charge - r.covered > 0);
       const made = rows.map((r) => addPay(sid, r.m, r.charge - r.covered)); save(); draw();
@@ -230,6 +251,11 @@ function sheetPayPick(s) {
     if (d.paygo) return true; // the old "Save" of Mark paid is gone
     return false;
   };
+  // A tap anywhere else, or scrolling the list, hides the green "Yes, paid" again
+  const disarmRows = (keep) => { if (root) root.querySelectorAll('.pl-row.pl-armed').forEach((r) => { if (r !== keep) { r.classList.remove('pl-armed'); r.querySelectorAll('.pl-mo button.on').forEach((x) => x.classList.remove('on')); const ok = r.querySelector('.pl-ok'); if (ok) ok.tabIndex = -1; } }); };
+  document.addEventListener('click', (e) => { const r = e.target.closest && e.target.closest('.pl-row.pl-armed'); if (!r || !e.target.closest('.pl-act, .pl-mo')) disarmRows(); }, true);
+  document.addEventListener('click', (e) => { if (!e.target.closest('.pl-unpay')) document.querySelectorAll('.pl-unpay.on').forEach((x) => { x.classList.remove('on'); x.textContent = 'Not paid'; }); }, true);
+  document.addEventListener('scroll', () => { const r = root && root.querySelector('.pl-row.pl-armed'); if (r && Math.abs(r.getBoundingClientRect().top - r._y) > 12) disarmRows(); }, true); // a real scroll, not a tiny shake
   home2Click = function (b, d) { return mine(b, d) || _h(b, d); };
   feesClick = function (b, d) { return mine(b, d) || _f(b, d); };
   // "Starts paying from" is a list, chosen in place
