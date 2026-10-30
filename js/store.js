@@ -23,7 +23,7 @@ function normalize(d) {
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
     students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}) })).filter((s) => s.name),
-    color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(),
+    color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
   }));
   const P = out.pay && typeof out.pay === 'object' && !Array.isArray(out.pay) ? out.pay : {}, bp = blankPay();
   const first = /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start; // 27 Oct 2026: fees count from September (once; after that the saved start is kept)

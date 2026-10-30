@@ -16,7 +16,7 @@ Object.assign(ICONS, {
 });
 
 /* ---------- money + months ---------- */
-const dMoney = (n) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
+const dMoney = (n) => Math.round(n).toLocaleString('en-US').replace(/,/g, '.'); // 31 Oct: 1.000.000, dots are easier to count than spaces
 const ymOf = (d) => iso(d).slice(0, 7);
 const ymAdd = (ym, n) => { const [y, m] = ym.split('-').map(Number), d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
 const ymName = (ym) => { const [y, m] = ym.split('-').map(Number); return MONTHS[m - 1] + ' ' + y; };

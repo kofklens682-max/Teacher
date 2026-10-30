@@ -153,7 +153,7 @@ function sheetPayRec(s) {
   const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id], fee = baseFee(g, st);
   const owe = L.rows.filter((r) => r.charge - r.covered > 0);
   const firsts = []; for (let m = S.pay.start; m <= ymAdd(ym, 3); m = ymAdd(m, 1)) firsts.push(m);
-  return `<div class="tp-sh-h"><span></span><b>${esc(st.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
+  return `<div class="tp-sh-h"><button class="tp-back" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}">Edit</button><b>${esc(st.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
     <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(fee) + " so'm a month"}</em></div>
     <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it: part payment, a discount, or not paid. Budget asks you to add the money.</p>
     ${monthGrid(g, st, s.open)}

@@ -192,3 +192,88 @@
 .bk-body .tp-media { border-radius: 20px; }
 .bk-body .tp-media .mi { border-radius: 50%; background: rgba(0,122,255,.1) !important; color: #007AFF; } .bk-body .tp-media a.mi { background: rgba(255,59,48,.1) !important; color: #FF3B30; }
 @media (prefers-reduced-motion: reduce) { .un-hero, .un-list, .at-hero, .at-list .tl-sec, .at-mini, .bk-hero, .bk-body .tp-shelf, .bk-body .tp-media, .un-ring .fg { animation: none; } }
+
+/* ===== 31 Oct, round 2: Up next = one lesson big, the others smaller inside the card; capsule buttons like iPhone widgets ===== */
+.hn-tl { display: none; }
+.hn-btns button { border-radius: 99px; padding: 10px 14px; font-size: 14.5px; }
+.hn-more { position: relative; z-index: 1; margin: 14px -4px -4px; padding: 4px 0; border-radius: 16px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.2); }
+.hn-mr { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: none; border: 0; font: inherit; color: #fff; text-align: left; }
+.hn-mr + .hn-mr { border-top: .5px solid rgba(255,255,255,.18); }
+.hn-ic { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55); } .hn-ic svg { width: 12px; height: 12px; }
+.hn-mr.done .hn-ic { background: #fff; color: #0062E0; box-shadow: none; } .hn-mr.past .hn-ic { box-shadow: none; background: rgba(255,149,0,.9); }
+.hn-t { width: 40px; flex: none; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hn-x { flex: 1; min-width: 0; display: grid; } .hn-x b { font-size: 14px; font-weight: 700; } .hn-x small { font-size: 11.5px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hn-mr em { font-style: normal; font-size: 12px; font-weight: 700; opacity: .85; white-space: nowrap; } .hn-mr.done { opacity: .75; } .hn-mr.done .hn-x b { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.5); }
+/* Who still owes = an iPhone inset list (like Settings / Contacts) */
+.ho-list, .ho-row { display: none; }
+.io-list { display: grid; gap: 6px; }
+.io-h { display: flex; align-items: center; gap: 7px; margin: 6px 6px 0; padding: 0; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #6D6D72; text-align: left; }
+.io-h span:last-child { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 600; color: #8E8E93; }
+.io-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.io-card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04); margin-bottom: 8px; }
+.io-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 14px; background: none; border: 0; font: inherit; color: #1C1C1E; text-align: left; position: relative; transition: background .15s; }
+.io-row + .io-row::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; border-top: .5px solid rgba(60,60,67,.18); }
+.io-row:active { background: #E5E5EA; }
+.io-av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c)); }
+.io-nm { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.io-m { font-size: 15px; color: #8E8E93; white-space: nowrap; } .io-m.late { color: #FF9500; font-weight: 600; }
+.io-row > svg { width: 14px; height: 14px; color: #C7C7CC; flex: none; }
+.io-all { color: #007AFF; font-size: 16px; justify-content: space-between; } .io-all::before { left: 14px !important; }
+.io-ok { color: #248A3D; font-size: 15px; font-weight: 600; } .io-ok svg { width: 18px; height: 18px; }
+/* Attendance: the people button on each lesson opens the group (students, program, table, edit) */
+.at-edit { flex: none; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,122,255,.1); color: #007AFF; display: grid; place-items: center; } .at-edit svg { width: 17px; height: 17px; }
+.tl-h { align-items: center; }
+/* 31 Oct, round 3: Who still owes = one white card per group (name, how many paid, bar) with the iPhone list inside; a colored dot instead of a letter */
+.io-list { gap: 10px; }
+.io-card { border-radius: 20px; box-shadow: var(--shadow); margin: 0; padding-top: 4px; }
+.io-top { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; background: none; border: 0; font: inherit; color: #1C1C1E; text-align: left; }
+.io-top b { font-size: 16px; } .io-top .io-cnt { margin-left: auto; font-size: 13px; font-weight: 700; color: #8E8E93; } .io-top svg { width: 16px; height: 16px; color: #C7C7CC; }
+.io-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.io-bar { margin: 10px 14px 4px; }
+.io-st { width: 10px; height: 10px; border-radius: 50%; background: #FF3B30; flex: none; margin: 0 2px; } .io-st.late { background: #FF9500; }
+.io-row { min-height: 46px; } .io-row + .io-row::before { left: 38px; } .io-top + .io-bar + .io-row::before { display: none; }
+.io-row:first-of-type::before { display: none; }
+/* Units: the colorful unit icons are back; a green tick = done, a blue ring = where the group is now */
+.un-ic { position: relative; flex: none; display: grid; } .un-ic .tp-tile { width: 40px; height: 40px; border-radius: 12px; }
+.un-ic.done .tp-tile { filter: saturate(.55); opacity: .75; }
+.un-ic.now .tp-tile { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px #007AFF, 0 6px 14px rgba(0,122,255,.3); }
+.un-b { position: absolute; right: -5px; bottom: -5px; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; border: 2px solid #fff; color: #fff; font-style: normal; font-size: 10px; font-weight: 800; }
+.un-b.ok { background: #34C759; } .un-b.ok svg { width: 11px; height: 11px; } .un-b.now { background: #007AFF; }
+.un-row2 .k { font-size: 11.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #8E8E93; } .un-row2.now .k { color: #007AFF; } .un-row2.done .tx b { color: #636366; }
+
+/* ===== 31 Oct, round 4: student profile, month tiles ask first, individual students' calendar ===== */
+.pm.pm-arm { background: #34C759 !important; color: #fff !important; box-shadow: 0 6px 16px rgba(52,199,89,.35); animation: pm-pop .35s cubic-bezier(.3,1.4,.5,1); }
+.pm.pm-arm span, .pm.pm-arm b { color: #fff !important; } .pm.pm-arm i { color: #fff; }
+@keyframes pm-pop { from { transform: scale(.94); } }
+.sp-top { display: grid; justify-items: center; gap: 4px; padding: 6px 0 4px; text-align: center; } .sp-top b { font-size: 20px; } .sp-top span:last-child { font-size: 13.5px; color: #8E8E93; }
+.sp-av { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 26px; font-weight: 700; }
+.sc-prof .sp-av { width: 40px; height: 40px; font-size: 17px; flex: none; }
+.sc-prof { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--card); border: 0; border-radius: 18px; box-shadow: var(--shadow); font: inherit; color: inherit; text-align: left; }
+.sc-prof span:nth-child(2) { flex: 1; display: grid; gap: 2px; } .sc-prof b { font-size: 16px; } .sc-prof small { font-size: 13px; color: #8E8E93; } .sc-prof > svg { width: 16px; height: 16px; color: #C7C7CC; }
+.sc-wrap { display: grid; gap: 14px; }
+.sc-cal { background: var(--card); border-radius: 22px; box-shadow: var(--shadow); padding: 10px 10px 12px; animation: h-in .55s cubic-bezier(.32,.72,0,1) both; }
+.sc-nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; } .sc-nav b { font-size: 17px; }
+.sc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.sc-h { text-align: center; font-size: 11.5px; font-weight: 700; color: #8E8E93; padding-bottom: 2px; }
+.sc-d { aspect-ratio: 1; border-radius: 12px; border: 0; display: grid; place-items: center; align-content: center; gap: 1px; font: inherit; background: #F2F2F7; color: #C7C7CC; position: relative; transition: transform .15s, background .2s; }
+.sc-d b { font-size: 14.5px; font-weight: 700; } .sc-d i { height: 13px; display: grid; place-items: center; } .sc-d i svg { width: 13px; height: 13px; } .sc-d i.dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; justify-self: center; }
+.sc-d:active { transform: scale(.92); }
+.sc-d.off { background: transparent; color: #AEAEB2; }
+.sc-d.soon { background: rgba(0,122,255,.1); color: #007AFF; } .sc-d.miss { background: #F2F2F7; color: #8E8E93; box-shadow: inset 0 0 0 1.5px #FF9500; }
+.sc-d.done { background: #34C759; color: #fff; } .sc-d.cancel { background: #FF3B30; color: #fff; } .sc-d.moved { background: #FF9500; color: #fff; }
+.sc-d.today { box-shadow: inset 0 0 0 2px #007AFF; } .sc-d.added::after { content: "+"; position: absolute; top: 1px; right: 4px; font-size: 10px; font-weight: 800; }
+.sc-sum { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 4px; font-size: 13.5px; font-weight: 600; color: #3A3A3C; } .sc-sum span { display: flex; align-items: center; gap: 6px; } .sc-sum i { width: 9px; height: 9px; border-radius: 50%; }
+.sd-list { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.sd-opt { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: none; border: 0; font: inherit; color: #1C1C1E; text-align: left; position: relative; }
+.sd-opt + .sd-opt::before { content: ""; position: absolute; top: 0; left: 58px; right: 0; border-top: .5px solid rgba(60,60,67,.18); }
+.sd-opt:disabled { opacity: .4; } .sd-opt > span:nth-child(2) { flex: 1; display: grid; gap: 1px; } .sd-opt b { font-size: 16px; } .sd-opt small { font-size: 12.5px; color: #8E8E93; }
+.sd-ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: var(--c); flex: none; } .sd-ic svg { width: 17px; height: 17px; }
+.sd-opt > svg { width: 18px; height: 18px; color: #007AFF; } .sd-opt.on { background: rgba(0,122,255,.06); }
+.io-all span { flex: 1; }
+/* the individual calendar: only his lesson days, as tiles */
+.sc-grid.sc-only { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sc-only .sc-d { aspect-ratio: auto; padding: 8px 4px 7px; gap: 2px; border-radius: 14px; }
+.sc-only .sc-d small { font-size: 11px; font-weight: 700; opacity: .8; } .sc-only .sc-d b { font-size: 20px; line-height: 1.1; }
+.sc-only .sc-d em { font-style: normal; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 2px; white-space: nowrap; } .sc-only .sc-d em svg { width: 11px; height: 11px; }
+.sc-only .sc-d.soon { color: #007AFF; } .sc-only .sc-d.miss { color: #C93400; }
+.sc-add { margin-top: 10px; width: 100%; }
