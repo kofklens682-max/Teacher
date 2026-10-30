@@ -39,23 +39,24 @@ function scSolo(f) {
   const st = g.students[0];
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit</button></div>`;
   return `${bar}<div class="tp-inner sc-wrap">
-    <div><div class="tp-eyebrow">Individual · ${g.days.map((d) => DAYS[d]).join(', ') || 'no days set'} · ${esc(g.time)}</div><div class="tp-lt" style="font-size:28px">${esc(st ? st.name : g.name)}</div></div>
+    <div><div class="tp-eyebrow">Individual · ${esc(timesText(g))}</div><div class="tp-lt" style="font-size:28px">${esc(st ? st.name : g.name)}</div></div>
     ${st ? `<button class="sc-prof" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}"><span class="sp-av" style="background:${avColor(st.name)}">${esc(st.name[0].toUpperCase())}</span><span><b>${esc(st.name)}</b><small>${esc(LVNAME(g.lvl))}${planned(g.lvl) ? ` · Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : ''}</small></span>${ic('ChevronRight')}</button>` : ''}
     ${soloCal(g, f.ym)}
     <p class="tp-small" style="text-align:left">Only the days ${esc(st ? st.name.split(' ')[0] : 'the student')} comes are shown. Tap one to mark it done, canceled or postponed. Marking today's lesson done moves ${esc(st ? st.name.split(' ')[0] : 'the student')} to the next lesson.</p></div>`;
 }
 function sheetSoloDay(s) {
   const g = gById(s.g), k = s.key, d = fromIso(k), les = isLessonDay(g, d), cur = calSt(g, k), c = calOf(g), open = lessonOpen(g, d);
-  const opt = (v, sub) => `<button class="sd-opt ${cur === v ? 'on' : ''}" style="--c:${CST[v][1]}" data-soloset="${g.id}|${k}|${v}" ${v === 'done' && !open ? 'disabled' : ''}><span class="sd-ic">${ic(CST[v][2])}</span><span><b>${CST[v][0]}</b><small>${sub}</small></span>${cur === v ? ic('Check') : ''}</button>`;
+  const opt = (v, sub) => `<button class="sd-opt ${cur === v ? 'on' : ''}" style="--c:${CST[v][1]}" data-soloset="${g.id}|${k}|${v}" ${open ? '' : 'disabled'}><span class="sd-ic">${ic(CST[v][2])}</span><span><b>${CST[v][0]}</b><small>${sub}</small></span>${cur === v ? ic('Check') : ''}</button>`;
   return `<div class="tp-sh-h"><span></span><b>${DAYS_LONG[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    ${les ? `<div class="sd-list">${opt('done', open ? 'The lesson happened: it counts, and the plan moves on' : 'Can be marked when the lesson has started')}${opt('cancel', 'No lesson, nothing is owed for it')}${opt('moved', 'Moved to another day: the same topic waits')}</div>
+    ${les ? `${open ? '' : `<div class="tp-note2 sd-lock">${ic('Clock')}<span>This lesson hasn't started yet. You can mark it once it starts.</span></div>`}<div class="sd-list">${opt('done', 'The lesson happened: it counts, and the plan moves on')}${opt('cancel', 'No lesson, nothing is owed for it')}${opt('moved', 'Moved to another day: the same topic waits')}</div>
       ${cur ? `<button class="tp-cta ghost" data-soloset="${g.id}|${k}|">${ic('RotateCcw')}Clear the mark</button>` : ''}
       ${c.add[k] ? `<button class="tp-danger" data-soloadd="${g.id}|${k}|0">Remove this added day</button>` : hasLesson(g, d) ? `<button class="tp-danger" data-solooff="${g.id}|${k}">No lesson on this day</button>` : ''}`
       : `<p class="tp-small">${c.off[k] ? 'You took this lesson day away.' : 'This is not one of the lesson days.'}</p><button class="tp-cta" data-soloadd="${g.id}|${k}|1">${ic('Plus')}Add a lesson on this day</button>`}`;
 }
 function soloSet(g, k, v) {
   const c = calOf(g), was = calSt(g, k), st = g.students[0];
-  if (v === 'done') { if (!lessonOpen(g, fromIso(k))) return notOpenToast(g, fromIso(k)); const r = rec(g, fromIso(k), true); if (st) { r.att[st.id] = 'here'; r.hw[st.id] = true; } (S.saved[g.id] = S.saved[g.id] || {})[k] = true; autoTaught(g, k); c.st[k] = 'done'; }
+  if (v && !lessonOpen(g, fromIso(k))) return notOpenToast(g, fromIso(k)); // an upcoming lesson can't be marked yet
+  if (v === 'done') { const r = rec(g, fromIso(k), true); if (st) { r.att[st.id] = 'here'; r.hw[st.id] = true; } (S.saved[g.id] = S.saved[g.id] || {})[k] = true; autoTaught(g, k); c.st[k] = 'done'; }
   else { if (was === 'done' && (S.saved[g.id] || {})[k]) { [S.rec, S.hw, S.saved].forEach((x) => { if (x[g.id]) delete x[g.id][k]; }); undoTaught(g, k); } if (v) c.st[k] = v; else delete c.st[k]; }
   save(); closeSheetNow(); toast(v ? `${fromIso(k).getDate()} ${MONTHS[fromIso(k).getMonth()]}: ${CST[v][0].toLowerCase()}` : 'Mark cleared');
 }

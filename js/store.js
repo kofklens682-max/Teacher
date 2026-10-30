@@ -21,7 +21,8 @@ function normalize(d) {
   out.groups = out.groups.filter((g) => g && typeof g === 'object').map((g) => ({
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
-    time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
+    time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', len: Math.min(240, Math.max(20, +g.len || 80)),
+    ...(g.times && typeof g.times === 'object' ? { times: Object.fromEntries(Object.entries(g.times).filter(([k, v]) => /^[0-6]$/.test(k) && /^\d\d:\d\d$/.test(v))) } : {}), week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
     students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}) })).filter((s) => s.name),
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
   }));

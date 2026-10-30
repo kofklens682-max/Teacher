@@ -1040,3 +1040,14 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .h2-og .big.ok{display:flex;align-items:center;gap:5px;color:#12B76A;font-weight:800;font-size:15px;padding:6px 0}.h2-og .big.ok svg{width:18px;height:18px}
 .h2-og .f{font-size:12px;color:var(--text2);font-weight:600}
 .h2-og.done{opacity:.8}
+
+/* 30 Oct: who paid, as a column of the attendance table (sticky next to the names) */
+button.gt-n{border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;padding:0 4px 0 0}
+.gt-m{position:sticky;left:142px;z-index:2;align-self:stretch;display:flex;align-items:center;justify-content:center;background:var(--card);border:0;font:800 16px/1 inherit;font-family:inherit;cursor:pointer;box-shadow:6px 0 6px -6px rgba(14,19,37,.18)}
+.gt-h.gt-m{flex-direction:column;justify-content:flex-end;font-weight:600;cursor:default}
+.gt-m.ok{color:#067647}.gt-m.no{color:#B42318}.gt-m.part{color:#B54708}
+/* 30 Oct: a time for each lesson day in the group form */
+.f-times{display:grid;gap:6px}
+.f-trow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border-radius:12px;padding:4px 6px 4px 14px}
+.f-trow b{font-weight:600;font-size:15px}
+.tp-f .f-trow input{width:auto;min-width:110px;flex:none}

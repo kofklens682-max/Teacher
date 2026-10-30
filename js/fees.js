@@ -90,11 +90,11 @@ function pgHomeNew() {
     <button class="dr-rt" data-tab="2">${ring((a || 0) / 100, 62, 7, '#34C759', '#0FA37F', a === null ? '–' : a + '%')}<span>Attendance</span></button>
     <button class="dr-rt" data-tab="2">${ring((h || 0) / 100, 62, 7, '#A78BFA', '#7B3FE4', h === null ? '–' : h + '%')}<span>Homework</span></button>
     <button class="dr-rt" data-push="pay">${ring(paidP, 62, 7, '#5CC8FF', '#147EFB', sc.n ? `${sc.ok}/${sc.n}` : '–')}<span>Fees paid</span></button></div>`;
-  const todays = S.groups.filter((g) => hasLesson(g, TODAY)).sort((x, y) => x.time.localeCompare(y.time));
-  const nextId = (todays.find((g) => startMin(g) + 80 > nowMin() && !taughtOn(g, TODAY)) || {}).id;
+  const todays = S.groups.filter((g) => hasLesson(g, TODAY)).sort((x, y) => startMin(x, TODAY) - startMin(y, TODAY));
+  const nextId = (todays.find((g) => endMin(g, TODAY) > nowMin() && !doneOn(g, TODAY)) || {}).id;
   const rows = todays.map((g) => {
-    const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = taughtOn(g, TODAY) || (S.ownDone[g.id] || {})[iso(TODAY)];
-    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(g.time)}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
+    const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = doneOn(g, TODAY);
+    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(timeOn(g, TODAY))}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
       ${done ? `<span class="dr-done">${ic('Check')}</span>` : `<button class="dr-reg" data-push="register" data-g="${g.id}" aria-label="Register">${ic('ClipboardCheck')}</button>`}</div>`;
   }).join('');
   const today = `<div class="tp-sec dr-sec"><h4>Today</h4><span class="dr-h4s">${todays.length} lesson${todays.length === 1 ? '' : 's'} · ${cnt(todays)} students</span></div>${todays.length ? `<div class="dr-list">${rows}</div>` : `<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`}`;

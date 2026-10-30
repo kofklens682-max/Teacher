@@ -280,3 +280,5 @@
 
 /* 31 Oct: the calendar card on an individual group page (no box inside a box) */
 .tp-card2 .sc-cal{background:none;box-shadow:none;border:0;padding:0;margin-top:6px}
+.sd-lock{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sd-lock svg{width:20px;height:20px;flex:none}

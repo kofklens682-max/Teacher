@@ -94,12 +94,12 @@ function sheetOweGrp(s) {
     ${now.length ? `<div class="h2-grp"><span class="d"></span>Not paid for ${mn}<em>${now.length}</em></div><div class="h2-ows">${now.map(row).join('')}</div>` : ''}`;
 }
 function secToday() {
-  const todays = S.groups.filter((g) => hasLesson(g, TODAY)).sort((x, y) => x.time.localeCompare(y.time));
-  const nextId = (todays.find((g) => startMin(g) + 80 > nowMin() && !taughtOn(g, TODAY)) || {}).id;
+  const todays = S.groups.filter((g) => hasLesson(g, TODAY)).sort((x, y) => startMin(x, TODAY) - startMin(y, TODAY));
+  const nextId = (todays.find((g) => endMin(g, TODAY) > nowMin() && !doneOn(g, TODAY)) || {}).id;
   const cnt = todays.reduce((n, g) => n + g.students.length, 0);
   const rows = todays.map((g) => {
-    const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = taughtOn(g, TODAY) || (S.ownDone[g.id] || {})[iso(TODAY)];
-    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(g.time)}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
+    const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = doneOn(g, TODAY);
+    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(timeOn(g, TODAY))}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
       ${done ? `<span class="dr-done" title="Taught">${ic("Check")}</span>` : `<button class="dr-reg" data-push="register" data-g="${g.id}" aria-label="Attendance">${ic("ClipboardCheck")}</button>`}</div>`;
   }).join('');
   return card('Today', `${todays.length} lesson${todays.length === 1 ? '' : 's'} · ${cnt} students`, todays.length ? `<div class="dr-list">${rows}</div>` : `<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`);
@@ -116,16 +116,10 @@ function secGroups() {
   return card('Students by group', `${total} students`, `<div class="dr-over">${donut(gs.map((g) => [g.students.length, grpColor(g)]), 138, 18, `<b>${total}</b><span>students</span>`)}
     <div class="dr-pl h2-leg">${[...gs].sort((a, b) => b.students.length - a.students.length).map((g) => `<div><i style="background:${grpColor(g)}"></i>${esc(g.name)}<b>${g.students.length}</b></div>`).join('')}</div></div>`);
 }
-/* ---------- Today's work comes from Budget's schedule (changed only in Budget). Only lessons: no university, travel or home. ---------- */
-function budgetToday() {
-  let d = null; try { d = JSON.parse(localStorage.getItem('budget-schedule') || 'null'); } catch (e) { /* none */ }
-  if (!d || !Array.isArray(d.days)) return null;
-  return (d.days[wd(TODAY)] || []).map((b) => ({ from: b.from, to: b.to, name: b.name, color: b.color, g: (b.tid && gById(b.tid)) || S.groups.find((x) => x.name.toLowerCase() === String(b.name).toLowerCase()) || null }));
-}
+/* ---------- Today's lessons: Teacher owns the groups and their lesson times (30 Oct, user); Budget only shows them in its schedule ---------- */
 const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
-function todayBlocks() { // Budget's schedule when Budget has shared it, else the groups' own days and times
-  const b = budgetToday(); if (b) return { list: b, from: 'budget' };
-  return { list: S.groups.filter((g) => hasLesson(g, TODAY)).map((g) => ({ from: startMin(g), to: startMin(g) + 80, name: g.name, g })).sort((x, y) => x.from - y.from), from: 'teacher' };
+function todayBlocks() {
+  return { list: S.groups.filter((g) => hasLesson(g, TODAY)).map((g) => ({ from: startMin(g, TODAY), to: endMin(g, TODAY), name: g.name, g })).sort((x, y) => x.from - y.from), from: 'teacher' };
 }
 const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
 const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
@@ -135,7 +129,7 @@ const hc = (g) => IOS[Math.max(0, S.groups.indexOf(g)) % IOS.length];
 function secNext() { // one lesson big (the one that is on, or the next); today's other lessons smaller underneath: what's coming and what's taught
   const { list } = todayBlocks(), now = nowMin(), b = list.find((x) => x.to > now); if (!list.length) return '';
   const on = b && b.from <= now, g = b && b.g, st = g ? g.students.length : 0;
-  const state = (x) => { const tg = x.g && taughtOn(x.g, TODAY); return tg ? ['done', 'Taught'] : x.to <= now ? ['past', 'Not marked'] : x.from <= now ? ['now', 'Now'] : ['soon', 'in ' + inMin(x.from - now)]; };
+  const state = (x) => { const tg = x.g && doneOn(x.g, TODAY); return tg ? ['done', 'Taught'] : x.to <= now ? ['past', 'Not marked'] : x.from <= now ? ['now', 'Now'] : ['soon', 'in ' + inMin(x.from - now)]; };
   const rest = list.filter((x) => x !== b), small = rest.length ? `<div class="hn-more">${rest.map((x) => { const [k, t] = state(x);
     return `<${x.g ? `button ${openLessonAttr(x.g)}` : 'div'} class="hn-mr ${k}"><span class="hn-ic">${k === 'done' ? ic('Check') : k === 'past' ? ic('Clock') : ''}</span><span class="hn-t">${hm(x.from)}</span><span class="hn-x"><b>${esc(x.name)}</b><small>${lessonLine(x.g)}</small></span><em>${t}</em></${x.g ? 'button' : 'div'}>`; }).join('')}</div>` : '';
   if (!b) return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">Today</span><span class="hn-when">all done</span></div><b class="hn-name">No more lessons today</b>${small}</div>`;
@@ -144,12 +138,12 @@ function secNext() { // one lesson big (the one that is on, or the next); today'
     ${g ? `<div class="hn-btns"><button ${openLessonAttr(g)}>${ic('BookOpen')}Open lesson</button><button data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance</button></div>` : ''}${small}</div>`;
 }
 function secTodayB() { // today only, as a simple timeline
-  const { list, from } = todayBlocks(), now = nowMin();
+  const { list } = todayBlocks(), now = nowMin();
   const row = (b) => { const done = b.to <= now, on = b.from <= now && !done, g = b.g;
     const main = `<span class="ht-t">${hm(b.from)}<small>${hm(b.to)}</small></span><i></i><span class="ht-x"><b>${esc(b.name)}</b><span>${lessonLine(g)}</span></span>${on ? '<em>Now</em>' : ''}`;
-    const side = !g ? '' : taughtOn(g, TODAY) ? `<span class="ht-ok" title="Taught">${ic('Check')}</span>` : `<button class="ht-reg" data-push="register" data-g="${g.id}" aria-label="Attendance for ${esc(g.name)}">${ic('ClipboardCheck')}</button>`; // the tick = really taught
+    const side = !g ? '' : doneOn(g, TODAY) ? `<span class="ht-ok" title="Taught">${ic('Check')}</span>` : `<button class="ht-reg" data-push="register" data-g="${g.id}" aria-label="Attendance for ${esc(g.name)}">${ic('ClipboardCheck')}</button>`; // the tick = really taught
     return `<div class="ht-row ${done ? 'done' : on ? 'on' : ''}" style="--c:${g ? hc(g) : '#8E8E93'}">${g ? `<button class="ht-main" ${openLessonAttr(g)}>${main}</button>` : `<span class="ht-main">${main}</span>`}${side}</div>`; };
-  const note = from === 'budget' ? 'from Budget' : 'open Budget once to use your schedule';
+  const note = '';
   return card('Today', note, list.length ? `<div class="ht-list h-in">${list.map(row).join('')}</div>` : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`);
 }
 function secOverview() { // two halves: how the students are spread over the groups, and how many have paid. No money here: money lives in Budget.
@@ -284,21 +278,18 @@ function sheetXPay(s) {
 }
 
 /* ---------- the group page ---------- */
-function stuPct(g, s) { const ds = savedDates(g); let n = 0, h = 0; ds.forEach((k) => { const r = rec(g, fromIso(k)); n++; if (r.get(s.id) !== 'absent') h++; }); return n ? Math.round((h / n) * 100) : null; }
 function scGroup(f) {
   const g = gById(f.g); if (!g) return scGone();
   const n = g.students.length, p = attPct(g), ym = payState().ym, fee = hasFee(g), sc = statusCounts(ym).per[g.id];
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit group</button></div>`;
   const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null;
-  const head = `<div><div class="tp-eyebrow">${g.days.map((d) => DAYS[d]).join(', ') || 'No days set'} · ${esc(g.time)}</div><div class="tp-lt" style="font-size:28px">${esc(g.name)}</div></div>`;
+  const head = `<div><div class="tp-eyebrow">${esc(timesText(g))}</div><div class="tp-lt" style="font-size:28px">${esc(g.name)}</div></div>`;
   const acts = `<div class="h2-acts"><button class="tp-cta" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance</button>${g.lvl === 'own' || planned(g.lvl) ? `<button class="tp-cta ghost" ${openLessonAttr(g)}>${ic('BookOpen')}Lesson plan</button>` : ''}</div>`;
   const stats = `<div class="dr-stats"><div><span>Students</span><b>${n}</b></div><div><span>Here</span><b>${p === null ? '–' : p + '%'}</b></div><div><span>${fee ? 'Paid' : 'Level'}</span><b>${fee ? (sc ? `${sc.paid + sc.credit}/${sc.n}` : '–') : esc(LVNAME(g.lvl)).split(' ')[0]}</b><small>${fee ? SHORT(ym) : ''}</small></div></div>`;
-  const list = g.students.map((s, i) => { const L = fee ? ledger(g, s, ym) : null, pc = stuPct(g, s), row = `<span class="num">${i + 1}</span><span class="dr-av ${L ? 'st-' + PST[L.st][1] : ''}" style="background:${avColor(s.name)}">${esc(s.name[0])}</span><span class="tx"><b>${esc(s.name)}</b><span>${pc === null ? 'No lessons yet' : pc + '% here'}${L ? ' · ' + esc(rowText(g, L)) : ''}</span></span>${L ? `<span class="dr-pill ${PST[L.st][1]}">${PST[L.st][0]}</span>` : ''}`;
-    return `<button class="dr-stu" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}">${row}</button>`; }).join(''); // 31 Oct: the profile (name, fee, payments, remove)
+  // 30 Oct (user): no separate student list any more; the table below shows who came and who paid, a tap on a name opens the student
   const add = `<div class="tp-addrow"><input id="tp-newstu" placeholder="Add a student" aria-label="New student's name" autocomplete="off"><button data-addstu="${g.id}" aria-label="Add student">${ic('UserPlus')}</button></div>`;
   return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}${u ? `<p class="tp-small" style="text-align:left">Now on Week ${g.week} · ${dayWord(g.lvl)} ${g.les}</p>` : ''}${acts}${stats}
-    <div class="tp-sec"><h4>Students</h4><span>${n} in this group</span></div><div class="dr-sl h2-stu">${list || `<div class="tp-empty2">${ic('UserPlus')}<b>No students yet</b></div>`}</div>${add}
-    ${n ? histGrid(g, iso(TODAY)) : ''}${isSingle(g) && n ? pastCard(g, f) : ''}</div>`;
+    ${n ? histGrid(g, iso(TODAY)) : `<div class="tp-empty2">${ic('UserPlus')}<b>No students yet</b></div>`}${add}${isSingle(g) && n ? pastCard(g, f) : ''}</div>`;
 }
 function pastCard(g, f) { // lessons from before the app: only the days this student comes
   const cur = ymOf(TODAY), pm = f.pm || ymAdd(cur, -1), ms = []; for (let i = 0; i < 12; i++) ms.push(ymAdd(cur, -i)); // newest first
@@ -387,5 +378,4 @@ function home2Click(b, d) {
 }
 
 // Budget's schedule changed (in another tab, or while Teacher was in the background): show it
-window.addEventListener('storage', (e) => { if (e.key === 'budget-schedule' && typeof draw === 'function') draw(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && typeof draw === 'function') draw(); });

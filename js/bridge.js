@@ -65,7 +65,9 @@ function publishRoster() {
     const to = ymAdd(ymOf(TODAY), FUTURE), groups = [], charges = {}, cov = {}, paid = {}, st = {};
     S.groups.forEach((g) => {
       const p = planOf(g) || {};
-      groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })) });
+      groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })),
+        // 30 Oct (user): the lessons too; Budget paints them into its schedule and they can be changed only here
+        slots: [...g.days].sort((a, b) => a - b).map((d) => ({ d, from: toMin((g.times && g.times[d]) || g.time), len: g.len || 80 })) });
       if (!hasFee(g)) return;
       g.students.forEach((s) => {
         const o = charges[s.id] = {}, c = cov[s.id] = {}, pd = paid[s.id] = {}, t = st[s.id] = {}, cur = ymOf(TODAY);
