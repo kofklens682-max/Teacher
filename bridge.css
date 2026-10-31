@@ -282,3 +282,13 @@
 .tp-card2 .sc-cal{background:none;box-shadow:none;border:0;padding:0;margin-top:6px}
 .sd-lock{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sd-lock svg{width:20px;height:20px;flex:none}
+
+/* 31 Oct: single-column lists must never grow wider than the screen. A grid column is "auto" by default, so one long
+   no-wrap line (an IELTS group with four lesson times) stretched every row past the edge: minmax(0,1fr) lets the text cut with "…" instead. */
+.at-list, .ho-list, .io-list, .tp-list, .tp-units, .dr-list, .tl-sec, .tp-ownprog, .h2-rows, .hs-day, .dr-gsec { grid-template-columns: minmax(0, 1fr); }
+.at-list > *, .ho-list > *, .io-list > *, .tp-list > *, .tp-units > * { min-width: 0; max-width: 100%; }
+/* the schedule line of a group with many lesson days wraps to two lines instead of hiding "next lesson ..." */
+.tp-lrow.at-other .tx > span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+
+/* a card that is only redrawn (not newly opened) appears at once: no fade-and-slide, no ring or bar redrawing from zero */
+.nin, .nin * { animation: none !important; }

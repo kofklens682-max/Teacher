@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 4.9';
+const VERSION_LABEL = 'Teacher 5.0';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -540,15 +540,18 @@ function setHTML(el, html, swap) {
   const xs = stripsOf(el), tpl = document.createElement('template'); tpl.innerHTML = html;
   const neu = [...tpl.content.children], old = [...el.children];
   const textOnTop = [...tpl.content.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim());
+  const quiet = el._html !== undefined && !swap; // a plain redraw (a tap, a tick) must not replay the entrance of every card: class "nin" (bridge.css)
   if (el._html !== undefined && !textOnTop && neu.length === old.length && neu.every((x, i) => x.tagName === old[i].tagName)) {
     neu.forEach((x, i) => {
       const o = old[i];
       if (o.outerHTML === x.outerHTML) return;
       if (sameStrip(o, x)) { syncStrip(o, x); return; }
+      if (quiet) x.classList.add('nin');
       o.replaceWith(x);
       if (swap) x.classList.add('swapin-el');
     });
   } else {
+    if (quiet) neu.forEach((x) => x.classList.add('nin'));
     el.replaceChildren(tpl.content);
     if (swap && el._html !== undefined) { el.classList.remove('swapin'); void el.offsetWidth; el.classList.add('swapin'); }
   }
@@ -971,7 +974,7 @@ function onClick(e) {
   if (d.aud) { if (d.aud === T.aud) return; T.aud = d.aud; keepUi(); return draw(); }
   if (d.kidlvl) { if (d.kidlvl === T.kidLvl) return; T.kidLvl = d.kidlvl; keepUi(); return draw(); }
   if (d.kshow) { T.open['tr-' + d.kshow] = !T.open['tr-' + d.kshow]; return draw(); }
-  if (d.attday) { if (d.attday === T.attDay) return; T.attDay = d.attday; return draw(); }
+  if (d.attday) { if (d.attday === T.attDay) return; T.attDay = d.attday; R.anim = 2; return draw(); } // a new day: the cards slide in again
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.gcell !== undefined) {
