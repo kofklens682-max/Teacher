@@ -181,8 +181,8 @@
 .tl-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 6px; }
 .tl-st { background: #F7F7FA; gap: 8px; padding: 4px 6px 4px 4px; } .tl-st.absent, .tl-st.late { background: #F7F7FA; }
 .tl-st.absent .tp-av { filter: grayscale(1); opacity: .5; } .tl-st.absent .nm { text-decoration: line-through; color: #8E8E93; }
-.tp-seg2.pla { flex: none; width: 120px; margin: 0; background: rgba(118,118,128,.12); border-radius: 10px; padding: 2px; gap: 0; }
-.tp-seg2.pla .seg-thumb { top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 8px; }
+.tp-seg2.pla { flex: none; width: 104px; margin: 0; background: rgba(118,118,128,.12); border-radius: 10px; padding: 2px; gap: 0; }
+.tp-seg2.pla .seg-thumb { top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 2); border-radius: 8px; }
 .tp-seg2.pla button { padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 8px; color: #636366; }
 .tl-st.here .pla .seg-thumb { --seg-on: #34C759; } .tl-st.late .pla .seg-thumb { --seg-on: #FF9500; } .tl-st.absent .pla .seg-thumb { --seg-on: #FF3B30; }
 .tp-seg2.pla button.on { color: #fff; }

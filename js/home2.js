@@ -171,7 +171,7 @@ function secOweB() { // like an iPhone list: one section per group (its header s
   return card('Who still owes', mn, `<div class="io-list h-in">${gs.map(sec).join('')}</div>`);
 }
 function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
-  const D = TODAY, k = iso(D), list = S.groups.filter((g) => hasLesson(g, D) || (S.rec[g.id] || {})[k]).sort((a, b) => startMin(a, D) - startMin(b, D));
+  const D = TODAY, k = iso(D), list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
   const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, next = list.find((g) => !rec(g, D).saved);
   const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next to mark</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(timeOn(next, D))} · ${stu(next.students.length)}</span>

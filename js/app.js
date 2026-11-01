@@ -2,13 +2,13 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.1';
+const VERSION_LABEL = 'Teacher 5.2';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const AVC = ['#FF6B9A', '#32ADE6', '#8B6CFF', '#34C759', '#FF8A4C', '#5E7BFF', '#C46BF5', '#0FA37F'];
-const NEXT = { here: 'absent', absent: 'late', late: 'here' };
+const NEXT = { here: 'absent', absent: 'here', late: 'absent' };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COLORS = { red: ['#FF6B6B', '#E5484D'], orange: ['#FFA24C', '#F26B1D'], yellow: ['#FFD23F', '#F5A300'], green: ['#4ADE80', '#16A34A'], teal: ['#2DD4BF', '#0F9D8F'], sky: ['#5CC8FF', '#147EFB'], blue: ['#6C8CFF', '#3D5AFE'], purple: ['#A78BFA', '#7B3FE4'], pink: ['#FF7AB6', '#E0457B'], slate: ['#94A3B8', '#475569'] };
@@ -107,18 +107,19 @@ function attPct(g) { // the share of students present over this month's taken re
   use.forEach((k) => { const r = rec(g, fromIso(k)); g.students.forEach((s) => { if (!(s.id in r.att) && !r.saved) return; total++; if (r.get(s.id) !== 'absent') here++; }); });
   return total ? Math.round((here / total) * 100) : null;
 }
+// a record on a day with no lesson only counts once its register is saved: a stray tap must not turn a Sunday into a lesson day
+const kept = (g, d) => !!(S.rec[g.id] || {})[iso(d)] && (hasLesson(g, d) || !!(S.saved[g.id] || {})[iso(d)]);
 function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1) a date, never after today; dates with a record count too
   let d = new Date(from); const born = midnight(new Date(g.created || 0));
   for (let i = 0; i < 70; i++) {
     d = addDays(d, dir);
-    const has = (S.rec[g.id] || {})[iso(d)];
-    if (has) return d;
+    if (kept(g, d)) return d;
     if (d < born) { if (dir < 0) return null; continue; } // no lessons before the group was added
     if (hasLesson(g, d)) return d;
   }
   return null;
 }
-function lastLesson(g) { return hasLesson(g, TODAY) || (S.rec[g.id] || {})[iso(TODAY)] ? new Date(TODAY) : lessonDay(g, TODAY, -1) || lessonDay(g, TODAY, 1); } // else the first lesson coming
+function lastLesson(g) { return hasLesson(g, TODAY) || kept(g, TODAY) ?new Date(TODAY) : lessonDay(g, TODAY, -1) || lessonDay(g, TODAY, 1); } // else the first lesson coming
 
 // ---------- UI state ----------
 const T = { tab: 0, push: [], sheet: null, open: {}, unitLvl: 'A1', bookLvl: 0, bookSeg: 'books', aud: 'teens', kidLvl: KIDLV.length ? KIDLV[0].id : '', big: {} };
@@ -296,12 +297,12 @@ const scGone = () => `<div class="tp-pushbar"><button class="tp-back" data-pop>$
 const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : 'https://' + u.replace(/^[a-z]+:/i, ''));
 
 /* ===================== Attendance: everyone is here; P / L / A on every name (31 Oct) ===================== */
-const MK = [['here', 'P'], ['late', 'L'], ['absent', 'A']];
+const MK = [['here', 'P'], ['absent', 'A']]; // 1 Nov (user): only Present / Absent; "late" is no longer offered
+const mkIdx = (a) => (a === 'absent' ? 1 : 0);
 function stuRow(g, d, s, r) {
-  const a = r.get(s.id), hw = r.hwOf(s.id), i = MK.findIndex((m) => m[0] === a);
+  const a = r.get(s.id) === 'absent' ? 'absent' : 'here', i = mkIdx(a);
   return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span></button>
-    <div class="tp-seg2 slide pla" data-noswipe style="--n:3"><span class="seg-thumb" style="--i:${i}"></span>${MK.map(([k, t], j) => `<button class="${j === i ? 'on' : ''}" data-mark="${s.id}|${k}" aria-label="${esc(s.name)}: ${k}">${t}</button>`).join('')}</div>
-    <button class="tl-hw ${hw ? 'on' : ''}" data-taphw="${s.id}" aria-label="Homework: ${esc(s.name)}"${a === 'absent' ? ' hidden' : ''}>${ic(hw ? 'BookCheck' : 'BookX')}</button></div>`;
+    <div class="tp-seg2 slide pla" data-noswipe style="--n:2"><span class="seg-thumb" style="--i:${i}"></span>${MK.map(([k, t], j) => `<button class="${j === i ? 'on' : ''}" data-mark="${s.id}|${k}" aria-label="${esc(s.name)}: ${k}">${t}</button>`).join('')}</div></div>`;
 }
 function saveLabel(g, d) { const r = rec(g, d), here = g.students.filter((s) => r.get(s.id) !== 'absent').length; return `${r.saved ? 'Saved ✓ · ' : 'Save · '}${here} of ${g.students.length} here`; }
 function tapList(g, d) {
@@ -309,7 +310,7 @@ function tapList(g, d) {
   const r = rec(g, d), open = lessonOpen(g, d);
   return `<div class="tl-lockable${open ? '' : ' locked'}" data-lock="${g.id}" data-dates="${iso(d)}" data-open="${open ? 1 : 0}"><p class="lock-note">${ic('Clock')} The register opens ${whenLabel(g, d)}</p>
     <div class="tl-grid" data-g="${g.id}" data-date="${iso(d)}">${g.students.map((s) => stuRow(g, d, s, r)).join('')}</div>
-    <p class="jr-key">P = here, L = late, A = absent: tap or slide the switch. Tap a name to open the student's profile. The book = homework done or not.</p>
+    <p class="jr-key">P = here, A = absent: tap the switch. Tap a name to open the student's profile.</p>
     <button class="tp-cta save-day ${r.saved ? 'done' : ''}" data-saveday="${g.id}" data-date="${iso(d)}">${saveLabel(g, d)}</button></div>`;
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
@@ -321,7 +322,7 @@ function pgAtt() {
   T.attDay = iso(TODAY); // 1 Nov: Attendance is only about taking the register; today's lessons are on Home
   const D = fromIso(T.attDay), k = T.attDay, isToday = k === iso(TODAY);
   const strip = '';
-  const list = S.groups.filter((g) => hasLesson(g, D) || (S.rec[g.id] || {})[k]).sort((a, b) => startMin(a, D) - startMin(b, D)), others = S.groups.filter((g) => !list.includes(g));
+  const list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D)), others = S.groups.filter((g) => !list.includes(g));
   const stu = (n) => `${n} student${n === 1 ? '' : 's'}`;
   const next = list.find((g) => !rec(g, D).saved);
   const hero = next ? `<div class="hn-next at-hero"><div class="hn-top"><span class="hn-tag">${isToday ? 'Next to mark' : D < TODAY ? 'Not marked yet' : 'Coming up'}</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + (isToday ? '' : DAYS[wd(D)] + ' ') + esc(timeOn(next, D))}</span></div>
@@ -338,14 +339,14 @@ function pgAtt() {
   const minis = `<div class="at-two"><div class="at-mini"><span class="h">${MONTHS[TODAY.getMonth()]}</span><b>${pc === null ? '–' : pc}<small>${pc === null ? '' : '%'}</small></b><span class="s">came to lessons</span><span class="ho-bar"><i style="--w:${pc || 0}%"></i></span></div>
     <div class="at-mini"><span class="h">Taken</span><b>${taken}<small> register${taken === 1 ? '' : 's'}</small></b><span class="s">this month, all groups</span></div></div>`;
   // 1 Nov: Attendance is only for taking the register: Today's groups, then the other groups.
-  const row = (g, later) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="register" data-g="${g.id}" data-date="${iso(TODAY)}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timesText(g))}${later ? nextLessonText(g) : ''}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`;
+  const row = (g, later) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="register" data-g="${g.id}"${later ? '' : ` data-date="${iso(TODAY)}"`}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timesText(g))}${later ? nextLessonText(g) : ''}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`;
   return `${head}${list.length ? `<div class="tp-sec"><h4>Today</h4><span>${list.length} group${list.length === 1 ? '' : 's'}</span></div><div class="at-list">${list.map((g) => row(g, false)).join('')}</div>` : ''}
     ${others.length ? `<div class="tp-sec"><h4>${list.length ? 'Other groups' : 'Groups'}</h4><span>${others.length}</span></div><div class="at-list">${others.map((g) => row(g, true)).join('')}</div>` : ''}`;
 }
 const GSYM = { here: '✓', late: 'L', absent: '✕' };
 function tableDates(g) { // the last lessons taken, then the lessons still to come (today included)
   const past = savedDates(g).filter((k) => k < iso(TODAY)).slice(-3), now = [];
-  for (let i = 0; i < 60 && now.length < 5; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) || (i === 0 && (S.rec[g.id] || {})[iso(d)])) now.push(iso(d)); }
+  for (let i = 0; i < 60 && now.length < 5; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) || (i === 0 && kept(g, d))) now.push(iso(d)); }
   return [...new Set([...past, ...now])].sort();
 }
 const gridPct = (g, ds, sid) => { let n = 0, h = 0; ds.forEach((k) => { const r = rec(g, fromIso(k)); if (!(sid in r.att)) return; n++; if (r.get(sid) !== 'absent') h++; }); return n ? Math.round((h / n) * 100) : null; };
@@ -363,6 +364,8 @@ function histGrid(g, cur) { // the register as a table: names down, lesson dates
 }
 function scRegister(f) {
   const g = gById(f.g); if (!g) return scGone();
+  purgeStray();
+  if (f.date && !hasLesson(g, fromIso(f.date)) && !(S.saved[g.id] || {})[f.date]) f.date = null; // never open on a day without a lesson
   if (!f.date) { const d = lastLesson(g); f.date = d ? iso(d) : null; }
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit group</button></div>`;
   const head = `<div><div class="tp-eyebrow">${esc(timesText(g))}</div><div class="tp-lt" style="font-size:28px">${groupLabel(g)}</div></div>`;
@@ -710,11 +713,12 @@ function bindSegSlide() {
   root.addEventListener('pointerdown', (e) => {
     const sw = e.target.closest('.tp-seg2.slide'); if (!sw) return;
     const btns = [...sw.querySelectorAll('button')], th = sw.querySelector('.seg-thumb');
-    st = { sw, btns, th, x0: e.clientX, id: e.pointerId, on: false, i: btns.findIndex((b) => b.classList.contains('on')) };
+    st = { sw, btns, th, x0: e.clientX, y0: e.clientY, id: e.pointerId, on: false, i: btns.findIndex((b) => b.classList.contains('on')) };
   });
   root.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return;
-    if (!st.on) { if (Math.abs(e.clientX - st.x0) < 6) return; st.on = true; st.sw.classList.add('sliding'); try { st.sw.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    if (!st.on) { if (Math.abs(e.clientY - st.y0) > Math.abs(e.clientX - st.x0) && Math.abs(e.clientY - st.y0) > 4) { st = null; return; } // scrolling the page, not sliding the switch
+      if (Math.abs(e.clientX - st.x0) < 10) return; st.on = true; st.sw.classList.add('sliding'); try { st.sw.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
     const r = st.sw.getBoundingClientRect(), w = (r.width - 6) / st.btns.length, x = Math.max(0, Math.min(w * (st.btns.length - 1), e.clientX - r.left - 3 - w / 2));
     st.th.style.transform = `translateX(${x}px)`; st.i = Math.round(x / w);
     st.btns.forEach((b, k) => b.classList.toggle('on', k === st.i));
@@ -944,12 +948,17 @@ function keepForm() {
 }
 
 // ---------- attendance taps: updated in place (no redraw), saved at once ----------
-function tapCtx(b) { const grid = b.closest('.tl-grid'); return grid ? { g: gById(grid.dataset.g), d: fromIso(grid.dataset.date), grid } : null; }
+function tapCtx(b) { const grid = b.closest('.tl-grid'); if (!grid) return null; const c = { g: gById(grid.dataset.g), d: fromIso(grid.dataset.date), grid };
+  if (!hasLesson(c.g, c.d) && !(S.saved[c.g.id] || {})[iso(c.d)]) { toast('This is not a lesson day for this group'); return null; } // no stray registers on days without a lesson
+  return c; }
+function purgeStray() { // unsaved registers on days with no lesson are leftovers of old taps: drop them
+  let n = 0; S.groups.forEach((g) => Object.keys(S.rec[g.id] || {}).forEach((k) => { if (!(S.saved[g.id] || {})[k] && !hasLesson(g, fromIso(k))) { delete S.rec[g.id][k]; if (S.hw[g.id]) delete S.hw[g.id][k]; n++; } }));
+  if (n) save();
+}
 function refreshRow(grid, g, d, sid) {
   const s = g.students.find((x) => x.id === sid), row = grid.querySelector(`.tl-st[data-sid="${sid}"]`); if (!s || !row) return;
-  const r = rec(g, d), a = r.get(sid), hw = r.hwOf(sid), hb = row.querySelector('.tl-hw'); // changed in place, so the colour glides
-  row.className = 'tl-st ' + a; const sg = row.querySelector('.pla'); if (sg) { const i = MK.findIndex((m) => m[0] === a); sg.querySelector('.seg-thumb').style.setProperty('--i', i); sg.querySelectorAll('button').forEach((x, k) => x.classList.toggle('on', k === i)); }
-  hb.hidden = a === 'absent'; hb.classList.toggle('on', hw); hb.innerHTML = ic(hw ? 'BookCheck' : 'BookX');
+  const r = rec(g, d), a = r.get(sid) === 'absent' ? 'absent' : 'here'; // changed in place, so the colour glides
+  row.className = 'tl-st ' + a; const sg = row.querySelector('.pla'); if (sg) { const i = mkIdx(a); sg.querySelector('.seg-thumb').style.setProperty('--i', i); sg.querySelectorAll('button').forEach((x, k) => x.classList.toggle('on', k === i)); }
   const btn = grid.parentElement.querySelector(`[data-saveday="${g.id}"]`); if (btn) btn.textContent = saveLabel(g, d);
 }
 
@@ -985,6 +994,7 @@ function onClick(e) {
   if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
   if (d.gcell !== undefined) {
     const gt = b.closest('.gt'), g = gById(gt.dataset.g), dt = fromIso(d.gdate);
+    if (!hasLesson(g, dt) && !(S.saved[g.id] || {})[d.gdate]) return;
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
     const r = rec(g, dt, true);
     r.att[d.gcell] = d.gcell in r.att ? NEXT[r.get(d.gcell)] : 'here'; save();
@@ -997,6 +1007,7 @@ function onClick(e) {
   if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
   if (d.saveday) {
     const g = gById(d.saveday), dt = fromIso(d.date);
+    if (!hasLesson(g, dt) && !(S.saved[g.id] || {})[d.date]) return toast('This is not a lesson day for this group');
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
     const r = rec(g, dt, true);
     g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
