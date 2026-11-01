@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.0';
+const VERSION_LABEL = 'Teacher 5.1';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -206,14 +206,16 @@ function scLesson(f) {
       ${l.activity ? `<div class="tp-card2"><div class="h" style="color:#F5A000">${ic('PartyPopper')}Activity</div><p>${esc(l.activity)}</p></div>` : ''}
       ${l.exit ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('ListChecks')}Exit check · 3 min</div><p>${esc(l.exit)}</p></div>` : ''}
       ${l.grammarTopic || l.grammar ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}Grammar topic</div><p class="big">${esc(l.grammarTopic || l.grammar)}</p>${l.grammarTopic && l.grammar ? `<p class="ex">${esc(l.grammar)}</p>` : ''}${l.bgiu && l.bgiu.length && !hasPack ? `<p class="sub">${L.id === 'A1' ? "Teacher's reference" : 'Students practice in'}: ${esc(l.gbook || 'Basic Grammar in Use (American)')}, unit${l.bgiu.length > 1 ? 's' : ''} ${l.bgiu.join(', ')}</p>` : ''}${l.grammarExtra ? `<p class="sub">Also: ${esc(l.grammarExtra.book)}, unit${l.grammarExtra.units.length > 1 ? 's' : ''} ${l.grammarExtra.units.join(', ')}</p>` : ''}</div>` : ''}
-      ${l.words.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${esc(l.vocabTopic || '')} · ${l.words.length}${l.revise ? ' new' : ''} words</p>${chips(l.words)}
+      ${l.reading ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('BookOpenCheck')}Reading</div><p>${esc(l.reading)}</p></div>` : ''}
+      ${l.words.length || l.revise ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${l.pool ? esc(l.vocabTopic || '') + ' · word pool of ' + l.words.length + ' (pick 25-30)' : l.words.length ? esc(l.vocabTopic || '') + ' · ' + l.words.length + (l.revise ? ' new' : '') + ' words' : 'Words to revise'}</p>${chips(l.words)}${chips(l.words)}
         ${l.revise ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('RotateCcw')}Revision words</div>${chips(l.revise)}` : ''}
         ${l.collocations ? `<div class="h" style="color:#0FA37F;margin-top:8px">${ic('Link')}Collocations</div>${chips(l.collocations, 'col')}` : ''}
         ${l.phrasal && l.phrasal.length ? `<div class="h" style="color:#E8770E;margin-top:8px">${ic('ArrowUpRight')}Phrasal verbs</div>${chips(l.phrasal, 'pv')}` : ''}${books}</div>` : ''}
-      ${l.watch ? `<div class="tp-card2"><div class="h" style="color:#FF5A5F">${ic('CirclePlay')}Watch & talk</div><p class="big">${esc(l.watch)}</p>${l.watchAlt ? `<p class="sub">${esc(l.watchAlt)}</p>` : ''}<p class="sub">Watch once for the main idea, then again with 3 questions; translate 5 lines; retell in pairs.</p></div>` : ''}
+      ${l.watch ? `<div class="tp-card2"><div class="h" style="color:#FF5A5F">${ic('CirclePlay')}Watch & talk</div><p class="big">${esc(l.watch)}</p>${l.watchAlt ? `<p class="sub">${esc(l.watchAlt)}</p>` : ''}${l.retell ? '' : '<p class="sub">Watch once for the main idea, then again with 3 questions; translate 5 lines; retell in pairs.</p>'}</div>` : ''}
       ${l.review ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('RotateCcw')}Review · 15 min</div><p>${esc(l.review)}</p></div>` : ''}
       ${l.use ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Sparkles')}Use it in real life</div><p>${esc(l.use)}</p></div>` : ''}
       ${l.speaking ? `<div class="tp-card2"><div class="h" style="color:#12B76A">${ic('MessageCircle')}Speaking</div><p>${esc(l.speaking)}</p></div>` : ''}
+      ${l.retell ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('MessageSquareQuote')}Retell</div><p>${esc(l.retell)}</p></div>` : ''}
       ${l.reader ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('BookOpen')}Graded reader</div><p>${esc(l.reader)}</p></div>` : ''}
       ${ed.link ? `<a class="tp-media" href="${esc(safeUrl(ed.link))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('CirclePlay')}</span><span class="tx"><b>Your link for this lesson</b><span>${esc(ed.link)}</span></span></a>` : ''}
       ${matsBlock(key)}
@@ -297,7 +299,7 @@ const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : 'https://' + u.replace(/^[
 const MK = [['here', 'P'], ['late', 'L'], ['absent', 'A']];
 function stuRow(g, d, s, r) {
   const a = r.get(s.id), hw = r.hwOf(s.id), i = MK.findIndex((m) => m[0] === a);
-  return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-tap="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span></button>
+  return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span></button>
     <div class="tp-seg2 slide pla" data-noswipe style="--n:3"><span class="seg-thumb" style="--i:${i}"></span>${MK.map(([k, t], j) => `<button class="${j === i ? 'on' : ''}" data-mark="${s.id}|${k}" aria-label="${esc(s.name)}: ${k}">${t}</button>`).join('')}</div>
     <button class="tl-hw ${hw ? 'on' : ''}" data-taphw="${s.id}" aria-label="Homework: ${esc(s.name)}"${a === 'absent' ? ' hidden' : ''}>${ic(hw ? 'BookCheck' : 'BookX')}</button></div>`;
 }
@@ -307,7 +309,7 @@ function tapList(g, d) {
   const r = rec(g, d), open = lessonOpen(g, d);
   return `<div class="tl-lockable${open ? '' : ' locked'}" data-lock="${g.id}" data-dates="${iso(d)}" data-open="${open ? 1 : 0}"><p class="lock-note">${ic('Clock')} The register opens ${whenLabel(g, d)}</p>
     <div class="tl-grid" data-g="${g.id}" data-date="${iso(d)}">${g.students.map((s) => stuRow(g, d, s, r)).join('')}</div>
-    <p class="jr-key">P = here, L = late, A = absent: tap or slide. Tapping a name works too. The book = homework done or not.</p>
+    <p class="jr-key">P = here, L = late, A = absent: tap or slide the switch. Tap a name to open the student's profile. The book = homework done or not.</p>
     <button class="tp-cta save-day ${r.saved ? 'done' : ''}" data-saveday="${g.id}" data-date="${iso(d)}">${saveLabel(g, d)}</button></div>`;
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
@@ -316,9 +318,9 @@ function pgAtt() {
   if (!S.groups.length) return `${head}<div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
   // the week strip: this week, Monday to Sunday; the glass circle slides to the chosen day
   const mon = addDays(TODAY, -wd(TODAY)), days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(mon, i));
-  if (!T.attDay || !days.some((x) => iso(x) === T.attDay)) T.attDay = iso(TODAY);
+  T.attDay = iso(TODAY); // 1 Nov: Attendance is only about taking the register; today's lessons are on Home
   const D = fromIso(T.attDay), k = T.attDay, isToday = k === iso(TODAY);
-  const strip = `<div class="tp-seg2 slide at-week" data-noswipe style="--n:7"><span class="seg-thumb" style="--i:${wd(D)}"></span>${days.map((x) => `<button class="${iso(x) === k ? 'on' : ''}${S.groups.some((g) => hasLesson(g, x)) ? ' has' : ''}${iso(x) === iso(TODAY) ? ' today' : ''}" data-attday="${iso(x)}" aria-label="${DAYS_LONG[wd(x)]} ${x.getDate()}"><small>${DAYS[wd(x)]}</small><b>${x.getDate()}</b><i></i></button>`).join('')}</div>`;
+  const strip = '';
   const list = S.groups.filter((g) => hasLesson(g, D) || (S.rec[g.id] || {})[k]).sort((a, b) => startMin(a, D) - startMin(b, D)), others = S.groups.filter((g) => !list.includes(g));
   const stu = (n) => `${n} student${n === 1 ? '' : 's'}`;
   const next = list.find((g) => !rec(g, D).saved);
@@ -335,11 +337,10 @@ function pgAtt() {
   const pc = total ? Math.round((here / total) * 100) : null;
   const minis = `<div class="at-two"><div class="at-mini"><span class="h">${MONTHS[TODAY.getMonth()]}</span><b>${pc === null ? '–' : pc}<small>${pc === null ? '' : '%'}</small></b><span class="s">came to lessons</span><span class="ho-bar"><i style="--w:${pc || 0}%"></i></span></div>
     <div class="at-mini"><span class="h">Taken</span><b>${taken}<small> register${taken === 1 ? '' : 's'}</small></b><span class="s">this month, all groups</span></div></div>`;
-  return `${head}${strip}${hero}
-    <div class="tp-sec"><h4>${isToday ? 'Today' : esc(dayName(D))}</h4><span>${list.length} lesson${list.length === 1 ? '' : 's'}</span></div>
-    ${list.length ? `<div class="at-list">${rows}</div>` : `<div class="tp-empty2">${ic('Coffee')}<b>No lessons ${isToday ? 'today' : 'on this day'}</b></div>`}
-    ${minis}
-    ${others.length ? `<div class="tp-sec"><h4>Other groups</h4></div><div class="at-list">${others.map((g) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="group" data-g="${g.id}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timesText(g))}${nextLessonText(g)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>` : ''}`;
+  // 1 Nov: Attendance is only for taking the register: Today's groups, then the other groups.
+  const row = (g, later) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="register" data-g="${g.id}" data-date="${iso(TODAY)}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timesText(g))}${later ? nextLessonText(g) : ''}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`;
+  return `${head}${list.length ? `<div class="tp-sec"><h4>Today</h4><span>${list.length} group${list.length === 1 ? '' : 's'}</span></div><div class="at-list">${list.map((g) => row(g, false)).join('')}</div>` : ''}
+    ${others.length ? `<div class="tp-sec"><h4>${list.length ? 'Other groups' : 'Groups'}</h4><span>${others.length}</span></div><div class="at-list">${others.map((g) => row(g, true)).join('')}</div>` : ''}`;
 }
 const GSYM = { here: '✓', late: 'L', absent: '✕' };
 function tableDates(g) { // the last lessons taken, then the lessons still to come (today included)
@@ -424,25 +425,29 @@ function pgBooks() {
 function sheetGroup(s) {
   const g = s.g ? gById(s.g) : null;
   const pl = g && S.pay.plan[g.id];
-  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, times: { ...(g.times || {}) }, len: g.len || 80, len0: g.len || 80, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })), solo: !!g.solo, feeKind: pl ? pl.kind : 'group', fee: pl ? (pl.kind === 'single' ? pl.rate : pl.fee) : '' }
-    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', times: {}, len: 80, color: '', week: 1, les: 1, students: [], feeKind: 'group', fee: '' };
-  const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null;
-  return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${g ? 'Edit group' : 'New group'}</b><button class="tp-back strong" data-savegroup>Save</button></div>
-    <div class="tp-f"><span>Type</span><div class="tp-chips2"><button class="${F.solo ? '' : 'on'}" data-f-solo="0">${ic('Users')} Group</button><button class="${F.solo ? 'on' : ''}" data-f-solo="1">${ic('UserRound')} Individual</button></div>${F.solo ? '<div class="tp-note2">One student. Attendance becomes a calendar: mark each day done, canceled or postponed, and add your own days.</div>' : ''}</div>
+  if (!s.form) s.form = g ? { name: g.name, lvl: g.lvl, book: g.book || '', days: [...g.days], time: g.time, times: { ...(g.times || {}) }, len: g.len || 80, len0: g.len || 80, color: g.color || '', week: g.week, les: g.les, students: g.students.map((x) => ({ ...x })), solo: !!g.solo, feeKind: pl ? pl.kind : 'group', fee: pl ? (pl.kind === 'single' ? pl.rate : pl.fee) : '', step: 1 }
+    : { name: '', lvl: 'A1', book: '', days: [0, 2, 4], time: '15:00', times: {}, len: 80, color: '', week: 1, les: 1, students: [], feeKind: 'group', fee: '', step: 1 };
+  const F = s.form, L = F.lvl !== 'own' ? lv(F.lvl) : null, step = F.step || 1, fresh = !g; // 1 Nov: a new group is two short pages (the group, then the people and money)
+  const head = `<div class="tp-sh-h">${fresh && step === 2 ? '<button class="tp-back" data-f-step="1">Back</button>' : '<button class="tp-back" data-closesheet>Cancel</button>'}<b>${g ? 'Edit group' : 'New group'}</b>${fresh && step === 1 ? '<button class="tp-back strong" data-f-step="2">Next</button>' : '<button class="tp-back strong" data-savegroup>Save</button>'}</div>
+    <div class="tp-chips2 f-steps"><button class="${step === 1 ? 'on' : ''}" data-f-step="1"><b>1</b>The group</button><button class="${step === 2 ? 'on' : ''}" data-f-step="2"><b>2</b>Students and fee</button></div>`;
+  const one = `<div class="tp-f"><span>Type</span><div class="tp-chips2"><button class="${F.solo ? '' : 'on'}" data-f-solo="0">${ic('Users')} Group</button><button class="${F.solo ? 'on' : ''}" data-f-solo="1">${ic('UserRound')} Individual</button></div>${F.solo ? '<div class="tp-note2">One student. Attendance becomes a calendar: mark each day done, canceled or postponed, and add your own days.</div>' : ''}</div>
     <label class="tp-f"><span>${F.solo ? 'Name (the student or the lesson)' : 'Group name'}</span><input id="f-name" value="${esc(F.name)}" placeholder="${F.solo ? 'e.g. Javlon' : 'e.g. Group D'}" autocomplete="off"></label>
     <div class="tp-f"><span>Program</span><div class="tp-chips2">${[...C.levels.map((l) => l.id), ...KIDLV.map((l) => l.id), ...(typeof TURBO_LV !== 'undefined' && TURBO_LV ? ['IT'] : []), 'own'].map((id) => `<button class="${F.lvl === id ? 'on' : ''}" style="${gv(id)}" data-f-lvl="${id}">${esc(LVNAME(id))}</button>`).join('')}</div></div>
-    <div class="tp-f"><span>Colour</span><div class="tp-swatches" id="f-colors"><button class="auto${F.color ? '' : ' on'}" data-f-color="" aria-label="Automatic colour">A</button>${Object.entries(COLORS).map(([k, c]) => `<button class="${F.color === k ? 'on' : ''}" style="--g1:${c[0]};--g2:${c[1]}" data-f-color="${k}" aria-label="${k}"></button>`).join('')}</div></div>
     <div class="f-prog">${F.lvl === 'own' ? `<label class="tp-f"><span>Their book</span><input id="f-book" value="${esc(F.book)}" placeholder="e.g. Family and Friends 2" autocomplete="off"></label><div class="tp-note2">Own program: for groups like kids who start from letters. Each lesson has your notes.</div>`
       : planned(F.lvl) ? `<div class="tp-f"><span>They are on</span><div class="tp-2col"><select id="f-week">${L.units.map((u) => `<option value="${u.n}" ${u.n === +F.week ? 'selected' : ''}>${u.final ? 'Level test' : 'Week ' + u.n + ' · ' + esc(u.title)}</option>`).join('')}</select><select id="f-les">${(F.lvl === 'IT' ? weekOf('IT', F.week).lessons.map((x) => x.n) : [1, 2, 3]).map((n) => `<option value="${n}" ${n === +F.les ? 'selected' : ''}>${F.lvl === 'IT' ? esc(weekOf('IT', F.week).lessons[n - 1].day + ' · ' + weekOf('IT', F.week).lessons[n - 1].title) : dayWord(F.lvl) + ' ' + n}</option>`).join('')}</select></div></div>`
       : `<div class="tp-note2">This level is planned next. You can add the group now.</div>`}</div>
     <div class="tp-f"><span>Days</span><div class="tp-chips2 days">${DAYS.map((d, i) => `<button class="${F.days.includes(i) ? 'on' : ''}" data-f-day="${i}">${d}</button>`).join('')}</div></div>
     <div class="tp-f"><span>Time · each day can have its own</span><div class="f-times">${F.days.length ? [...F.days].sort((a, b) => a - b).map((d) => `<label class="f-trow"><b>${DAYS_LONG[d]}</b><input id="f-time-${d}" type="time" value="${esc((F.times || {})[d] || F.time)}"></label>`).join('') : '<div class="tp-note2">Tick the days first.</div>'}</div>
       <div class="tp-note2">Groups, days and times are one list shared with Budget: change them here or in Budget's schedule, both always show the same.</div></div>
-    <label class="tp-f"><span>Lesson length (minutes)</span><input id="f-len" type="number" inputmode="numeric" min="20" max="240" step="5" value="${F.len || 80}"></label>
-    <div class="tp-f"><span>Students · ${F.students.length}</span><div class="tp-stulist">${F.students.map((x, i) => `<span>${esc(x.name)}<button data-f-rm="${i}" aria-label="Remove ${esc(x.name)}">${ic('X')}</button></span>`).join('')}</div>
+    <label class="tp-f"><span>Lesson length (minutes)</span><input id="f-len" type="number" inputmode="numeric" min="20" max="240" step="5" value="${F.len || 80}"></label>`;
+  const colour = F.color || F.colorOpen ? `<div class="tp-f"><span>Colour</span><div class="tp-swatches" id="f-colors"><button class="auto${F.color ? '' : ' on'}" data-f-color="" aria-label="Automatic colour">A</button>${Object.entries(COLORS).map(([k, c]) => `<button class="${F.color === k ? 'on' : ''}" style="--g1:${c[0]};--g2:${c[1]}" data-f-color="${k}" aria-label="${k}"></button>`).join('')}</div></div>`
+    : `<div class="tp-f"><span>Colour</span><div class="f-colauto"><i></i><span><b>Automatic</b><small>the app picks one for this group</small></span><button class="tp-pill" data-f-colopen>Change</button></div></div>`;
+  const two = `<div class="tp-f"><span>Students · ${F.students.length}</span><div class="tp-stulist">${F.students.map((x, i) => `<span>${esc(x.name)}<button data-f-rm="${i}" aria-label="Remove ${esc(x.name)}">${ic('X')}</button></span>`).join('')}</div>
       <div class="tp-addrow"><input id="f-stu" placeholder="Student's name" autocomplete="off" enterkeyhint="done"><button data-f-add aria-label="Add student">${ic('UserPlus')}</button></div></div>
     ${feeForm(F)}
+    ${colour}
     ${g ? `<button class="tp-danger" data-delgroup="${g.id}">Remove this group</button>` : ''}`;
+  return head + (step === 1 ? one : two);
 }
 function sheetLesson(s) {
   const ed = S.edits[s.key] || {};
@@ -477,6 +482,7 @@ function sheetSettings(s) {
     <div class="tp-card2"><div class="h">${ic('ShieldCheck')}Your data</div><p>${S.groups.length} group${S.groups.length === 1 ? '' : 's'} · ${n} student${n === 1 ? '' : 's'}. Everything stays on this phone, with a second copy and automatic daily copies.</p></div>
     <button class="tp-lrow" data-backup>${ic('Download')}<span class="tx"><b>Save a backup file</b><span>Send it to yourself in Telegram or Drive</span></span></button>
     <label class="tp-lrow">${ic('Upload')}<span class="tx"><b>Restore from a backup file</b><span>Replaces what is in the app now (a copy is kept first)</span></span><input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>
+    <button class="tp-lrow" data-sheet="homecfg">${ic('Sliders')}<span class="tx"><b>Arrange Home</b><span>Switch the parts of Home on or off and move them</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>
     <button class="tp-lrow" data-sheet="copies">${ic('History')}<span class="tx"><b>Automatic copies</b><span>One a day for two weeks, then one a month</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>
     <p class="tp-small">${VERSION_LABEL} · the course: Beginner to IELTS 7+</p>`;
 }
@@ -1028,6 +1034,8 @@ function onClick(e) {
   if (d.closesheet !== undefined) return closeSheetNow();
   if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(); }
   if (d.fColor !== undefined) { keepForm(); T.sheet.form.color = d.fColor; b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return; }
+  if (d.fStep) { keepForm(); const F = T.sheet.form; if (d.fStep === '2' && !F.name) return toast('Give the group a name first'); F.step = +d.fStep; return draw(); }
+  if (d.fColopen !== undefined) { keepForm(); T.sheet.form.colorOpen = true; return draw(); }
   if (d.opengrp) { const sec = b.closest('.tl-sec'), on = !sec.classList.contains('open'); T.open[d.opengrp] = on; sec.classList.toggle('open', on); b.setAttribute('aria-expanded', on); return; }
   if (d.fDay !== undefined) { keepForm(); const ds = T.sheet.form.days, k = +d.fDay; T.sheet.form.days = ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k].sort(); return draw(); }
   if (d.fAdd !== undefined) { keepForm(); addFormStudent(); return; }

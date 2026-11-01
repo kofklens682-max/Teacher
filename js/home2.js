@@ -50,10 +50,10 @@ function rowText(g, L) { // used by the Fees screen
 
 /* ---------- Home: you choose what you see, and in which order ---------- */
 // 31 Oct draft: Up next, Overview (students by group + how many paid, no money: money lives in Budget), Today (from Budget's schedule), Who still owes, Extra charges.
-const HOME_SECS = [['next', 'Up next'], ['overview', 'Students and who paid'], ['owe', 'Who still owes'], ['extras', 'Extra charges']]; // 31 Oct: no Today section (today's lessons are inside Up next)
+const HOME_SECS = [['next', 'Up next'], ['today', 'Today'], ['overview', 'Students and who paid'], ['owe', 'Who still owes'], ['extras', 'Extra charges']]; // 31 Oct: no Today section (today's lessons are inside Up next)
 function homeCfg() {
   const c = S.homeCfg || (S.homeCfg = {});
-  if (c.v !== 4) { c.v = 4; c.order = []; c.hide = []; } // the new Home starts in its own order
+  if (c.v !== 5) { c.v = 5; c.order = []; c.hide = ['next']; } // the new Home starts in its own order
   if (!Array.isArray(c.order)) c.order = [];
   c.order = c.order.filter((id) => HOME_SECS.some((x) => x[0] === id)); HOME_SECS.forEach((x) => { if (!c.order.includes(x[0])) c.order.push(x[0]); });
   if (!Array.isArray(c.hide)) c.hide = [];
@@ -112,7 +112,7 @@ function secExtras() {
   return card('Extra charges', '', `<div class="h2-exs">${rows}<button class="tp-dashed" style="margin-top:${ex.length ? 4 : 0}px" data-sheet="extra">${ic('Plus')} ${ex.length ? 'Add another charge' : 'Add an extra charge (a book, a trip, an exam...)'}</button></div>`);
 }
 function secGroups() {
-  const gs = S.groups.filter((g) => g.students.length), total = gs.reduce((n, g) => n + g.students.length, 0);
+  const gs = S.groups.filter((g) => g.students.length).sort((x, y) => y.students.length - x.students.length || x.name.localeCompare(y.name)), total = gs.reduce((n, g) => n + g.students.length, 0);
   return card('Students by group', `${total} students`, `<div class="dr-over">${donut(gs.map((g) => [g.students.length, grpColor(g)]), 138, 18, `<b>${total}</b><span>students</span>`)}
     <div class="dr-pl h2-leg">${[...gs].sort((a, b) => b.students.length - a.students.length).map((g) => `<div><i style="background:${grpColor(g)}"></i>${esc(g.name)}<b>${g.students.length}</b></div>`).join('')}</div></div>`);
 }
@@ -147,7 +147,7 @@ function secTodayB() { // today only, as a simple timeline
   return card('Today', note, list.length ? `<div class="ht-list h-in">${list.map(row).join('')}</div>` : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`);
 }
 function secOverview() { // two halves: how the students are spread over the groups, and how many have paid. No money here: money lives in Budget.
-  const gs = S.groups.filter((g) => g.students.length), total = gs.reduce((n, g) => n + g.students.length, 0); if (!total) return '';
+  const gs = S.groups.filter((g) => g.students.length).sort((x, y) => y.students.length - x.students.length || x.name.localeCompare(y.name)), total = gs.reduce((n, g) => n + g.students.length, 0); if (!total) return '';
   const ym = payState().ym, sc = statusCounts(ym), no = sc.part + sc.unpaid, pc = sc.n ? Math.round((sc.ok / sc.n) * 100) : 0;
   const pie = `<div class="hv-card h-in"><span class="hv-h">Students</span>${donut(gs.map((g) => [g.students.length, hc(g)]), 112, 14, `<b>${total}</b><span>in ${gs.length} groups</span>`, '#E5E5EA')}
     <div class="hv-leg">${gs.map((g) => `<span><i style="background:${hc(g)}"></i>${esc(g.name)}<b>${g.students.length}</b></span>`).join('')}</div></div>`;
@@ -170,13 +170,25 @@ function secOweB() { // like an iPhone list: one section per group (its header s
     return `<div class="io-card">${head}${body}</div>`; };
   return card('Who still owes', mn, `<div class="io-list h-in">${gs.map(sec).join('')}</div>`);
 }
-const SECS = { next: secNext, overview: secOverview, today: secTodayB, owe: secOweB, extras: secExtras };
+function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
+  const D = TODAY, k = iso(D), list = S.groups.filter((g) => hasLesson(g, D) || (S.rec[g.id] || {})[k]).sort((a, b) => startMin(a, D) - startMin(b, D));
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, next = list.find((g) => !rec(g, D).saved);
+  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next to mark</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + esc(timeOn(next, D))}</span></div>
+      <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(timeOn(next, D))} · ${stu(next.students.length)}</span>
+      <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
+    : list.length ? `<div class="at-all h-in">${ic('Check')}<b>Every register is taken</b><span>${esc(dayName(D))}</span></div>`
+    : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`;
+  const rest = list.filter((g) => g !== next).map((g) => { const done = rec(g, D).saved;
+    return `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="register" data-g="${g.id}" data-date="${k}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timeOn(g, D))} · ${done ? 'register taken' : stu(g.students.length)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
+  return card('Today', list.length ? `${list.length} lesson${list.length === 1 ? '' : 's'}` : '', hero + (rest ? `<div class="at-list" style="margin-top:10px">${rest}</div>` : ''));
+}
+const SECS = { next: secNext, overview: secOverview, today: secTodayHero, owe: secOweB, extras: secExtras };
 function pgHomeNew() {
   if (!S.groups.length) return pgHome();
   const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, cfg = homeCfg();
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
-  const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark who paid</button><button data-sheet="extra">${ic('Package')}Extra charge</button><button data-sheet="homecfg">${ic('Sliders')}Arrange Home</button></div>`;
+  const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark who paid</button><button data-sheet="extra">${ic('Package')}Extra charge</button></div>`;
   return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => SECS[id]()).join('');
 }
 function sheetHomeCfg() {

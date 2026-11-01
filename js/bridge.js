@@ -190,13 +190,23 @@ function monthGrid(g, st, open) {
     return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${dsc ? `<small>−${dMoney(dsc)} discount</small>` : ''}${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
   }).join('')}</div>`;
 }
+function lessonShare(g, st, m) { // a new student who came for part of the month: the fee for the lessons they had
+  const [y, mo] = m.split('-').map(Number); let total = 0;
+  for (let d = 1; d <= 31; d++) { const dt = new Date(y, mo - 1, d); if (dt.getMonth() !== mo - 1) break; if (hasLesson(g, dt)) total++; }
+  const came = lessonsCame(g, st, m), fee = baseFee(g, st);
+  return { total, came, amount: total ? Math.round((fee * Math.min(came, total)) / total / 1000) * 1000 : fee };
+}
 function editPanel(g, st, m) { // one month: what it costs, its discount, what was paid
   const charge = chargeOf(g, st, m), paid = paidIn(st.id, m), ps = S.pay.pays.filter((p) => p.sid === st.id && p.m === m), single = isSingle(g);
   const D = single ? { grp: 0, own: 0 } : discOf(g, st, m), fee = single ? charge : baseFee(g, st);
-  const cost = single ? `${dMoney(charge)} so'm for the lessons` : `Fee ${dMoney(fee)}${D.grp ? ` − ${dMoney(D.grp)} group discount` : ''}${D.own ? ` − ${dMoney(D.own)} discount` : ''} = <b>${dMoney(charge)} so'm</b>`;
+  const ownM = !single && S.pay.sfee && S.pay.sfee[st.id + '|' + m] != null;
+  const cost = single ? `${dMoney(charge)} so'm for the lessons` : ownM ? `Own price for ${ymName(m)}: <b>${dMoney(charge)} so'm</b> (the normal fee is ${dMoney(fee)})` : `Fee ${dMoney(fee)}${D.grp ? ` − ${dMoney(D.grp)} group discount` : ''}${D.own ? ` − ${dMoney(D.own)} discount` : ''} = <b>${dMoney(charge)} so'm</b>`;
   return `<div class="pm-edit"><b>${ymName(m)}</b><p>${cost}</p><p>${paid ? `Paid: ${dMoney(paid)} so'm${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : 'Not paid yet'}</p>
     <label class="tp-f"><span>How much was paid for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || charge || fee || ''}" autocomplete="off"></label>
-    ${single ? '' : `<label class="tp-f"><span>Discount for ${esc(st.name.split(' ')[0])} in ${ymName(m)} only (so'm, empty = none)</span><input id="f-pmdisc" inputmode="numeric" value="${D.own || ''}" placeholder="0" autocomplete="off"></label>${D.grp ? `<p class="tp-small" style="text-align:left">The whole group has −${dMoney(D.grp)} in ${ymName(m)}. <button class="tp-pill" data-sheet="gdisc" data-g="${g.id}">Change the group discount</button></p>` : ''}`}
+    ${single ? '' : `<div class="pm-fee2"><label class="tp-f"><span>${esc(st.name.split(' ')[0])}'s fee for ${ymName(m)} (so'm)</span><input id="f-pmfee" inputmode="numeric" value="${dMoney(charge)}" autocomplete="off"></label>
+      <div class="tp-chips2 pm-scope" data-noswipe><button class="on" data-pmscope="month">Only ${ymName(m)}</button><button data-pmscope="all">All months</button></div>
+      <div class="pm-fee2b"><button class="tp-pill" data-pmlessons="${st.id}|${g.id}|${m}">${ic('Percent')} By lessons: ${lessonShare(g, st, m).came} of ${lessonShare(g, st, m).total} = ${dMoney(lessonShare(g, st, m).amount)}</button><button class="tp-pill strong" data-pmfeesave="${st.id}|${g.id}|${m}">Save fee</button></div>
+      ${D.grp ? `<p class="tp-small" style="text-align:left">The whole group has −${dMoney(D.grp)} in ${ymName(m)}. <button class="tp-pill" data-sheet="gdisc" data-g="${g.id}">Change the group discount</button></p>` : ''}</div>`}
     <div class="pm-btns"><button class="tp-cta" data-pmsave="${st.id}|${g.id}|${m}">Save</button>${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div></div>`;
 }
 function sheetPayRec(s) {
@@ -208,8 +218,8 @@ function sheetPayRec(s) {
     <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(fee) + " so'm a month"}</em></div>
     <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it: part payment, a discount, or not paid. Budget asks you to add the money.</p>
     ${monthGrid(g, st, s.open)}
+    ${single ? '' : `<div class="pm-chg"><span>Change the fee for</span>${L.rows.slice(-4).map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div>`}
     ${s.open ? editPanel(g, st, s.open) : ''}
-    ${single ? '' : `<div class="pm-fee"><label class="tp-f"><span>${esc(st.name.split(' ')[0])}'s monthly fee (so'm)${own ? '' : ' · the group fee'}</span><input id="f-ownfee" inputmode="numeric" value="${dMoney(own ?? (planOf(g) || {}).fee ?? 0)}" autocomplete="off"></label><button class="tp-pill" data-ownfee="${st.id}|${g.id}">Save fee</button></div>`}
     <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
 
@@ -232,6 +242,7 @@ function sheetOweGrp(s) {
   const paidRow = ({ st, L, n }) => `<div class="pl-row ok"><span class="pl-n">${n}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`;
   return `<div class="tp-sh-h"><span></span><b>${esc(g.name)} · ${mn}</b><button class="tp-back strong" data-closesheet>Done</button></div>
     ${HOW}
+    <button class="tp-dashed" data-sheet="gdisc" data-g="${g.id}">${ic('Percent')} Change the fee for the whole group in ${mn}</button>
     <div class="pl-h"><span class="d no"></span>Not paid<em>${owe.length}</em></div>${owe.length ? `<div class="pl-list">${owe.map(oweRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Everybody has paid for ${mn}.</p>`}
     <div class="pl-h"><span class="d ok"></span>Paid<em>${paid.length}</em></div>${paid.length ? `<div class="pl-list">${paid.map(paidRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Nobody yet.</p>`}`;
 }
@@ -286,6 +297,15 @@ function sheetPayPick(s) {
       if (T.sheet) T.sheet.open = null; save(); draw();
       toast(v > 0 ? `${st.name} · ${ymName(m)} · ${dMoney(v)} so'm${v < chargeOf(g, st, m) ? ' (part)' : ''}` : `${st.name} · ${ymName(m)} · not paid`);
       return true;
+    }
+    if (d.pmedit) { const [sid, gid, m] = d.pmedit.split('|'); if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } return true; }
+    if (d.pmscope) { b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return true; }
+    if (d.pmlessons) { const [sid, gid, m] = d.pmlessons.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), el = document.getElementById('f-pmfee'); if (st && el) el.value = dMoney(lessonShare(g, st, m).amount); return true; }
+    if (d.pmfeesave) {
+      const [sid, gid, m] = d.pmfeesave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), v = numVal('f-pmfee'), all = !!document.querySelector('.pm-scope [data-pmscope="all"].on'), gf = (planOf(g) || {}).fee || 0; if (!st) return true;
+      if (all) { if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; delete S.pay.sfee[sid + '|' + m]; }
+      else S.pay.sfee[sid + '|' + m] = v;
+      save(); draw(); toast(all ? `${st.name.split(' ')[0]}: ${dMoney(v)} so'm every month from now` : `${st.name.split(' ')[0]}: ${dMoney(v)} so'm for ${ymName(m)} only`); return true;
     }
     if (d.pmnone) {
       const [sid, gid, m] = d.pmnone.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;

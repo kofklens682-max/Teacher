@@ -3,6 +3,10 @@
    their lessons as a calendar (done / canceled / postponed, and days you add yourself). Loaded after app.js. */
 
 /* ---------- the student's profile ---------- */
+function stuPct(g, st) { // % of the taken lessons this student was here (late counts as here); null before the first lesson
+  const ds = savedDates(g); if (!ds.length) return null;
+  const here = ds.filter((k) => rec(g, fromIso(k)).get(st.id) !== 'absent').length; return Math.round((here / ds.length) * 100);
+}
 function sheetStu(s) {
   const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
   const fee = hasFee(g) && !isSingle(g), own = S.pay.stuFee[st.id], gf = (planOf(g) || {}).fee || 0, pc = stuPct(g, st);

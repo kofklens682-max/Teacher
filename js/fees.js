@@ -32,7 +32,9 @@ function lessonsCame(g, s, ym) { return savedDates(g).filter((k) => k.startsWith
 function chargeOf(g, s, ym) {
   const P = S.pay, p = planOf(g) || {};
   if (p.kind === 'single') return lessonsCame(g, s, ym) * (p.rate || 0);
-  return Math.max(0, (P.stuFee[s.id] ?? p.fee ?? 0) - (P.disc[g.id + '|' + ym] || 0) - (P.sdisc[s.id + '|' + ym] || 0));
+  const own = P.sfee && P.sfee[s.id + '|' + ym]; if (own != null) return Math.max(0, own); // 1 Nov: this student's fee for this month only
+  const skip = P.dex && (P.dex[g.id + '|' + ym] || []).includes(s.id); // left out of the group discount
+  return Math.max(0, (P.stuFee[s.id] ?? p.fee ?? 0) - (skip ? 0 : P.disc[g.id + '|' + ym] || 0) - (P.sdisc[s.id + '|' + ym] || 0));
 }
 function firstMonth(g, s) { return [S.pay.start, ymOf(new Date(g.created || Date.now())), s.added ? ymOf(new Date(s.added)) : ''].sort().pop(); }
 function ledger(g, s, ym) { // what was paid is used for the oldest month first; what is left over is credit
@@ -159,10 +161,20 @@ function sheetPayRec(s) {
     <p class="tp-small">If more than the fee is paid, the extra is kept as credit and covers next month. After you save, Budget asks whether to add the money ("Already counted" if it is in Budget already).</p>
     ${hist ? `<div class="tp-sec"><h4>Last payments</h4></div><div class="dr-hl">${hist}</div>` : ''}`;
 }
+const oddOnes = (g, ym) => { const gf = (planOf(g) || {}).fee || 0; return g.students.filter((st) => (S.pay.stuFee[st.id] != null && S.pay.stuFee[st.id] !== gf) || (S.pay.sfee && S.pay.sfee[st.id + '|' + ym] != null)); };
 function sheetGDisc(s) {
   const g = gById(s.g), ym = payState().ym, fee = (planOf(g) || {}).fee || 0, cur = S.pay.disc[g.id + '|' + ym] || 0;
+  if (s.gdAsk) { // they asked for a discount, but some students pay their own fee: ask before touching them
+    const odd = oddOnes(g, ym), v = s.gdAsk.v, n = odd.length;
+    return `<div class="tp-sh-h"><button class="tp-back" data-gdback>Back</button><b>Wait: ${n} student${n === 1 ? '' : 's'}</b><span></span></div>
+      <div class="tp-card2"><div class="h">${ic('Users')}${n} student${n === 1 ? ' pays' : 's pay'} a different fee</div><p>The group fee is ${dMoney(fee)} so'm, but these students have their own price for ${ymName(ym)} or for every month:</p>
+      <div class="gd-odd">${odd.map((st) => `<div><span>${esc(st.name)}</span><b>${dMoney(chargeOf(g, st, ym))} so'm</b></div>`).join('')}</div></div>
+      <p class="tp-small" style="text-align:left">Take ${dMoney(v)} off ${n === 1 ? 'this student' : 'these students'} too?</p>
+      <button class="tp-cta" data-gdgo="${g.id}" data-gdall="no">No, only the other ${g.students.length - n}</button>
+      <button class="tp-cta ghost" data-gdgo="${g.id}" data-gdall="yes">Yes, everybody (−${dMoney(v)})</button>`;
+  }
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>Discount · ${esc(g.name)}</b><button class="tp-back strong" data-gdgo="${g.id}">Save</button></div>
-    <div class="tp-card2"><div class="h">${ic('Percent')}${ymName(ym)}</div><p>Use this when you missed lessons. The discount is taken off every student's fee for this month only. Next month is the normal fee.</p></div>
+    <div class="tp-card2"><div class="h">${ic('Percent')}${ymName(ym)}</div><p>Use this when you missed lessons or want to lower the price for everybody. It is taken off every student's fee for this month only. Next month is the normal fee. Students with their own price are asked about first.</p></div>
     <div class="tp-chips2 dr-fill"><button data-gdfill="${Math.round(fee * 0.25)}">Missed 1 week · −25%</button><button data-gdfill="${Math.round(fee * 0.5)}">Missed 2 weeks · −50%</button><button data-gdfill="0">None</button></div>
     <label class="tp-f"><span>Discount per student (so'm)</span><input id="f-gdisc" inputmode="numeric" value="${cur || ''}" placeholder="0" autocomplete="off"></label>`;
 }
@@ -199,6 +211,13 @@ function feesClick(b, d) {
     save(); closeSheetNow(); toast(amt ? 'Saved · Budget will ask you to add it' : 'Saved'); draw();
     return true;
   }
-  if (d.gdgo) { const v = numVal('f-gdisc'), k = d.gdgo + '|' + payState().ym; if (v) S.pay.disc[k] = v; else delete S.pay.disc[k]; save(); closeSheetNow(); toast(v ? 'Discount saved for this month' : 'Discount removed'); return true; }
+  if (d.gdback !== undefined) { delete T.sheet.gdAsk; draw(); return true; }
+  if (d.gdgo) {
+    const g = gById(d.gdgo), ym = payState().ym, k = d.gdgo + '|' + ym, v = d.gdall ? (T.sheet.gdAsk || {}).v : numVal('f-gdisc'), odd = oddOnes(g, ym);
+    if (v && odd.length && !d.gdall) { T.sheet.gdAsk = { v }; draw(); return true; } // ask first
+    if (v) S.pay.disc[k] = v; else delete S.pay.disc[k];
+    if (v && d.gdall === 'no') S.pay.dex[k] = odd.map((x) => x.id); else delete S.pay.dex[k];
+    save(); closeSheetNow(); toast(!v ? 'Discount removed' : d.gdall === 'no' ? `−${dMoney(v)} for ${g.students.length - odd.length} students; ${odd.length} keep their own fee` : 'Discount saved for this month'); return true;
+  }
   return false;
 }

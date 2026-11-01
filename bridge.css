@@ -292,3 +292,17 @@
 
 /* a card that is only redrawn (not newly opened) appears at once: no fade-and-slide, no ring or bar redrawing from zero */
 .nin, .nin * { animation: none !important; }
+
+/* 1 Nov 2026 drafts */
+.at-two { margin-top: 14px; }
+.f-steps { margin-bottom: 6px; } .f-steps button { display: flex; align-items: center; gap: 7px; justify-content: center; }
+.f-steps button b { width: 20px; height: 20px; border-radius: 50%; background: #E5E5EA; color: #3A3A3C; font-size: 12px; display: grid; place-items: center; } .f-steps button.on b { background: #3D5AFE; color: #fff; }
+.f-colauto { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 16px; padding: 10px 14px; box-shadow: var(--shadow); }
+.f-colauto i { width: 30px; height: 30px; border-radius: 50%; background: conic-gradient(#FF6B6B, #FFD23F, #4ADE80, #5CC8FF, #8E3BD9, #FF6B6B); flex: none; }
+.f-colauto span { flex: 1; display: grid; } .f-colauto small { color: #8E8E93; font-size: 12.5px; }
+.pm-fee2 { display: grid; gap: 8px; margin-top: 6px; } .pm-fee2b { display: flex; gap: 8px; flex-wrap: wrap; } .pm-fee2b .strong { background: #3D5AFE; color: #fff; }
+.gd-odd { display: grid; gap: 4px; margin-top: 6px; } .gd-odd div { display: flex; justify-content: space-between; background: #F2F2F7; border-radius: 10px; padding: 8px 12px; font-size: 15px; }
+
+.ht-list { margin-bottom: 14px; } .tp-sec { margin-top: 18px; }
+
+.pm-chg { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; } .pm-chg span { font-size: 13px; color: #8E8E93; font-weight: 600; margin-right: 2px; } .pm-chg button { border: 0; background: #fff; box-shadow: var(--shadow); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13.5px; color: #3D5AFE; } .pm-chg button.on { background: #3D5AFE; color: #fff; }
