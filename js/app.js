@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.2';
+const VERSION_LABEL = 'Teacher 5.3';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -215,7 +215,7 @@ function scLesson(f) {
       ${l.watch ? `<div class="tp-card2"><div class="h" style="color:#FF5A5F">${ic('CirclePlay')}Watch & talk</div><p class="big">${esc(l.watch)}</p>${l.watchAlt ? `<p class="sub">${esc(l.watchAlt)}</p>` : ''}${l.retell ? '' : '<p class="sub">Watch once for the main idea, then again with 3 questions; translate 5 lines; retell in pairs.</p>'}</div>` : ''}
       ${l.review ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('RotateCcw')}Review · 15 min</div><p>${esc(l.review)}</p></div>` : ''}
       ${l.use ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Sparkles')}Use it in real life</div><p>${esc(l.use)}</p></div>` : ''}
-      ${l.speaking ? `<div class="tp-card2"><div class="h" style="color:#12B76A">${ic('MessageCircle')}Speaking</div><p>${esc(l.speaking)}</p></div>` : ''}
+      ${l.speaking ? `<div class="tp-card2"><div class="h" style="color:#34C759">${ic('MessageCircle')}Speaking</div><p>${esc(l.speaking)}</p></div>` : ''}
       ${l.retell ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('MessageSquareQuote')}Retell</div><p>${esc(l.retell)}</p></div>` : ''}
       ${l.reader ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('BookOpen')}Graded reader</div><p>${esc(l.reader)}</p></div>` : ''}
       ${ed.link ? `<a class="tp-media" href="${esc(safeUrl(ed.link))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('CirclePlay')}</span><span class="tx"><b>Your link for this lesson</b><span>${esc(ed.link)}</span></span></a>` : ''}
@@ -482,6 +482,7 @@ function sheetSettings(s) {
     <label class="tp-f"><span>Your name</span><input id="f-pname" value="${esc(P.name || '')}" placeholder="e.g. Aziz Karimov" autocomplete="off" data-profile></label>
     <label class="tp-f"><span>Your role</span><input id="f-prole" value="${esc(P.role || '')}" placeholder="e.g. English teacher" autocomplete="off" data-profile></label>
     <div class="tp-f"><span>Look</span><div class="tp-seg2 slide" id="look-seg" style="--n:2"><span class="seg-thumb" style="--i:${lookGet() === 'glass' ? 1 : 0}"></span><button class="${lookGet() === 'normal' ? 'on' : ''}" data-look="normal">Normal</button><button class="${lookGet() === 'glass' ? 'on' : ''}" data-look="glass">Glass</button></div></div>
+    ${dotsSettingsHtml()}
     <div class="tp-card2"><div class="h">${ic('ShieldCheck')}Your data</div><p>${S.groups.length} group${S.groups.length === 1 ? '' : 's'} · ${n} student${n === 1 ? '' : 's'}. Everything stays on this phone, with a second copy and automatic daily copies.</p></div>
     <button class="tp-lrow" data-backup>${ic('Download')}<span class="tx"><b>Save a backup file</b><span>Send it to yourself in Telegram or Drive</span></span></button>
     <label class="tp-lrow">${ic('Upload')}<span class="tx"><b>Restore from a backup file</b><span>Replaces what is in the app now (a copy is kept first)</span></span><input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>
@@ -499,7 +500,7 @@ function sheetCopies(s) {
 }
 const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
 const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: (f) => (f.lvl === 'IT' ? turboWeek(f) : scWeek(f)), lesson: (f) => (f.lvl === 'IT' ? turboLesson(f) : scLesson(f)), own: scOwn, register: scRegister, big: scBig };
-const SHEETS = { owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
+const SHEETS = { pkfiles: (s) => sheetPkFiles(s), pkgroups: () => sheetPkGroups(), owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
    The app is drawn into a fixed frame (4 pages, a screen on top, the tab bar, a sheet). draw() rebuilds only the parts
@@ -589,12 +590,17 @@ function checkLocks() { // a register opens by itself when its lesson starts
   });
   if (stale) draw();
 }
-function draw() {
+// draw(true) = a screen or sheet is sliding in: build only that, and redraw the pages underneath once it has stopped
+// (they are covered and unchanged; building them first delayed the first frame of the slide).
+function draw(lite) {
   if (!R) frame();
   R.drawnAt = performance.now();
-  PAGES.forEach((p, i) => setHTML(R.pages[i], safe(p), R.anim === i));
-  R.anim = -1;
-  syncScreen(); syncSheet(); syncTabs(); fixTables();
+  clearTimeout(R.lateDraw);
+  if (lite) R.lateDraw = setTimeout(() => draw(), 520);
+  else { PAGES.forEach((p, i) => setHTML(R.pages[i], safe(p), R.anim === i)); R.anim = -1; }
+  syncScreen(); syncSheet(); syncTabs();
+  if (lite) return;
+  fixTables();
   if ((T.tab === 1 || T.tab === 3) && !R.lvEnd) lvIdle(T.tab);
 }
 // ---------- screens on top (week, lesson, register…), kept as a stack like on an iPhone ----------
@@ -610,7 +616,7 @@ function syncScreen() {
     el.className = 'tp-push' + (slide ? ' prep' : '');
     el._sc = want[n];
     R.screens.appendChild(el);
-    setHTML(el, safe(PUSH[want[n].s], want[n]));
+    setHTML(el, withLights(safe(PUSH[want[n].s], want[n])));
     if (want[n]._scroll) el.scrollTop = want[n]._scroll;
     stack.push(el);
     if (slide) { void el.offsetHeight; afterPaint(() => el.classList.remove('prep')); } // drawn first, then it slides in whole
@@ -623,11 +629,11 @@ function syncScreen() {
   const under = stack.length > 0;
   if (R.vp.classList.contains('under') !== under) { R.vp.classList.toggle('under', under); R.vp.toggleAttribute('aria-hidden', under); }
   R.screen = top || null;
-  if (top && !adding) { setHTML(top, safe(PUSH[top._sc.s], top._sc), top._swap); top._swap = false; }
+  if (top && !adding) { setHTML(top, withLights(safe(PUSH[top._sc.s], top._sc)), top._swap); top._swap = false; }
 }
 function slideAway(el) {
   el.inert = true; el.classList.remove('under'); el.classList.add('gone');
-  setTimeout(() => el.remove(), 420);
+  setTimeout(() => el.remove(), 540);
 }
 // ---------- the sheet ----------
 function syncSheet() {
@@ -654,7 +660,7 @@ function closeAnim(el) {
   el.classList.remove('dragging'); el.classList.add('closing');
   el._panel.style.transform = ''; el._scrim.style.opacity = '';
   el.classList.remove('show');
-  setTimeout(() => el.remove(), 420);
+  setTimeout(() => el.remove(), 540);
 }
 // Pull the sheet down to close it — from ANYWHERE inside it (fields, chips, the student list…). If its content is
 // scrolled down, the same pull first scrolls it back to the top and then carries the sheet down (like iOS). A short
@@ -751,12 +757,13 @@ function unwind() { const d = (history.state && history.state.tp) || 0; if (d > 
 window.addEventListener('popstate', () => { if (R && R.skipPop > 0) { R.skipPop--; return; } closeTop(); }); // the phone's Back button
 function closeTop() {
   if (T.sheet) { T.sheet = null; draw(); return true; }
+  if (typeof PV !== 'undefined' && PV.el) { pvClose(); return true; }
   if (T.push.length) { T.push.pop(); draw(); return true; }
   return false;
 }
-function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(); }
+function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(!replacing); }
 function closeSheetNow() { if (T.sheet) goBack(); }
-function pushScreen(sc) { T.push.push(sc); stepIn(); draw(); }
+function pushScreen(sc) { T.push.push(sc); stepIn(); draw(true); }
 function goTab(i) {
   if (i === T.tab && !T.push.length) { R.pages[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const hadPush = T.push.length; T.tab = i; T.push = [];
@@ -975,6 +982,7 @@ function onClick(e) {
     if (sg) { sg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); sg.querySelector('.seg-thumb').style.setProperty('--i', d.look === 'glass' ? 1 : 0); }
     return;
   }
+  if (d.light !== undefined || d.pvopen !== undefined || d.pvclose !== undefined) return; // the three dots and the file viewer: jslights.js
   if (d.tab !== undefined) return goTab(+d.tab);
   if (d.pop !== undefined) return goBack();
   if (d.resetUi !== undefined) { T.push = []; T.sheet = null; T.tab = 0; unwind(); return draw(); }

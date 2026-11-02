@@ -3,7 +3,7 @@
    extra charges (a book, a trip...), and past lessons for private students. Loaded after fees.js (it replaces a few of its functions). */
 
 Object.assign(ICONS, {
-  Sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+    Sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
   ArrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
   ArrowDown: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
   Eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
@@ -13,7 +13,7 @@ Object.assign(ICONS, {
 });
 
 const SHORT = (ym) => MONTHS[+ym.slice(5) - 1].slice(0, 3);
-const PIE = ['#3D5AFE', '#12B76A', '#F79009', '#E5484D', '#8E3BD9', '#14B8A6', '#FF6B9A', '#32ADE6', '#C9A400', '#7B61FF', '#FF8A4C', '#0F766E'];
+const PIE = ['#3D5AFE', '#34C759', '#FF9500', '#E5484D', '#8E3BD9', '#14B8A6', '#FF6B9A', '#32ADE6', '#C9A400', '#7B61FF', '#FF8A4C', '#0F766E'];
 const MAXAHEAD = 24; // months into the future you can look at and pay for
 
 /* ---------- small changes to the payment rules ---------- */
@@ -65,7 +65,7 @@ const grpColor = (g) => PIE[S.groups.indexOf(g) % PIE.length];
 const monthNav = () => { const ym = payState().ym, cur = ymOf(TODAY); return `<div class="h2-mn"><button class="tp-iconbtn" data-paymonth="-1" ${ym <= S.pay.start ? 'disabled' : ''} aria-label="Previous month">${ic('ChevronLeft')}</button><b>${ymName(ym)}</b><button class="tp-iconbtn" data-paymonth="1" ${ym >= ymAdd(cur, MAXAHEAD) ? 'disabled' : ''} aria-label="Next month">${ic('ChevronRight')}</button></div>`; };
 function secPaid() { // the big picture: how many students, who paid, who did not
   const ym = payState().ym, gs = feeGroups();
-  if (!gs.length) return card('Who paid', '', `<div class="tp-card2"><div class="h" style="color:#12B76A">${ic('Wallet')}Fees</div><p>Set the monthly fee (or the price per lesson) in <b>Edit group</b>, and the app shows who paid.</p></div>`);
+  if (!gs.length) return card('Who paid', '', `<div class="tp-card2"><div class="h" style="color:#34C759">${ic('Wallet')}Fees</div><p>Set the monthly fee (or the price per lesson) in <b>Edit group</b>, and the app shows who paid.</p></div>`);
   const sc = statusCounts(ym), no = sc.part + sc.unpaid, mn = MONTHS[+ym.slice(5) - 1];
   return card('Who paid', monthNav(), `<div class="h2-card h2-pie">${donut([[sc.ok, STC.paid], [no, STC.unpaid]], 150, 22, `<b>${sc.n}</b><span>students</span>`)}
     <div class="h2-key"><div><i style="background:${STC.paid}"></i><b>${sc.ok}</b><span><strong>Paid</strong>${mn} is paid</span></div><div><i style="background:${STC.unpaid}"></i><b>${no}</b><span><strong>Not paid</strong>still owe for ${mn} or before</span></div></div></div>`);
@@ -121,6 +121,8 @@ const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 function todayBlocks() {
   return { list: S.groups.filter((g) => hasLesson(g, TODAY)).map((g) => ({ from: startMin(g, TODAY), to: endMin(g, TODAY), name: g.name, g })).sort((x, y) => x.from - y.from), from: 'teacher' };
 }
+// 2 Nov (user): on Home a group opens its NEXT LESSON; the register (attendance table) lives in the Attendance tab
+const homeOpen = (g) => (g.lvl === 'own' || planned(g.lvl) ? openLessonAttr(g) : `data-push="group" data-g="${g.id}"`);
 const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
 const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
 // iPhone system colors, one per group (in the order of your groups), used everywhere on Home
@@ -131,11 +133,11 @@ function secNext() { // one lesson big (the one that is on, or the next); today'
   const on = b && b.from <= now, g = b && b.g, st = g ? g.students.length : 0;
   const state = (x) => { const tg = x.g && doneOn(x.g, TODAY); return tg ? ['done', 'Taught'] : x.to <= now ? ['past', 'Not marked'] : x.from <= now ? ['now', 'Now'] : ['soon', 'in ' + inMin(x.from - now)]; };
   const rest = list.filter((x) => x !== b), small = rest.length ? `<div class="hn-more">${rest.map((x) => { const [k, t] = state(x);
-    return `<${x.g ? `button ${openLessonAttr(x.g)}` : 'div'} class="hn-mr ${k}"><span class="hn-ic">${k === 'done' ? ic('Check') : k === 'past' ? ic('Clock') : ''}</span><span class="hn-t">${hm(x.from)}</span><span class="hn-x"><b>${esc(x.name)}</b><small>${lessonLine(x.g)}</small></span><em>${t}</em></${x.g ? 'button' : 'div'}>`; }).join('')}</div>` : '';
+    return `<${x.g ? `button ${homeOpen(x.g)}` : 'div'} class="hn-mr ${k}"><span class="hn-ic">${k === 'done' ? ic('Check') : k === 'past' ? ic('Clock') : ''}</span><span class="hn-t">${hm(x.from)}</span><span class="hn-x"><b>${esc(x.name)}</b><small>${lessonLine(x.g)}</small></span><em>${t}</em></${x.g ? 'button' : 'div'}>`; }).join('')}</div>` : '';
   if (!b) return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">Today</span><span class="hn-when">all done</span></div><b class="hn-name">No more lessons today</b>${small}</div>`;
   return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">${on ? 'Now' : 'Up next'}</span><span class="hn-when">${on ? 'ends in ' + inMin(b.to - now) : 'in ' + inMin(b.from - now)}</span></div>
     <b class="hn-name">${esc(b.name)}</b><span class="hn-sub">${hm(b.from)}–${hm(b.to)} · ${lessonLine(g)}${st ? ` · ${st} student${st === 1 ? '' : 's'}` : ''}</span>
-    ${g ? `<div class="hn-btns"><button ${openLessonAttr(g)}>${ic('BookOpen')}Open lesson</button><button data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance</button></div>` : ''}${small}</div>`;
+    ${g ? `<div class="hn-btns"><button ${homeOpen(g)}>${ic('BookOpen')}Open lesson</button></div>` : ''}${small}</div>`;
 }
 function secTodayB() { // today only, as a simple timeline
   const { list } = todayBlocks(), now = nowMin();
@@ -171,15 +173,15 @@ function secOweB() { // like an iPhone list: one section per group (its header s
   return card('Who still owes', mn, `<div class="io-list h-in">${gs.map(sec).join('')}</div>`);
 }
 function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
-  const D = TODAY, k = iso(D), list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
-  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, next = list.find((g) => !rec(g, D).saved);
-  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next to mark</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + esc(timeOn(next, D))}</span></div>
-      <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(timeOn(next, D))} · ${stu(next.students.length)}</span>
-      <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
-    : list.length ? `<div class="at-all h-in">${ic('Check')}<b>Every register is taken</b><span>${esc(dayName(D))}</span></div>`
+  const D = TODAY, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, next = list.find((g) => !doneOn(g, D));
+  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next lesson</span><span class="hn-when">${esc(timeOn(next, D))}</span></div>
+      <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${lessonLine(next)} · ${stu(next.students.length)}</span>
+      <div class="hn-btns"><button ${homeOpen(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
+    : list.length ? `<div class="at-all h-in">${ic('Check')}<b>All lessons are taught</b><span>${esc(dayName(D))}</span></div>`
     : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`;
-  const rest = list.filter((g) => g !== next).map((g) => { const done = rec(g, D).saved;
-    return `<button class="tp-lrow at-other" style="--c:${hc(g)}" data-push="register" data-g="${g.id}" data-date="${k}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timeOn(g, D))} · ${done ? 'register taken' : stu(g.students.length)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
+  const rest = list.filter((g) => g !== next).map((g) => { const done = doneOn(g, D);
+    return `<button class="tp-lrow at-other" style="--c:${hc(g)}" ${homeOpen(g)}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)}</b><span>${esc(timeOn(g, D))} · ${done ? 'taught' : lessonLine(g)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
   return card('Today', list.length ? `${list.length} lesson${list.length === 1 ? '' : 's'}` : '', hero + (rest ? `<div class="at-list" style="margin-top:10px">${rest}</div>` : ''));
 }
 const SECS = { next: secNext, overview: secOverview, today: secTodayHero, owe: secOweB, extras: secExtras };
@@ -187,7 +189,7 @@ function pgHomeNew() {
   if (!S.groups.length) return pgHome();
   const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, cfg = homeCfg();
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
-    <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
+    <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
   const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark who paid</button><button data-sheet="extra">${ic('Package')}Extra charge</button></div>`;
   return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => SECS[id]()).join('');
 }

@@ -1,0 +1,159 @@
+'use strict';
+/* The three dots (3 Nov 2026) + the file viewer.
+   Three small iPhone-style dots in a capsule: on Home, on every screen on top and inside an open file. What each dot does, and how the
+   dots look (icons or plain colour dots), is set in Profile and settings → Three dots. Standard: blue = lesson files (you pick the
+   group first), green = attendance, orange = the Budget app.
+   Files (PDF) open inside the app (pdf.js, kept offline in media\pdfjs), so the dots stay on top of them. */
+const BUDGET_URL = 'https://kofklens682-max.github.io/Budget/';
+const PV = { el: null, ctx: null, doc: null, zoom: 1, lib: null, seq: 0 };
+
+const DOT_KEY = 'teacher-dots';
+const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['ClipboardCheck', 'Attendance of this group'], atttab: ['ClipboardCheck', 'Attendance tab'], budget: ['Wallet', 'Budget app'],
+  group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Books tab'], none: ['X', 'Nothing (hide this dot)'] };
+const DOT_DEFAULT = { style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'] };
+const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Blue', 'Green', 'Orange'];
+function dotsGet() {
+  let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
+  const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
+  return { style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), inside: ok(v.inside, DOT_DEFAULT.inside) };
+}
+const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify(c)); } catch (e) { /* not saved */ } };
+const lightsHtml = (where = 'home') => {
+  const c = dotsGet(), b = c[where].map((a, i) => (a === 'none' ? '' : `<button class="lt ${DOT_CLS[i]}" data-light="${a}" aria-label="${ACTIONS[a][1]}">${c.style === 'icons' ? ic(ACTIONS[a][0]) : ''}</button>`)).join('');
+  return b ? `<div class="tp-lights ${c.style}" role="group" aria-label="Shortcuts">${b}</div>` : '';
+};
+// every screen on top gets the dots in its bar (between Back and Edit)
+const withLights = (html) => html.replace(/(<div class="tp-pushbar"><button class="tp-back"[^>]*>[\s\S]*?<\/button>)/, '$1' + lightsHtml('inside'));
+function dotsSettingsHtml() {
+  const c = dotsGet(), opts = (cur) => Object.keys(ACTIONS).map((k) => `<option value="${k}"${k === cur ? ' selected' : ''}>${ACTIONS[k][1]}</option>`).join('');
+  const rows = (where, label) => `<div class="tp-f"><span>${label}</span>${c[where].map((a, i) => `<label class="dt-row"><i class="dt-sw ${DOT_CLS[i]}"></i><select data-dotsel="${where}|${i}" aria-label="${label}: ${DOT_NAMES[i]} dot">${opts(a)}</select></label>`).join('')}</div>`;
+  return `<div class="tp-card2"><div class="h">${ic('Sliders')}Three dots</div>
+    <div class="tp-f"><span>Look</span><div class="tp-chips2 dr-fill"><button class="${c.style === 'icons' ? 'on' : ''}" data-dotstyle="icons">With icons</button><button class="${c.style === 'plain' ? 'on' : ''}" data-dotstyle="plain">Plain dots</button></div></div>
+    ${rows('home', 'On Home')}${rows('inside', 'Inside lessons and files')}
+    <div class="tp-f"><span>Budget</span><div class="tp-chips2 dr-fill"><button class="${c.budget === 'app' ? 'on' : ''}" data-dotbud="app">Open the app</button><button class="${c.budget === 'web' ? 'on' : ''}" data-dotbud="web">Open in browser</button></div></div>
+    <button class="tp-dashed" data-dotreset>Back to the standard dots</button></div>`;
+}
+
+const packKeyOf = (g) => (g && PACKS[`${String(g.lvl).toLowerCase()}-w${g.week}-l${g.les}`] ? `${String(g.lvl).toLowerCase()}-w${g.week}-l${g.les}` : null);
+function lightCtx() { // the group the dots are about right now (on a screen or in a file); on Home there is none
+  if (PV.el && PV.ctx) return PV.ctx;
+  const top = T.push[T.push.length - 1], g = top && top.g && gById(top.g);
+  return { gid: g ? g.id : null, key: top && top.s === 'lesson' && top.lvl ? `${String(top.lvl).toLowerCase()}-w${top.w}-l${top.l}` : packKeyOf(g) };
+}
+const lessonTitle = (key) => { const m = /^(\w+)-w(\d+)-l(\d+)$/.exec(key || ''); if (!m) return 'Lesson files'; try { const id = m[1].toUpperCase(), u = weekOf(id, +m[2]), l = u.lessons[+m[3] - 1]; return `${LVNAME(id)} · W${m[2]} L${m[3]} · ${l.subtopic}`; } catch (e) { return 'Lesson files'; } };
+const fileKinds = (key) => (PACKS[key] ? PK_KINDS.filter(([k]) => PACKS[key][k]) : []);
+const planScreen = (g) => (g.lvl === 'own' ? { s: 'own', g: g.id } : planned(g.lvl) ? { s: 'lesson', lvl: g.lvl, w: g.week, l: g.les, g: g.id } : { s: 'register', g: g.id });
+
+// step 1: which group? (the group you are in comes first, then today's groups in time order, then the others)
+function sheetPkGroups() {
+  const cur = lightCtx().gid, today = (g) => hasLesson(g, TODAY);
+  const order = [...S.groups].sort((a, b) => (b.id === cur) - (a.id === cur) || today(b) - today(a) || startMin(a, TODAY) - startMin(b, TODAY) || a.name.localeCompare(b.name));
+  const rows = order.map((g) => { const key = packKeyOf(g), n = fileKinds(key).length;
+    return `<button class="tp-lrow pv-row" data-pkgroup="${g.id}"><span class="pv-ic" style="background:${hc(g)}22;color:${hc(g)}">${ic('Users')}</span><span class="tx"><b>${esc(g.name)}${g.id === cur ? ' <em class="pv-now">here</em>' : ''}</b><span>${today(g) ? esc(timeOn(g, TODAY)) + ' · ' : ''}${planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}${n ? ` · ${n} file${n === 1 ? '' : 's'}` : ''}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('');
+  return `<div class="tp-sh-h"><span></span><b>Which group?</b><button class="tp-back strong" data-closesheet>Done</button></div><p class="tp-small" style="text-align:left">Choose a group to see the files of its current lesson.</p>${rows || '<p class="tp-small">No groups yet.</p>'}`;
+}
+// step 2: that group's lesson: the lesson plan and its files
+function sheetPkFiles(s) {
+  const key = s.key, g = s.gid && gById(s.gid), P = PACKS[key] || {}, rows = fileKinds(key).map(([k, name, sub]) => {
+    const pdf = !/\.html$/.test(P[k][0]), cur = PV.el && PV.ctx && PV.ctx.key === key && PV.ctx.kind === k;
+    return pdf ? `<button class="tp-lrow pv-row${cur ? ' cur' : ''}" data-pvopen="${key}|${k}" data-pvg="${s.gid || ''}"><span class="pv-ic">${ic('FileText')}</span><span class="tx"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></span><span class="tp-chev">${ic(cur ? 'Check' : 'ChevronRight')}</span></button>`
+      : `<a class="tp-lrow pv-row" href="media/packs/${P[k][0]}" target="_blank" rel="noopener"><span class="pv-ic">${ic('FileText')}</span><span class="tx"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></a>`;
+  }).join('');
+  const plan = g ? `<button class="tp-lrow pv-row" data-pkplan="${g.id}"><span class="pv-ic">${ic('BookOpen')}</span><span class="tx"><b>Open the lesson plan</b><span>${esc(g.name)} · today's lesson</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>` : '';
+  return `<div class="tp-sh-h">${g ? `<button class="tp-back" data-pkback>${ic('ChevronLeft')} Groups</button>` : '<span></span>'}<b>${g ? esc(g.name) : 'Lesson files'}</b><button class="tp-back strong" data-closesheet>Done</button></div><p class="tp-small" style="text-align:left">${esc(lessonTitle(key))}</p>${plan}${rows || '<p class="tp-small">No files for this lesson.</p>'}`;
+}
+
+function openBudget() { // Android: an "intent" link asks the phone to open the address with the app that owns it (the installed Budget app); the browser address is the fallback
+  const web = dotsGet().budget === 'web', u = new URL(BUDGET_URL);
+  if (!web && /Android/i.test(navigator.userAgent)) { location.href = `intent://${u.host}${u.pathname}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(BUDGET_URL)};end`; return; }
+  window.open(BUDGET_URL, '_blank', 'noopener');
+}
+function leaveViewer() { const had = T.push.length; if (PV.el) { pvClose(); if (!had) unwind(); } } // the file's history step goes with it
+const tabGo = (i) => { leaveViewer(); goTab(i); };
+function lightGo(what) {
+  const c = lightCtx();
+  switch (what) {
+    case 'files': if (S.groups.length === 1) { const g = S.groups[0]; return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); } return openSheet({ s: 'pkgroups' });
+    case 'budget': return openBudget();
+    case 'att': {
+      const g = c.gid && gById(c.gid), inViewer = !!PV.el; if (!g) return tabGo(2);
+      const sc = { s: 'register', g: g.id, date: hasLesson(g, TODAY) ? iso(TODAY) : undefined };
+      if (inViewer) { pvClose(); T.push.push(sc); return draw(true); } // the file's own history step now belongs to the register
+      return pushScreen(sc);
+    }
+    case 'atttab': return tabGo(2);
+    case 'units': return tabGo(1);
+    case 'home': return tabGo(0);
+    case 'books': return tabGo(3);
+    case 'group': return openSheet({ s: 'group' });
+    case 'pay': return openSheet({ s: 'paypick' });
+    case 'extra': return openSheet({ s: 'extra' });
+  }
+}
+
+/* ---------- the file viewer ---------- */
+function pvLib() {
+  if (PV.lib) return PV.lib;
+  return (PV.lib = new Promise((ok, no) => {
+    const s = document.createElement('script'); s.src = 'media/pdfjs/pdf.min.js';
+    s.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = 'media/pdfjs/pdf.worker.min.js'; ok(pdfjsLib); };
+    s.onerror = () => { PV.lib = null; no(new Error('lib')); }; document.head.appendChild(s);
+  }));
+}
+function pvEnsure(reuseStep) {
+  if (PV.el) return;
+  const el = document.createElement('div'); el.className = 'pv';
+  el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('inside')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
+  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => el.classList.add('show'));
+  const sc = el.querySelector('.pv-scroll'); let last = 0;
+  sc.addEventListener('pointerup', (e) => { if (e.target.closest('button')) return; const n = Date.now(); if (n - last < 300) { last = 0; pvZoom(); } else last = n; });
+}
+function pvMsg(t) { if (PV.el) { PV.el.querySelector('.pv-msg').textContent = t || ''; PV.el.classList.toggle('msg', !!t); } }
+async function pvOpen(ref, title, gid) {
+  const [key, kind] = ref.split('|'); if (!PACKS[key] || !PACKS[key][kind]) return;
+  const seq = ++PV.seq, name = PACKS[key][kind][0];
+  const hadSheet = !!T.sheet, hadViewer = !!PV.el; if (hadSheet) { T.sheet = null; draw(); } // the list closes; its history step is reused (or given back)
+  if (hadSheet && hadViewer) { R.skipPop = (R.skipPop || 0) + 1; try { history.back(); } catch (e) { R.skipPop--; } }
+  pvEnsure(hadSheet && !hadViewer); PV.ctx = { key, kind, gid: gid || (lightCtxBase() || {}).gid || null };
+  PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-pages').innerHTML = ''; PV.el.querySelector('.pv-scroll').scrollTop = 0; pvMsg('Opening…');
+  try {
+    const lib = await pvLib(), blob = await packGet(name), doc = await lib.getDocument({ data: await blob.arrayBuffer() }).promise;
+    if (seq !== PV.seq || !PV.el) return; PV.doc = doc; pvMsg(''); await pvLayout();
+  } catch (e) { if (seq === PV.seq) pvMsg('Connect to the internet once to get this file'); }
+}
+function lightCtxBase() { const keep = PV.ctx; PV.ctx = null; const c = lightCtx(); PV.ctx = keep; return c; }
+async function pvLayout() {
+  const doc = PV.doc, wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll'); wrap.innerHTML = '';
+  const w = Math.max(280, (sc.clientWidth - 16) * PV.zoom), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (PV.io) PV.io.disconnect();
+  PV.io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !e.target._done) { e.target._done = 1; pvPage(e.target, dpr); } }), { root: sc, rootMargin: '150% 0px' });
+  for (let i = 1; i <= doc.numPages; i++) {
+    const pg = await doc.getPage(i), vp = pg.getViewport({ scale: 1 }), box = document.createElement('div');
+    box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round((w * vp.height) / vp.width) + 'px'; box._pg = pg; box._w = w;
+    wrap.appendChild(box); PV.io.observe(box);
+  }
+}
+function pvPage(box, dpr) {
+  const vp0 = box._pg.getViewport({ scale: 1 }), s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
+  c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
+  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { box.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); }).catch(() => {});
+}
+function pvZoom() { if (!PV.doc) return; PV.zoom = PV.zoom > 1 ? 1 : 2.2; PV.el.classList.toggle('zoomed', PV.zoom > 1); pvLayout(); }
+function pvClose() {
+  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect();
+  el.classList.remove('show'); el.classList.add('out'); setTimeout(() => el.remove(), 480);
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('a[data-pvopen]'); if (a) { e.preventDefault(); return pvOpen(a.dataset.pvopen, a.dataset.pt, a.dataset.pvg); }
+  const b = e.target.closest && e.target.closest('button[data-pvopen]'); if (b) { const [k, kind] = b.dataset.pvopen.split('|'); return pvOpen(b.dataset.pvopen, `${PK_KINDS.find((x) => x[0] === kind)[1]} · ${lessonTitle(k)}`, b.dataset.pvg); }
+  const c = e.target.closest && e.target.closest('[data-pvclose]'); if (c) return goBack();
+  const gp = e.target.closest && e.target.closest('[data-pkgroup]'); if (gp) { const g = gById(gp.dataset.pkgroup); return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); }
+  if (e.target.closest && e.target.closest('[data-pkback]')) return openSheet({ s: 'pkgroups' });
+  const pl = e.target.closest && e.target.closest('[data-pkplan]'); if (pl) { const g = gById(pl.dataset.pkplan); T.sheet = null; if (PV.el) pvClose(); T.push.push(planScreen(g)); draw(true); return; } // the sheet's (or the file's) history step now belongs to that screen
+  const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotreset]');
+  if (ds) { const c = dotsGet(); if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { c.home = DOT_DEFAULT.home; c.inside = DOT_DEFAULT.inside; c.style = 'icons'; c.budget = 'app'; } dotsSet(c); return draw(); }
+  const l = e.target.closest && e.target.closest('[data-light]'); if (l) { l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop'); lightGo(l.dataset.light); }
+}, true);
+// the files are fetched once and kept: the PDF reader too, so files open without internet
+setTimeout(() => idle(() => { fetch('media/pdfjs/pdf.min.js').catch(() => {}); fetch('media/pdfjs/pdf.worker.min.js').catch(() => {}); }), 6000);
+document.addEventListener('change', (e) => { const s = e.target.closest && e.target.closest('select[data-dotsel]'); if (!s) return; const [w, i] = s.dataset.dotsel.split('|'), c = dotsGet(); c[w][+i] = s.value; dotsSet(c); draw(); });

@@ -54,7 +54,7 @@ function ledger(g, s, ym) { // what was paid is used for the oldest month first;
 }
 const payState = () => T.pay || (T.pay = { ym: ymOf(TODAY), f: 'all' });
 
-const STC = { paid: '#12B76A', credit: '#3D5AFE', part: '#F79009', unpaid: '#F04438' };
+const STC = { paid: '#34C759', credit: '#3D5AFE', part: '#FF9500', unpaid: '#FF3B30' };
 function donut(parts, size, w, center, track) { // parts: [[value, colour]]; a ring cut into coloured pieces
   const r = (size - w) / 2, L = 2 * Math.PI * r, on = parts.filter((p) => p[0] > 0), tot = on.reduce((a, p) => a + p[0], 0) || 1; let off = 0;
   const segs = on.map(([v, c]) => { const len = (L * v) / tot, gap = on.length > 1 ? Math.min(4, len / 3) : 0, s = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${(len - gap).toFixed(1)} ${L.toFixed(1)}" style="--L:${L.toFixed(1)}px" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>`; off += len; return s; }).join('');
@@ -102,7 +102,7 @@ function pgHomeNew() {
   const today = `<div class="tp-sec dr-sec"><h4>Today</h4><span class="dr-h4s">${todays.length} lesson${todays.length === 1 ? '' : 's'} · ${cnt(todays)} students</span></div>${todays.length ? `<div class="dr-list">${rows}</div>` : `<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`}`;
   const pay = sc.n ? `<button class="dr-paycard" data-push="pay">${donut([[sc.paid, STC.paid], [sc.credit, STC.credit], [sc.part, STC.part], [sc.unpaid, STC.unpaid]], 96, 12, `<b>${sc.ok}</b><span>of ${sc.n}</span>`)}
     <div class="dr-pl"><b>Fees · ${MONTHS[TODAY.getMonth()]}</b>${legend(sc)}</div><span class="tp-chev">${ic('ChevronRight')}</span></button>`
-    : `<div class="tp-card2"><div class="h" style="color:#12B76A">${ic('Wallet')}Fees</div><p>Set the monthly fee (or the price per lesson) in <b>Edit group</b>, and the app shows who paid.</p></div>`;
+    : `<div class="tp-card2"><div class="h" style="color:#34C759">${ic('Wallet')}Fees</div><p>Set the monthly fee (or the price per lesson) in <b>Edit group</b>, and the app shows who paid.</p></div>`;
   const tiles = [...S.groups].sort((x, y) => x.name.localeCompare(y.name)).map((g) => {
     const c = sc.per[g.id], p = attPct(g);
     return `<button class="dr-gt" style="${gvg(g)}" ${openLessonAttr(g)}><div class="t">${groupTile(g)}<span class="n">${ic('Users')}${g.students.length}</span></div><b>${esc(g.name)}</b><span class="l">${esc(LVNAME(g.lvl))}</span>
@@ -143,7 +143,7 @@ function scPay() {
       return `<button class="dr-stu" data-sheet="payrec" data-g="${g.id}" data-sid="${s.id}"><span class="dr-av st-${cls}" style="background:${avColor(s.name)}">${esc(s.name[0])}</span><span class="tx"><b>${esc(s.name)}</b><span>${esc(rowText(g, L))}${single ? ` · ${lessonsCame(g, s, ym)} lessons` : ''}</span></span><span class="dr-pill ${cls}">${txt}</span></button>`; }).join('');
     return `<div class="dr-gsec" style="${gvg(g)}"><div class="dr-gh"><span class="dot"></span><div><b>${esc(g.name)}</b><span>${single ? 'Per lesson · ' + dMoney(p.rate) : dMoney(p.fee) + ' a month'}${d ? ` · −${dMoney(d)} this month` : ''}</span></div>${single ? '' : `<button class="dr-disc" data-sheet="gdisc" data-g="${g.id}">${ic('Percent')}Discount</button>`}</div><div class="dr-sl">${list}</div></div>`;
   }).join('');
-  return `${bar}<div class="tp-inner" style="--g1:#12B76A;--g2:#0F9D8F">${head}${nav}${over}<div class="tp-sec"><h4>By group</h4></div>${byg}${chips}${secs || `<div class="tp-empty2">${ic('Check')}<b>Nobody here</b><span>Nothing matches this filter.</span></div>`}</div>`;
+  return `${bar}<div class="tp-inner" style="--g1:#34C759;--g2:#0F9D8F">${head}${nav}${over}<div class="tp-sec"><h4>By group</h4></div>${byg}${chips}${secs || `<div class="tp-empty2">${ic('Check')}<b>Nobody here</b><span>Nothing matches this filter.</span></div>`}</div>`;
 }
 
 /* ---------- sheets: record a payment, a group discount ---------- */

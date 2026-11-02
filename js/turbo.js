@@ -46,8 +46,8 @@ function turboLesson(f) {
       <div><div class="tp-eyebrow">IELTS Turbo · Week ${u.n} · ${esc(l.day)} ${tDate(l.date)}</div><div class="tp-lt" style="font-size:26px">${esc(l.title)}</div></div>
       <div class="tp-goal2">${ic('Target')}<div><small>Today's aim</small>${esc(l.focus)}</div></div>
       <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do</div>${tList(l.do)}</div>
-      <div class="tp-card2"><div class="h" style="color:#12B76A">${ic('Award')}What he knows at the end</div>${tList(l.know)}</div>
-      ${l.tips && l.tips.length ? `<div class="tp-card2"><div class="h" style="color:#F79009">${ic('Sparkles')}Tips</div>${tList(l.tips)}</div>` : ''}
+      <div class="tp-card2"><div class="h" style="color:#34C759">${ic('Award')}What he knows at the end</div>${tList(l.know)}</div>
+      ${l.tips && l.tips.length ? `<div class="tp-card2"><div class="h" style="color:#FF9500">${ic('Sparkles')}Tips</div>${tList(l.tips)}</div>` : ''}
       ${files ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Files</div>${files}</div>` : ''}
       ${hw ? `<div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework after this lesson · ${hw.tasks.reduce((a, t) => a + t.min, 0) / 60} h</div>${hw.tasks.map((t) => `<p class="hw">${ic('Square')}<span><b>${esc(t.skill)} · ${t.min} min.</b> ${esc(t.task)}</span></p>`).join('')}</div>` : ''}
     </div>`;
