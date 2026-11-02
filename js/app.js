@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.5';
+const VERSION_LABEL = 'Teacher 5.6';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -590,6 +590,21 @@ function checkLocks() { // a register opens by itself when its lesson starts
   });
   if (stale) draw();
 }
+// The four tab pages: only the one on show is built at once; the others are marked "stale" and built when the phone is idle
+// (about a quarter of a second later), or at the moment you swipe to them. Every tap used to rebuild all four.
+function renderPage(i) { if (R.stale) R.stale.delete(i); setHTML(R.pages[i], safe(PAGES[i]), R.anim === i); }
+function renderPages() {
+  R.stale = R.stale || new Set();
+  PAGES.forEach((p, i) => { if (i === T.tab) renderPage(i); else R.stale.add(i); });
+  clearTimeout(R.staleT); R.staleT = setTimeout(flushStale, 250);
+}
+function flushStale() {
+  if (!R.stale || !R.stale.size) return;
+  if (R.sliding || T.sheet || (R.screen && R.screen.classList.contains('prep'))) { R.staleT = setTimeout(flushStale, 400); return; }
+  renderPage(R.stale.values().next().value); // one page per idle turn
+  if (R.stale.size) R.staleT = setTimeout(() => idle(flushStale), 40);
+}
+const needPage = (i) => { if (R.stale && R.stale.has(i)) renderPage(i); };
 // draw(true) = a screen or sheet is sliding in: build only that, and redraw the pages underneath once it has stopped
 // (they are covered and unchanged; building them first delayed the first frame of the slide).
 function draw(lite) {
@@ -597,7 +612,7 @@ function draw(lite) {
   R.drawnAt = performance.now();
   clearTimeout(R.lateDraw);
   if (lite) R.lateDraw = setTimeout(() => draw(), 520);
-  else { PAGES.forEach((p, i) => setHTML(R.pages[i], safe(p), R.anim === i)); R.anim = -1; }
+  else { renderPages(); R.anim = -1; }
   syncScreen(); syncSheet(); syncTabs();
   if (lite) return;
   fixTables();
@@ -772,6 +787,7 @@ function goTab(i) {
   draw();
   lightsPlay(R.pages[i]);
 }
+function paintSwipe(s) { if (s.dx === undefined || s.lv) return; tabFx(T.tab - s.dx / s.W); R.track.style.transform = `translateX(calc(${-T.tab * 25}% + ${s.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - s.dx / s.W) * 100}%)`; }
 function bindSwipe() {
   const vp = R.vp, tr = R.track; let st = null;
   vp.addEventListener('pointerdown', (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, pts: [] }; });
@@ -782,7 +798,7 @@ function bindSwipe() {
       st.on = true; st.W = vp.offsetWidth; R.sliding = true; try { vp.setPointerCapture(e.pointerId); } catch (_) { /* ok */ }
       const page = R.pages[T.tab], pane = false && page.querySelector('[data-lvpane]') // user: a swipe only moves between the tabs; levels are chosen by tapping, cur = pane ? lvIndex(T.tab) : -1, n = cur + (dx < 0 ? 1 : -1);
       if (pane && n >= 0 && n < lvList(T.tab).length) { if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT); const p = page.querySelector('[data-lvpane]'); p.style.transition = 'none'; st.lv = { page, pane: p, cur: lvIndex(T.tab), dir: 0, peek: null, w: p.offsetWidth + LV_GAP }; }
-      else tr.classList.remove('settle');
+      else { tr.classList.remove('settle'); needPage(T.tab - 1); needPage(T.tab + 1); movingFor(1500); }
     }
     st.pts.push([e.timeStamp, e.clientX]); if (st.pts.length > 6) st.pts.shift();
     if (st.lv) { // paging through the levels: the pane follows the finger, the next level comes in beside it
@@ -793,10 +809,11 @@ function bindSwipe() {
       return;
     }
     st.dx = (T.tab === 0 && dx > 0) || (T.tab === 3 && dx < 0) ? dx / 3 : dx;
-    tabFx(T.tab - st.dx / st.W); tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
+    if (!st.raf) st.raf = requestAnimationFrame(() => { st.raf = 0; paintSwipe(st); });
   });
   const end = (e) => {
     if (!st || e.pointerId !== st.id) return; const s = st; st = null; if (!s.on) return;
+    if (s.raf) { cancelAnimationFrame(s.raf); s.raf = 0; paintSwipe(s); }
     R.sliding = false;
     // finger speed over its last 120 ms only (a slow first frame must not hide a flick); held still = no flick
     const b = s.pts[s.pts.length - 1], a = b && (s.pts.find((p) => b[0] - p[0] <= 120) || b), a2 = a === b ? s.pts[s.pts.length - 2] : a;
@@ -816,7 +833,7 @@ function bindSwipe() {
     let i = T.tab; if ((s.dx < -s.W * 0.3 || v < -0.3) && T.tab < 3) i++; else if ((s.dx > s.W * 0.3 || v > 0.3) && T.tab > 0) i--;
     // finish at the finger's speed: a quick flick glides fast, a slow drag settles gently (like iOS)
     const left = Math.abs((T.tab - i) * s.W + s.dx), ms = Math.round(Math.max(180, Math.min(420, left / Math.max(Math.abs(v), 0.9))));
-    tabFxTo(T.tab - s.dx / s.W, i, ms);
+    tabFxTo(T.tab - s.dx / s.W, i, ms); movingFor(ms + 120);
     tr.style.transitionDuration = ms + 'ms'; tr.classList.add('settle', 'glide');
     clearTimeout(tr._t); tr._t = setTimeout(() => { tr.style.transitionDuration = ''; tr.classList.remove('glide'); }, ms + 40);
     vp._moved = Date.now();
@@ -885,6 +902,7 @@ function lvIdle(tab) { // only when nothing is moving: never in the middle of a 
   const later = () => ('requestIdleCallback' in window ? requestIdleCallback(run, { timeout: 4000 }) : setTimeout(run, 300));
   const run = () => {
     if (R.sliding || R.lvEnd || performance.now() - (R.drawnAt || 0) < 450) { setTimeout(later, 200); return; }
+    if (R.stale && R.stale.has(tab)) { setTimeout(later, 300); return; } // that page is not built yet
     if (lvPrep(tab, true)) { setTimeout(later, 60); return; }
     lvIdle[tab] = false;
   };

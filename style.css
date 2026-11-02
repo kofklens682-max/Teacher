@@ -1118,6 +1118,16 @@ html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 @keyframes lti-cap{0%{opacity:0;clip-path:inset(-10px -10px -10px 68% round 17px);animation-timing-function:linear}22%{opacity:1;clip-path:inset(-10px -10px -10px 68% round 17px);animation-timing-function:var(--ease)}100%{opacity:1;clip-path:inset(-10px -10px -10px -10px round 17px)}}
 @keyframes lti-slide{0%{opacity:0;transform:translateX(var(--o,0px));animation-timing-function:linear}22%{opacity:1;transform:translateX(var(--o,0px));animation-timing-function:var(--ease)}100%{opacity:1;transform:none}}
 @keyframes lti-pop{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
-.tp-page{will-change:auto}
+
 
 .dt-range{width:100%;margin:6px 0 0;accent-color:#007AFF}.dt-scale{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:2px}
+
+/* ===== speed (4 Nov): every page is its own layer, so an animation on one page never repaints the others; the dots animate with transform and opacity only ===== */
+.tp-page{will-change:transform;contain:layout style}
+.tp-lights{position:relative;background:none!important;box-shadow:none!important}
+.tp-lights::before{content:"";position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.82);box-shadow:0 0 0 .5px rgba(60,60,67,.16),0 2px 8px rgba(0,0,0,.08);transform-origin:100% 50%;pointer-events:none}
+.tp-lights .lt{position:relative;z-index:1}
+.tp-lights.play{animation:none!important}
+.tp-lights.play::before{animation:lti-bg .95s var(--ease) both!important}
+@keyframes lti-bg{0%{opacity:0;transform:scaleX(.32);animation-timing-function:linear}22%{opacity:1;transform:scaleX(.32);animation-timing-function:var(--ease)}100%{opacity:1;transform:none}}
+.tp{touch-action:manipulation}

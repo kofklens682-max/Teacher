@@ -18,7 +18,7 @@
    (the main cause of lag on the phone). Small things (a chip, a toggle) do not count. */
 (function () {
   let n = 0, t = 0;
-  const big = (el) => el instanceof Element && el.offsetHeight > 300 && !el.closest('.tp-tabs, .tabs');
+  const big = (el) => el instanceof Element && el.matches('.tp-push, .tp-sheet .panel, .tp-viewport, .tp-track, .pv, .tp-page') && !el.closest('.tp-tabs, .tabs');
   const off = () => { n = 0; document.documentElement.classList.remove('moving'); };
   const on = (e) => { if (e.propertyName !== 'transform' || !big(e.target)) return; n++; document.documentElement.classList.add('moving'); clearTimeout(t); t = setTimeout(off, 900); };
   const end = (e) => { if (e.propertyName !== 'transform' || !big(e.target)) return; if (--n <= 0) { clearTimeout(t); t = setTimeout(off, 60); } };
