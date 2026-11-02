@@ -9,13 +9,18 @@ const PV = { el: null, ctx: null, doc: null, zoom: 1, lib: null, seq: 0 };
 
 const DOT_KEY = 'teacher-dots';
 const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['ClipboardCheck', 'Attendance of this group'], atttab: ['ClipboardCheck', 'Attendance tab'], budget: ['Wallet', 'Budget app'],
-  group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Books tab'], none: ['X', 'Nothing (hide this dot)'] };
-const DOT_DEFAULT = { style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'] };
+  plan: ['BookOpen', 'Lesson plan of this group'], students: ['Users', 'Students of this group'], nextfile: ['ChevronRight', 'Next file of the lesson'], prevfile: ['ChevronLeft', 'Previous file of the lesson'],
+  group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Books tab'],
+  settings: ['UserRound', 'Profile and settings'], arrange: ['Sliders', 'Arrange Home'], share: ['Share2', 'Share this file'], top: ['ArrowUp', 'Scroll to the top'], close: ['X', 'Close / go back'] };
+PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + name]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
+ACTIONS.none = ['X', 'Nothing (hide this dot)'];
+const DOT_DEFAULT = { blur: true, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'], file: ['k:q', 'k:e', 'k:z'] };
+const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Attendance and Books'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
 const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Blue', 'Green', 'Orange'];
 function dotsGet() {
   let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
   const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
-  return { style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), inside: ok(v.inside, DOT_DEFAULT.inside) };
+  return { blur: v.blur !== false, style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
 }
 const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify(c)); } catch (e) { /* not saved */ } };
 const lightsHtml = (where = 'home') => {
@@ -23,14 +28,15 @@ const lightsHtml = (where = 'home') => {
   return b ? `<div class="tp-lights ${c.style}" role="group" aria-label="Shortcuts">${b}</div>` : '';
 };
 // every screen on top gets the dots in its bar (between Back and Edit)
-const withLights = (html) => html.replace(/(<div class="tp-pushbar"><button class="tp-back"[^>]*>[\s\S]*?<\/button>)/, '$1' + lightsHtml('inside'));
+const withLights = (html) => html.replace(/(<div class="tp-pushbar">(?:(?!<\/div>)[\s\S])*?)(<\/div>)/, '$1' + lightsHtml('inside') + '$2');
 function dotsSettingsHtml() {
   const c = dotsGet(), opts = (cur) => Object.keys(ACTIONS).map((k) => `<option value="${k}"${k === cur ? ' selected' : ''}>${ACTIONS[k][1]}</option>`).join('');
   const rows = (where, label) => `<div class="tp-f"><span>${label}</span>${c[where].map((a, i) => `<label class="dt-row"><i class="dt-sw ${DOT_CLS[i]}"></i><select data-dotsel="${where}|${i}" aria-label="${label}: ${DOT_NAMES[i]} dot">${opts(a)}</select></label>`).join('')}</div>`;
   return `<div class="tp-card2"><div class="h">${ic('Sliders')}Three dots</div>
     <div class="tp-f"><span>Look</span><div class="tp-chips2 dr-fill"><button class="${c.style === 'icons' ? 'on' : ''}" data-dotstyle="icons">With icons</button><button class="${c.style === 'plain' ? 'on' : ''}" data-dotstyle="plain">Plain dots</button></div></div>
-    ${rows('home', 'On Home')}${rows('inside', 'Inside lessons and files')}
+    ${DOT_WHERE.map(([w, l]) => rows(w, l)).join('')}
     <div class="tp-f"><span>Budget</span><div class="tp-chips2 dr-fill"><button class="${c.budget === 'app' ? 'on' : ''}" data-dotbud="app">Open the app</button><button class="${c.budget === 'web' ? 'on' : ''}" data-dotbud="web">Open in browser</button></div></div>
+    <div class="tp-f"><span>Swiping between tabs</span><div class="tp-chips2 dr-fill"><button class="${c.blur ? 'on' : ''}" data-dotblur="1">With blur</button><button class="${c.blur ? '' : 'on'}" data-dotblur="0">Plain</button></div></div>
     <button class="tp-dashed" data-dotreset>Back to the standard dots</button></div>`;
 }
 
@@ -45,12 +51,12 @@ const fileKinds = (key) => (PACKS[key] ? PK_KINDS.filter(([k]) => PACKS[key][k])
 const planScreen = (g) => (g.lvl === 'own' ? { s: 'own', g: g.id } : planned(g.lvl) ? { s: 'lesson', lvl: g.lvl, w: g.week, l: g.les, g: g.id } : { s: 'register', g: g.id });
 
 // step 1: which group? (the group you are in comes first, then today's groups in time order, then the others)
-function sheetPkGroups() {
-  const cur = lightCtx().gid, today = (g) => hasLesson(g, TODAY);
+function sheetPkGroups(s = {}) {
+  const cur = lightCtx().gid, today = (g) => hasLesson(g, TODAY), kn = s.kind && PK_KINDS.find((x) => x[0] === s.kind);
   const order = [...S.groups].sort((a, b) => (b.id === cur) - (a.id === cur) || today(b) - today(a) || startMin(a, TODAY) - startMin(b, TODAY) || a.name.localeCompare(b.name));
   const rows = order.map((g) => { const key = packKeyOf(g), n = fileKinds(key).length;
     return `<button class="tp-lrow pv-row" data-pkgroup="${g.id}"><span class="pv-ic" style="background:${hc(g)}22;color:${hc(g)}">${ic('Users')}</span><span class="tx"><b>${esc(g.name)}${g.id === cur ? ' <em class="pv-now">here</em>' : ''}</b><span>${today(g) ? esc(timeOn(g, TODAY)) + ' · ' : ''}${planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}${n ? ` · ${n} file${n === 1 ? '' : 's'}` : ''}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`; }).join('');
-  return `<div class="tp-sh-h"><span></span><b>Which group?</b><button class="tp-back strong" data-closesheet>Done</button></div><p class="tp-small" style="text-align:left">Choose a group to see the files of its current lesson.</p>${rows || '<p class="tp-small">No groups yet.</p>'}`;
+  return `<div class="tp-sh-h"><span></span><b>Which group?</b><button class="tp-back strong" data-closesheet>Done</button></div><p class="tp-small" style="text-align:left">${kn ? 'Choose a group: its ' + esc(kn[1]) + ' opens.' : 'Choose a group to see the files of its current lesson.'}</p>${rows || '<p class="tp-small">No groups yet.</p>'}`;
 }
 // step 2: that group's lesson: the lesson plan and its files
 function sheetPkFiles(s) {
@@ -70,15 +76,30 @@ function openBudget() { // Android: an "intent" link asks the phone to open the 
 }
 function leaveViewer() { const had = T.push.length; if (PV.el) { pvClose(); if (!had) unwind(); } } // the file's history step goes with it
 const tabGo = (i) => { leaveViewer(); goTab(i); };
+function fileGo(kind, c) { // open one kind of file of the lesson the dots are about; no group on this screen: ask which group
+  const P = c.key && PACKS[c.key], kn = PK_KINDS.find((x) => x[0] === kind);
+  if (!c.key) return c.gid ? toast('No files for this lesson') : S.groups.length === 1 ? fileGo(kind, { gid: S.groups[0].id, key: packKeyOf(S.groups[0]) }) : openSheet({ s: 'pkgroups', kind });
+  if (!P || !P[kind]) return toast('No ' + kn[1].toLowerCase() + ' for this lesson');
+  if (/\.html$/.test(P[kind][0])) return void window.open('media/packs/' + P[kind][0], '_blank');
+  pvOpen(c.key + '|' + kind, kn[1] + ' · ' + lessonTitle(c.key), c.gid);
+}
+function stepFile(dir) {
+  const c = lightCtx(); if (!c.key) return openSheet({ s: 'pkgroups' });
+  const ks = fileKinds(c.key).map((x) => x[0]).filter((k) => !/\.html$/.test(PACKS[c.key][k][0])); if (!ks.length) return toast('No files for this lesson');
+  const at = ks.indexOf(c.kind); fileGo(ks[(at < 0 ? (dir > 0 ? 0 : ks.length - 1) : (at + dir + ks.length) % ks.length)], c);
+}
 function lightGo(what) {
   const c = lightCtx();
+  if (what.startsWith('k:')) return fileGo(what.slice(2), c);
   switch (what) {
     case 'files': if (S.groups.length === 1) { const g = S.groups[0]; return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); } return openSheet({ s: 'pkgroups' });
+    case 'nextfile': return stepFile(1);
+    case 'prevfile': return stepFile(-1);
     case 'budget': return openBudget();
-    case 'att': {
-      const g = c.gid && gById(c.gid), inViewer = !!PV.el; if (!g) return tabGo(2);
-      const sc = { s: 'register', g: g.id, date: hasLesson(g, TODAY) ? iso(TODAY) : undefined };
-      if (inViewer) { pvClose(); T.push.push(sc); return draw(true); } // the file's own history step now belongs to the register
+    case 'att': case 'plan': case 'students': {
+      const g = c.gid && gById(c.gid), inViewer = !!PV.el; if (!g) return what === 'att' ? tabGo(2) : openSheet({ s: 'pkgroups' });
+      const sc = what === 'att' ? { s: 'register', g: g.id, date: hasLesson(g, TODAY) ? iso(TODAY) : undefined } : what === 'plan' ? planScreen(g) : { s: 'group', g: g.id };
+      if (inViewer) { pvClose(); T.push.push(sc); return draw(true); } // the file's own history step now belongs to that screen
       return pushScreen(sc);
     }
     case 'atttab': return tabGo(2);
@@ -88,6 +109,11 @@ function lightGo(what) {
     case 'group': return openSheet({ s: 'group' });
     case 'pay': return openSheet({ s: 'paypick' });
     case 'extra': return openSheet({ s: 'extra' });
+    case 'settings': return openSheet({ s: 'settings' });
+    case 'arrange': return openSheet({ s: 'homecfg' });
+    case 'share': if (PV.ctx && PV.ctx.kind) return packShare(PV.ctx.key + '|' + PV.ctx.kind, PV.el.querySelector('.pv-t').textContent); return toast('Open a file first');
+    case 'top': if (PV.el) { PV.el.querySelector('.pv-scroll').scrollTo({ top: 0, behavior: 'smooth' }); return; } return void R.pages[T.tab].scrollTo({ top: 0, behavior: 'smooth' });
+    case 'close': return goBack();
   }
 }
 
@@ -103,8 +129,8 @@ function pvLib() {
 function pvEnsure(reuseStep) {
   if (PV.el) return;
   const el = document.createElement('div'); el.className = 'pv';
-  el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('inside')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
-  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => el.classList.add('show'));
+  el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
+  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
   const sc = el.querySelector('.pv-scroll'); let last = 0;
   sc.addEventListener('pointerup', (e) => { if (e.target.closest('button')) return; const n = Date.now(); if (n - last < 300) { last = 0; pvZoom(); } else last = n; });
 }
@@ -147,13 +173,32 @@ document.addEventListener('click', (e) => {
   const a = e.target.closest && e.target.closest('a[data-pvopen]'); if (a) { e.preventDefault(); return pvOpen(a.dataset.pvopen, a.dataset.pt, a.dataset.pvg); }
   const b = e.target.closest && e.target.closest('button[data-pvopen]'); if (b) { const [k, kind] = b.dataset.pvopen.split('|'); return pvOpen(b.dataset.pvopen, `${PK_KINDS.find((x) => x[0] === kind)[1]} · ${lessonTitle(k)}`, b.dataset.pvg); }
   const c = e.target.closest && e.target.closest('[data-pvclose]'); if (c) return goBack();
-  const gp = e.target.closest && e.target.closest('[data-pkgroup]'); if (gp) { const g = gById(gp.dataset.pkgroup); return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); }
+  const gp = e.target.closest && e.target.closest('[data-pkgroup]'); if (gp) { const g = gById(gp.dataset.pkgroup), kind = T.sheet && T.sheet.kind; if (kind) { T.sheet = null; draw(); return fileGo(kind, { key: packKeyOf(g), gid: g.id }); } return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); }
   if (e.target.closest && e.target.closest('[data-pkback]')) return openSheet({ s: 'pkgroups' });
   const pl = e.target.closest && e.target.closest('[data-pkplan]'); if (pl) { const g = gById(pl.dataset.pkplan); T.sheet = null; if (PV.el) pvClose(); T.push.push(planScreen(g)); draw(true); return; } // the sheet's (or the file's) history step now belongs to that screen
-  const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotreset]');
-  if (ds) { const c = dotsGet(); if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { c.home = DOT_DEFAULT.home; c.inside = DOT_DEFAULT.inside; c.style = 'icons'; c.budget = 'app'; } dotsSet(c); return draw(); }
+  const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotblur],[data-dotreset]');
+  if (ds) { const c = dotsGet(); if (ds.dataset.dotblur) c.blur = ds.dataset.dotblur === '1'; else if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { DOT_WHERE.forEach(([w]) => { c[w] = DOT_DEFAULT[w]; }); c.style = 'icons'; c.budget = 'app'; c.blur = true; } dotsSet(c); return draw(); }
   const l = e.target.closest && e.target.closest('[data-light]'); if (l) { l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop'); lightGo(l.dataset.light); }
 }, true);
 // the files are fetched once and kept: the PDF reader too, so files open without internet
 setTimeout(() => idle(() => { fetch('media/pdfjs/pdf.min.js').catch(() => {}); fetch('media/pdfjs/pdf.worker.min.js').catch(() => {}); }), 6000);
 document.addEventListener('change', (e) => { const s = e.target.closest && e.target.closest('select[data-dotsel]'); if (!s) return; const [w, i] = s.dataset.dotsel.split('|'), c = dotsGet(); c[w][+i] = s.value; dotsSet(c); draw(); });
+
+/* ---------- the dots appear: the orange one pops, then the capsule stretches to the left and the other dots come out of it together (no bounce) ---------- */
+function lightsPlay(el) {
+  const d = el && el.querySelector && el.querySelector('.tp-lights'); if (!d) return;
+  d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('play'), 1100);
+}
+/* ---------- blur while a finger swipes between the tabs ---------- */
+function tabFx(p) { // p = the tab position as a fraction (1.4 = 40% of the way from Units to Attendance); the page you leave softens and slides a little slower, the next one arrives from a blur
+  const on = dotsGet().blur, W = R.vp.offsetWidth;
+  R.pages.forEach((pg, i) => {
+    const s = i - p, d = Math.min(Math.abs(s), 1), e = d * d * (3 - 2 * d);
+    if (!on || d < 0.002 || d >= 1) { if (pg._fx) { pg.style.filter = ''; pg.style.transform = ''; pg.style.opacity = ''; pg._fx = 0; } return; }
+    pg._fx = 1; pg.style.filter = `blur(${(e * 10).toFixed(1)}px)`; pg.style.transform = `translate3d(${((s > 0 ? -1 : 1) * e * W * 0.2).toFixed(1)}px,0,0) scale(${(1 - e * 0.07).toFixed(3)})`; pg.style.opacity = (1 - e * 0.55).toFixed(2);
+  });
+}
+function tabFxTo(from, to, ms) { // the same effect while the page settles after the finger lets go
+  cancelAnimationFrame(tabFxTo.raf); if (!dotsGet().blur) return tabFx(to);
+  const t0 = performance.now(), step = (t) => { const k = Math.min((t - t0) / ms, 1); tabFx(from + (to - from) * (1 - Math.pow(1 - k, 3.5))); if (k < 1) tabFxTo.raf = requestAnimationFrame(step); }; tabFxTo.raf = requestAnimationFrame(step);
+}

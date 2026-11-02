@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.3';
+const VERSION_LABEL = 'Teacher 5.4';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -173,7 +173,7 @@ function pgUnits() {
       const title = kids && !L.weekTitles ? u.lessons.map((l) => l.subtopic.split(' · ')[0]).join(' · ') : u.title, sub = kids ? u.lessons.map((l) => esc(l.subtopic.split(' · ')[1] || '')).filter(Boolean).join(' · ') : u.lessons.map((l) => esc(l.subtopic)).join(' · ');
       return `<button class="un-row2 ${st}" data-push="week" data-lvl="${L.id}" data-w="${u.n}"><span class="un-ic ${st}">${u.final ? `<span class="tp-tile" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i)}${st === 'done' ? `<i class="un-b ok">${ic('Check')}</i>` : st === 'now' ? `<i class="un-b now">${g0.les}</i>` : ''}</span>
         <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${st === 'done' ? ' · done' : st === 'now' ? ` · ${dayWord(L.id)} ${g0.les} next` : ''}</span><b>${esc(title)}${grp.length ? ` <em class="un-here">${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</b><span>${sub}</span>${st === 'now' ? `<span class="un-dots">${u.lessons.map((l) => `<i class="${l.n < g0.les ? 'd' : l.n === g0.les ? 'n' : ''}"></i>`).join('')}</span>` : ''}</span>${ic('ChevronRight')}</button>`; }).join('')}</div>`;
-  return `<div class="tp-hdr"><div><div class="tp-eyebrow">${kids ? 'Kids course' : 'Teen course'}</div><div class="tp-lt">Units</div></div></div>
+  return `<div class="tp-hdr"><div><div class="tp-eyebrow">${kids ? 'Kids course' : 'Teen course'}</div><div class="tp-lt">Units</div></div><div class="hdr-btns">${lightsHtml('tabs')}</div></div>
     ${aud}<div class="tp-segs" data-noswipe>${chips}</div>
     <div class="lv-pane"${kids ? '' : ' data-lvpane'}>${hero}
     ${body}</div>`;
@@ -315,7 +315,7 @@ function tapList(g, d) {
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
 function pgAtt() {
-  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div>${S.groups.length ? `<button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button>` : ''}</div>`;
+  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><div class="hdr-btns">${lightsHtml('tabs')}${S.groups.length ? `<button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button>` : ''}</div></div>`;
   if (!S.groups.length) return `${head}<div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
   // the week strip: this week, Monday to Sunday; the glass circle slides to the chosen day
   const mon = addDays(TODAY, -wd(TODAY)), days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(mon, i));
@@ -419,7 +419,7 @@ function pgBooks() {
     <p class="tp-small">Add each PDF from your phone once (from Telegram, Drive or Downloads); it then opens from here, even offline.</p>`;
   else if (T.bookSeg === 'audio') body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings.</div>` : '') + audio.map((a) => `<div class="tp-media"><button class="mi play" style="background:#0FA37F" data-play="${a.id}" aria-label="Play ${esc(a.name)}">${ic('Play')}</button><span class="tx"><b>${esc(a.name)}</b><span>${fmtSize(a.size || 0)}</span></span><button class="tp-iconbtn" data-rmaudio="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button></div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="audio">${ic('Plus')} Add audio</button>`;
   else body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings. Videos start at Elementary.</div>` : '') + links.map((a, i) => `<div class="tp-media"><a class="mi" style="background:#FF5A5F" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener">${ic('CirclePlay')}</a><a class="tx" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener"><b>${esc(a.name)}</b><span>${esc(a.note || a.url)}</span></a>${a.id ? `<button class="tp-iconbtn" data-rmlink="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button>` : `<span class="tp-chev">${ic('ExternalLink')}</span>`}</div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="video">${ic('Plus')} Add a link</button>`;
-  return `<div class="tp-hdr"><div><div class="tp-eyebrow">Your files and links</div><div class="tp-lt">Books</div></div></div>
+  return `<div class="tp-hdr"><div><div class="tp-eyebrow">Your files and links</div><div class="tp-lt">Books</div></div><div class="hdr-btns">${lightsHtml('tabs')}</div></div>
     <div class="tp-segs" data-noswipe>${levelChips}</div>
     <div class="tp-seg2 slide" data-noswipe style="--n:${seg.length}"><span class="seg-thumb" style="--i:${seg.findIndex((k) => k[0] === T.bookSeg)}"></span>${seg.map((k) => `<button class="${T.bookSeg === k[0] ? 'on' : ''}" data-bookseg="${k[0]}">${ic(k[3])} ${k[1]} <em>${k[2]}</em></button>`).join('')}</div><div class="bk-body" data-lvpane>${body}</div>`; // one block below the switch, so the switch itself is kept
 }
@@ -500,7 +500,7 @@ function sheetCopies(s) {
 }
 const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
 const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: (f) => (f.lvl === 'IT' ? turboWeek(f) : scWeek(f)), lesson: (f) => (f.lvl === 'IT' ? turboLesson(f) : scLesson(f)), own: scOwn, register: scRegister, big: scBig };
-const SHEETS = { pkfiles: (s) => sheetPkFiles(s), pkgroups: () => sheetPkGroups(), owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
+const SHEETS = { pkfiles: (s) => sheetPkFiles(s), pkgroups: (s) => sheetPkGroups(s), owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
 /* ===================== drawing, back button, swipe, tab slide =====================
    The app is drawn into a fixed frame (4 pages, a screen on top, the tab bar, a sheet). draw() rebuilds only the parts
@@ -619,7 +619,7 @@ function syncScreen() {
     setHTML(el, withLights(safe(PUSH[want[n].s], want[n])));
     if (want[n]._scroll) el.scrollTop = want[n]._scroll;
     stack.push(el);
-    if (slide) { void el.offsetHeight; afterPaint(() => el.classList.remove('prep')); } // drawn first, then it slides in whole
+    if (slide) { void el.offsetHeight; afterPaint(() => { el.classList.remove('prep'); lightsPlay(el); }); } // drawn first, then it slides in whole
   }
   const top = stack[stack.length - 1];
   const set = (el, below) => { if (el.classList.contains('under') !== below) el.classList.toggle('under', below); if (el.inert !== below) el.inert = below; };
@@ -770,6 +770,7 @@ function goTab(i) {
   if (hadPush) unwind();
   R.track.classList.add('settle');
   draw();
+  lightsPlay(R.pages[i]);
 }
 function bindSwipe() {
   const vp = R.vp, tr = R.track; let st = null;
@@ -792,7 +793,7 @@ function bindSwipe() {
       return;
     }
     st.dx = (T.tab === 0 && dx > 0) || (T.tab === 3 && dx < 0) ? dx / 3 : dx;
-    tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
+    tabFx(T.tab - st.dx / st.W); tr.style.transform = `translateX(calc(${-T.tab * 25}% + ${st.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - st.dx / st.W) * 100}%)`;
   });
   const end = (e) => {
     if (!st || e.pointerId !== st.id) return; const s = st; st = null; if (!s.on) return;
@@ -815,6 +816,7 @@ function bindSwipe() {
     let i = T.tab; if ((s.dx < -s.W * 0.3 || v < -0.3) && T.tab < 3) i++; else if ((s.dx > s.W * 0.3 || v > 0.3) && T.tab > 0) i--;
     // finish at the finger's speed: a quick flick glides fast, a slow drag settles gently (like iOS)
     const left = Math.abs((T.tab - i) * s.W + s.dx), ms = Math.round(Math.max(180, Math.min(420, left / Math.max(Math.abs(v), 0.9))));
+    tabFxTo(T.tab - s.dx / s.W, i, ms);
     tr.style.transitionDuration = ms + 'ms'; tr.classList.add('settle', 'glide');
     clearTimeout(tr._t); tr._t = setTimeout(() => { tr.style.transitionDuration = ''; tr.classList.remove('glide'); }, ms + 40);
     vp._moved = Date.now();
@@ -1211,7 +1213,7 @@ async function start() {
   root = document.getElementById('tp');
   try { history.replaceState({ tp: 0 }, ''); } catch (e) { /* fine without */ } // a fresh start has nothing open
   const hadQuick = loadQuick();
-  draw();
+  draw(); lightsPlay(R.pages[T.tab]);
   root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('keydown', onKey);
   const took = await startSecond(hadQuick); if (took) draw();
   makeCopy('day');
