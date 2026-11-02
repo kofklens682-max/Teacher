@@ -1092,7 +1092,7 @@ html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 .pv-bar{display:flex;align-items:center;gap:10px;padding:46px 14px 8px;background:rgba(242,242,247,.96);box-shadow:0 .5px 0 rgba(60,60,67,.2);flex:none}
 .pv-x{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(60,60,67,.12);color:#3C3C43;border:0;padding:0;flex:none}.pv-x svg{width:17px;height:17px;stroke-width:2.6}
 .pv-t{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pv-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px 8px 40px;touch-action:pan-x pan-y;scrollbar-width:none}
+.pv-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:10px 8px 40px;touch-action:none;scrollbar-width:none;overscroll-behavior:contain}
 .pv-pages{display:flex;flex-direction:column;align-items:flex-start;gap:10px;width:max-content;min-width:100%}
 .pv-pg{background:#fff;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.14);overflow:hidden;position:relative;margin:0 auto}
 .pv-pg canvas{display:block;opacity:0;transition:opacity .3s}.pv-pg canvas.on{opacity:1}
