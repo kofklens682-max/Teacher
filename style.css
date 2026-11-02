@@ -1119,3 +1119,5 @@ html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 @keyframes lti-slide{0%{opacity:0;transform:translateX(var(--o,0px));animation-timing-function:linear}22%{opacity:1;transform:translateX(var(--o,0px));animation-timing-function:var(--ease)}100%{opacity:1;transform:none}}
 @keyframes lti-pop{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 .tp-page{will-change:auto}
+
+.dt-range{width:100%;margin:6px 0 0;accent-color:#007AFF}.dt-scale{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:2px}

@@ -14,13 +14,13 @@ const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['C
   settings: ['UserRound', 'Profile and settings'], arrange: ['Sliders', 'Arrange Home'], share: ['Share2', 'Share this file'], top: ['ArrowUp', 'Scroll to the top'], close: ['X', 'Close / go back'] };
 PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + name]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
 ACTIONS.none = ['X', 'Nothing (hide this dot)'];
-const DOT_DEFAULT = { blur: true, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'], file: ['k:q', 'k:e', 'k:z'] };
+const DOT_DEFAULT = { blurAmt: 50, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'], file: ['k:q', 'k:e', 'k:z'] };
 const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Attendance and Books'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
 const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Blue', 'Green', 'Orange'];
 function dotsGet() {
   let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
   const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
-  return { blur: v.blur !== false, style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
+  return { blurAmt: v.blur === false ? 0 : Number.isFinite(v.blurAmt) ? Math.max(0, Math.min(100, v.blurAmt)) : 50, style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
 }
 const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify(c)); } catch (e) { /* not saved */ } };
 const lightsHtml = (where = 'home') => {
@@ -36,7 +36,7 @@ function dotsSettingsHtml() {
     <div class="tp-f"><span>Look</span><div class="tp-chips2 dr-fill"><button class="${c.style === 'icons' ? 'on' : ''}" data-dotstyle="icons">With icons</button><button class="${c.style === 'plain' ? 'on' : ''}" data-dotstyle="plain">Plain dots</button></div></div>
     ${DOT_WHERE.map(([w, l]) => rows(w, l)).join('')}
     <div class="tp-f"><span>Budget</span><div class="tp-chips2 dr-fill"><button class="${c.budget === 'app' ? 'on' : ''}" data-dotbud="app">Open the app</button><button class="${c.budget === 'web' ? 'on' : ''}" data-dotbud="web">Open in browser</button></div></div>
-    <div class="tp-f"><span>Swiping between tabs</span><div class="tp-chips2 dr-fill"><button class="${c.blur ? 'on' : ''}" data-dotblur="1">With blur</button><button class="${c.blur ? '' : 'on'}" data-dotblur="0">Plain</button></div></div>
+    <div class="tp-f"><span>Swipe effect between tabs: <b data-dotamtv>${c.blurAmt ? c.blurAmt + '%' : 'Off'}</b></span><input class="dt-range" type="range" min="0" max="100" step="5" value="${c.blurAmt}" data-dotamt aria-label="Swipe effect strength"><div class="dt-scale"><span>Off</span><span>Soft</span><span>Strong</span></div></div>
     <button class="tp-dashed" data-dotreset>Back to the standard dots</button></div>`;
 }
 
@@ -176,8 +176,8 @@ document.addEventListener('click', (e) => {
   const gp = e.target.closest && e.target.closest('[data-pkgroup]'); if (gp) { const g = gById(gp.dataset.pkgroup), kind = T.sheet && T.sheet.kind; if (kind) { T.sheet = null; draw(); return fileGo(kind, { key: packKeyOf(g), gid: g.id }); } return openSheet({ s: 'pkfiles', key: packKeyOf(g), gid: g.id }); }
   if (e.target.closest && e.target.closest('[data-pkback]')) return openSheet({ s: 'pkgroups' });
   const pl = e.target.closest && e.target.closest('[data-pkplan]'); if (pl) { const g = gById(pl.dataset.pkplan); T.sheet = null; if (PV.el) pvClose(); T.push.push(planScreen(g)); draw(true); return; } // the sheet's (or the file's) history step now belongs to that screen
-  const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotblur],[data-dotreset]');
-  if (ds) { const c = dotsGet(); if (ds.dataset.dotblur) c.blur = ds.dataset.dotblur === '1'; else if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { DOT_WHERE.forEach(([w]) => { c[w] = DOT_DEFAULT[w]; }); c.style = 'icons'; c.budget = 'app'; c.blur = true; } dotsSet(c); return draw(); }
+  const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotreset]');
+  if (ds) { const c = dotsGet(); if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { DOT_WHERE.forEach(([w]) => { c[w] = DOT_DEFAULT[w]; }); c.style = 'icons'; c.budget = 'app'; c.blurAmt = 50; } dotsSet(c); return draw(); }
   const l = e.target.closest && e.target.closest('[data-light]'); if (l) { l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop'); lightGo(l.dataset.light); }
 }, true);
 // the files are fetched once and kept: the PDF reader too, so files open without internet
@@ -190,15 +190,16 @@ function lightsPlay(el) {
   d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('play'), 1100);
 }
 /* ---------- blur while a finger swipes between the tabs ---------- */
-function tabFx(p) { // p = the tab position as a fraction (1.4 = 40% of the way from Units to Attendance); the page you leave softens and slides a little slower, the next one arrives from a blur
-  const on = dotsGet().blur, W = R.vp.offsetWidth;
+function tabFx(p) { // p = the tab position as a fraction (1.4 = 40% of the way from Units to Attendance); the page you leave softens and slides a little slower, the next one arrives from a blur. Strength 0-100 (Profile and settings): 50 = the standard look
+  const amt = dotsGet().blurAmt, k = amt / 50, W = R.vp.offsetWidth;
   R.pages.forEach((pg, i) => {
     const s = i - p, d = Math.min(Math.abs(s), 1), e = d * d * (3 - 2 * d);
-    if (!on || d < 0.002 || d >= 1) { if (pg._fx) { pg.style.filter = ''; pg.style.transform = ''; pg.style.opacity = ''; pg._fx = 0; } return; }
-    pg._fx = 1; pg.style.filter = `blur(${(e * 10).toFixed(1)}px)`; pg.style.transform = `translate3d(${((s > 0 ? -1 : 1) * e * W * 0.2).toFixed(1)}px,0,0) scale(${(1 - e * 0.07).toFixed(3)})`; pg.style.opacity = (1 - e * 0.55).toFixed(2);
+    if (!amt || d < 0.002 || d >= 1) { if (pg._fx) { pg.style.filter = ''; pg.style.transform = ''; pg.style.opacity = ''; pg._fx = 0; } return; }
+    pg._fx = 1; pg.style.filter = `blur(${(e * 10 * k).toFixed(1)}px)`; pg.style.transform = `translate3d(${((s > 0 ? -1 : 1) * e * W * Math.min(0.2 * k, 0.36)).toFixed(1)}px,0,0) scale(${(1 - e * 0.07 * Math.min(k, 1.6)).toFixed(3)})`; pg.style.opacity = Math.max(0.25, 1 - e * 0.55 * Math.min(k, 1.5)).toFixed(2);
   });
 }
 function tabFxTo(from, to, ms) { // the same effect while the page settles after the finger lets go
-  cancelAnimationFrame(tabFxTo.raf); if (!dotsGet().blur) return tabFx(to);
+  cancelAnimationFrame(tabFxTo.raf); if (!dotsGet().blurAmt) return tabFx(to);
   const t0 = performance.now(), step = (t) => { const k = Math.min((t - t0) / ms, 1); tabFx(from + (to - from) * (1 - Math.pow(1 - k, 3.5))); if (k < 1) tabFxTo.raf = requestAnimationFrame(step); }; tabFxTo.raf = requestAnimationFrame(step);
 }
+document.addEventListener('input', (e) => { const s = e.target.closest && e.target.closest('input[data-dotamt]'); if (!s) return; const c = dotsGet(); c.blurAmt = +s.value; dotsSet(c); const v = document.querySelector('[data-dotamtv]'); if (v) v.textContent = c.blurAmt ? c.blurAmt + '%' : 'Off'; });
