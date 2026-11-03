@@ -140,7 +140,8 @@ SHEETS.breaks = (s) => sheetBreaks(s);
 {
   const _p = pgHomeNew;
   pgHomeNew = function () {
-    const h = _p.apply(this, arguments), now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
+    let h = _p.apply(this, arguments); const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
+    h = h.replace(/(<div class="h2-quick">[\s\S]*?)(<\/div>)/, `$1<button data-sheet="breaks">${ic('CalendarX2')}Holiday</button>$2`); // one tap from Home (also in Settings)
     if (!cur.length) return h;
     const note = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
     return h.replace(/(<div class="h2-quick">[\s\S]*?<\/div>)/, '$1' + note);
