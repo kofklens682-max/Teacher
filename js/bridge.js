@@ -185,9 +185,9 @@ function monthGrid(g, st, open) {
   return `<div class="pm-grid">${L.rows.map((r) => {
     const left = r.charge - r.covered, fut = r.m > cur;
     const cls = r.charge === 0 && !r.covered ? 'free' : left <= 0 ? 'ok' : r.covered > 0 ? 'part' : fut ? 'fut' : 'owe';
-    const D = isSingle(g) ? { grp: 0, own: 0 } : discOf(g, st, r.m), dsc = D.grp + D.own;
+    const D = discOf(g, st, r.m), dsc = D.grp + D.own, fr = isSingle(g) ? (S.pay.sfree || {})[st.id + '|' + r.m] : 0;
     const sub = r.charge === 0 && !r.covered ? (dsc ? 'Free: discount' : 'No charge') : left <= 0 ? 'Paid' : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
-    return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${dsc ? `<small>−${dMoney(dsc)} discount</small>` : ''}${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
+    return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${dsc ? `<small>−${dMoney(dsc)} discount</small>` : ''}${fr ? `<small>${fr === 'all' ? 'free month' : fr + ' free'}</small>` : ''}${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
   }).join('')}</div>`;
 }
 function lessonShare(g, st, m) { // a new student who came for part of the month: the fee for the lessons they had
@@ -198,7 +198,7 @@ function lessonShare(g, st, m) { // a new student who came for part of the month
 }
 function editPanel(g, st, m) { // one month: what it costs, its discount, what was paid
   const charge = chargeOf(g, st, m), paid = paidIn(st.id, m), ps = S.pay.pays.filter((p) => p.sid === st.id && p.m === m), single = isSingle(g);
-  const D = single ? { grp: 0, own: 0 } : discOf(g, st, m), fee = single ? charge : baseFee(g, st);
+  const D = discOf(g, st, m), fee = single ? charge : baseFee(g, st);
   const ownM = !single && S.pay.sfee && S.pay.sfee[st.id + '|' + m] != null;
   const cost = single ? `${dMoney(charge)} so'm for the lessons` : ownM ? `Own price for ${ymName(m)}: <b>${dMoney(charge)} so'm</b> (the normal fee is ${dMoney(fee)})` : `Fee ${dMoney(fee)}${D.grp ? ` − ${dMoney(D.grp)} group discount` : ''}${D.own ? ` − ${dMoney(D.own)} discount` : ''} = <b>${dMoney(charge)} so'm</b>`;
   return `<div class="pm-edit"><b>${ymName(m)}</b><p>${cost}</p><p>${paid ? `Paid: ${dMoney(paid)} so'm${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : 'Not paid yet'}</p>

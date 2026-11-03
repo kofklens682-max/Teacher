@@ -21,7 +21,7 @@ function firstMonth(g, s) { // private students pay per lesson, so every month s
   if (isSingle(g)) return S.pay.start;
   return [S.pay.start, ymOf(new Date(g.created || Date.now())), s.added ? ymOf(new Date(s.added)) : ''].sort().pop();
 }
-const rateOf = (g) => (planOf(g) || {}).rate || 0;
+const rateOf = (g, s) => { const st = s || (g.solo && stuAll(g)[0]); return (st && S.pay.stuFee[st.id]) || (planOf(g) || {}).rate || 0; }; // a private student can have his own price per lesson
 const nLes = (n) => n + (n === 1 ? ' lesson' : ' lessons');
 const owedLessons = (g, L) => Math.ceil(L.debt / (rateOf(g) || 1));
 function rowTextSingle(g, L) { // private: the money counts lessons
@@ -50,12 +50,13 @@ function rowText(g, L) { // used by the Fees screen
 
 /* ---------- Home: you choose what you see, and in which order ---------- */
 // 31 Oct draft: Up next, Overview (students by group + how many paid, no money: money lives in Budget), Today (from Budget's schedule), Who still owes, Extra charges.
-const HOME_SECS = [['next', 'Up next'], ['today', 'Today'], ['overview', 'Students and who paid'], ['owe', 'Who still owes'], ['extras', 'Extra charges']]; // 31 Oct: no Today section (today's lessons are inside Up next)
+const HOME_SECS = [['next', 'Up next'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['overview', 'Students and who paid'], ['owe', 'Who still owes'], ['extras', 'Extra charges']]; // 31 Oct: no Today section (today's lessons are inside Up next)
 function homeCfg() {
   const c = S.homeCfg || (S.homeCfg = {});
   if (c.v !== 5) { c.v = 5; c.order = []; c.hide = ['next']; } // the new Home starts in its own order
   if (!Array.isArray(c.order)) c.order = [];
-  c.order = c.order.filter((id) => HOME_SECS.some((x) => x[0] === id)); HOME_SECS.forEach((x) => { if (!c.order.includes(x[0])) c.order.push(x[0]); });
+  c.order = c.order.filter((id) => HOME_SECS.some((x) => x[0] === id));
+  HOME_SECS.forEach((x, i) => { if (c.order.includes(x[0])) return; const at = i ? c.order.indexOf(HOME_SECS[i - 1][0]) : -1; c.order.splice(at + 1, 0, x[0]); }); // a new part goes right after the one before it in the standard order
   if (!Array.isArray(c.hide)) c.hide = [];
   return c;
 }

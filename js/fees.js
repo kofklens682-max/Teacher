@@ -46,7 +46,10 @@ function lessonsCame(g, s, ym) { return savedDates(g).filter((k) => k.startsWith
 function chargeOf(g, s, ym) {
   const P = S.pay, p = planOf(g) || {};
   if (s.until && ym > s.until) return 0; // he had left
-  if (p.kind === 'single') return lessonsCame(g, s, ym) * (p.rate || 0);
+  if (p.kind === 'single') { // 3 Nov: a private student's own price, free lessons and a discount for one month
+    const came = lessonsCame(g, s, ym), fr = P.sfree && P.sfree[s.id + '|' + ym], free = fr === 'all' ? came : Math.min(came, +fr || 0);
+    return Math.max(0, (came - free) * (P.stuFee[s.id] ?? p.rate ?? 0) - ((P.sdisc && P.sdisc[s.id + '|' + ym]) || 0));
+  }
   const own = P.sfee && P.sfee[s.id + '|' + ym]; if (own != null) return Math.max(0, own); // 1 Nov: this student's fee for this month only
   const skip = P.dex && (P.dex[g.id + '|' + ym] || []).includes(s.id); // left out of the group discount
   return Math.max(0, (P.stuFee[s.id] ?? p.fee ?? 0) - (skip ? 0 : P.disc[g.id + '|' + ym] || 0) - (P.sdisc[s.id + '|' + ym] || 0));

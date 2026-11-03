@@ -104,6 +104,7 @@ SHEETS.soloday = (s) => sheetSoloDay(s);
       const [sid, gid] = d.stusave.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       const nm = val('f-sname').slice(0, 60); if (!nm) { toast('Type the name first'); return true; }
       st.name = nm;
+      if (document.getElementById('f-srate')) { const v = numVal('f-srate'), gr = (planOf(g) || {}).rate || 0; if (!v || v === gr) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; }
       if (document.getElementById('f-sfee')) { const v = numVal('f-sfee'), gf = (planOf(g) || {}).fee || 0; if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; }
       save(); closeSheetNow(); toast(`${nm} saved`); return true;
     }

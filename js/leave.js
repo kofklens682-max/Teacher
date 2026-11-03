@@ -180,3 +180,50 @@ SHEETS.breaks = (s) => sheetBreaks(s);
     return _c(t);
   };
 }
+
+/* ---------- Home: tomorrow's lessons (3 Nov 2026, the user asked for it) ---------- */
+SECS.tomorrow = function () {
+  const D = addDays(TODAY, 1), list = S.groups.filter((g) => hasLesson(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, brk = S.pauses.find((p) => iso(D) >= p.from && iso(D) <= p.to && !p.gids.length);
+  const rows = list.map((g) => `<button class="tp-lrow at-other" style="--c:${hc(g)}" ${homeOpen(g)}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)}</b><span>${esc(timeOn(g, D))}–${hm(endMin(g, D))} · ${stu(g.students.length)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('');
+  return card('Tomorrow', `${DAYS_LONG[wd(D)]} ${D.getDate()} ${MONTHS[D.getMonth()]}`, list.length ? `<div class="at-list h-in">${rows}</div>` : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>${brk ? esc(brk.label || 'Break') : 'No lessons tomorrow'}</b><span>${brk ? 'No lessons tomorrow.' : 'A free day.'}</span></div>`);
+};
+
+/* ---------- discounts for private (per-lesson) students (3 Nov 2026) ----------
+   Own price per lesson (all months), and for one month: the first N lessons free, the whole month free, or an amount off. */
+{
+  const _s = sheetStu;
+  sheetStu = function (s) {
+    const h = _s(s), g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st || !isSingle(g) || !hasFee(g)) return h;
+    const own = S.pay.stuFee[st.id], gr = (planOf(g) || {}).rate || 0;
+    return h.replace('<button class="tp-cta ghost" data-sheet="payrec"', `<label class="tp-f"><span>Price for one lesson (so'm)${own ? '' : ' · now the usual price'}</span><input id="f-srate" inputmode="numeric" value="${dMoney(own ?? gr)}" autocomplete="off"></label>
+      <button class="tp-cta ghost" data-sheet="payrec"`);
+  };
+  const _e = editPanel;
+  editPanel = function (g, st, m) {
+    const h = _e(g, st, m); if (!isSingle(g)) return h;
+    const k = st.id + '|' + m, fr = (S.pay.sfree || {})[k], sd = S.pay.sdisc[k] || 0, rate = S.pay.stuFee[st.id] ?? (planOf(g) || {}).rate ?? 0, came = lessonsCame(g, st, m);
+    const box = `<div class="pm-fee2"><p class="tp-small" style="text-align:left">${came} lesson${came === 1 ? '' : 's'} in ${ymName(m)} × ${dMoney(rate)} so'm${fr ? (fr === 'all' ? ' · the whole month is free' : ` · ${fr} free`) : ''}${sd ? ` · −${dMoney(sd)} discount` : ''}</p>
+      <label class="tp-f"><span>Free lessons in ${ymName(m)} (the first ones)</span><input id="f-pmfree" inputmode="numeric" value="${fr && fr !== 'all' ? fr : ''}" placeholder="0" autocomplete="off"></label>
+      <label class="tp-f"><span>Discount in ${ymName(m)} (so'm)</span><input id="f-pmsd" inputmode="numeric" value="${sd ? dMoney(sd) : ''}" placeholder="0" autocomplete="off"></label>
+      <div class="pm-fee2b"><button class="tp-pill" data-pmfreeall="${st.id}|${g.id}|${m}">${ic('Percent')} Whole month free</button><button class="tp-pill strong" data-pmsdsave="${st.id}|${g.id}|${m}">Save</button></div></div>`;
+    return h.replace('<div class="pm-btns">', box + '<div class="pm-btns">');
+  };
+  const _p = sheetPayRec;
+  sheetPayRec = function (s) {
+    const h = _p(s), g = gById(s.g), st = g && stuOf(g, s.sid); if (!st || !isSingle(g) || h.includes('pm-chg')) return h;
+    const rows = ledger(g, st, ymOf(TODAY)).rows.slice(-4);
+    return h.replace('<label class="tp-f pm-from">', `<div class="pm-chg"><span>Free lessons or a discount for</span>${rows.map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div><label class="tp-f pm-from">`);
+  };
+  const _h = home2Click;
+  home2Click = function (b, d) {
+    if (d.pmsdsave || d.pmfreeall) {
+      const [sid, gid, m] = (d.pmsdsave || d.pmfreeall).split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
+      const k = sid + '|' + m; S.pay.sfree = S.pay.sfree || {};
+      if (d.pmfreeall) { S.pay.sfree[k] = 'all'; delete S.pay.sdisc[k]; }
+      else { const n = Math.max(0, Math.floor(numVal('f-pmfree'))), v = numVal('f-pmsd'); if (n) S.pay.sfree[k] = n; else delete S.pay.sfree[k]; if (v) S.pay.sdisc[k] = v; else delete S.pay.sdisc[k]; }
+      save(); draw(); toast(d.pmfreeall ? `${st.name.split(' ')[0]}: ${ymName(m)} is free` : 'Saved'); return true;
+    }
+    return _h(b, d);
+  };
+}
