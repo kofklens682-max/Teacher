@@ -12,7 +12,11 @@ const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['C
   plan: ['BookOpen', 'Lesson plan of this group'], students: ['Users', 'Students of this group'], nextfile: ['ChevronRight', 'Next file of the lesson'], prevfile: ['ChevronLeft', 'Previous file of the lesson'],
   group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Books tab'],
   settings: ['UserRound', 'Profile and settings'], arrange: ['Sliders', 'Arrange Home'], share: ['Share2', 'Share this file'], top: ['ArrowUp', 'Scroll to the top'], close: ['X', 'Close / go back'] };
-PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + name]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
+// 4 Nov 2026 (user): a dot means a JOB, not one file name. Each level calls its files differently (kids: Vocabulary and speaking /
+// Grammar explained; teens: Reading / Lesson), so a dot opens the first file of its job that the lesson has.
+const ROLE = { q: ['q', 'y', 'r'], y: ['y', 'q', 'r'], r: ['r', 'y', 'q'], e: ['e', 'l'], l: ['l', 'e'], z: ['z', 'x'], x: ['x', 'z'], m: ['m', 'x'] };
+const ROLE_NAME = { q: 'Vocabulary (words and reading)', y: 'Vocabulary (words and reading)', r: 'Reading / vocabulary', e: 'Lesson (grammar explained)', l: 'Lesson (grammar explained)', z: 'Big screen slides, else Exercises', x: 'Exercises', m: 'Murphy explained, else Exercises' };
+PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + (ROLE_NAME[k] || name)]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
 ACTIONS.none = ['X', 'Nothing (hide this dot)'];
 const DOT_DEFAULT = { blurAmt: 30, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'], file: ['k:q', 'k:e', 'k:z'] };
 const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Attendance and Books'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
@@ -77,6 +81,7 @@ function openBudget() { // Android: an "intent" link asks the phone to open the 
 function leaveViewer() { const had = T.push.length; if (PV.el) { pvClose(); if (!had) unwind(); } } // the file's history step goes with it
 const tabGo = (i) => { leaveViewer(); goTab(i); };
 function fileGo(kind, c) { // open one kind of file of the lesson the dots are about; no group on this screen: ask which group
+  const P0 = c.key && PACKS[c.key]; if (P0 && !P0[kind]) kind = (ROLE[kind] || []).find((k) => P0[k]) || kind; // the same job under this level's name
   const P = c.key && PACKS[c.key], kn = PK_KINDS.find((x) => x[0] === kind);
   if (!c.key) return c.gid ? toast('No files for this lesson') : S.groups.length === 1 ? fileGo(kind, { gid: S.groups[0].id, key: packKeyOf(S.groups[0]) }) : openSheet({ s: 'pkgroups', kind });
   if (!P || !P[kind]) return toast('No ' + kn[1].toLowerCase() + ' for this lesson');
