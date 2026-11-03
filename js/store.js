@@ -11,12 +11,13 @@ const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS =
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Fees: see js/fees.js. start = the first month the app counts fees (months before it are never shown as unpaid).
 const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, sfee: {}, dex: {}, pays: [], extras: [], xpaid: {} });
-const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, pay: blankPay(), created: Date.now() });
+const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, rep: {}, pend: {}, pauses: [], pay: blankPay(), created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
 function normalize(d) {
   const out = Object.assign(blank(), d && typeof d === 'object' ? d : {});
-  for (const k of ['rec', 'hw', 'saved', 'taught', 'edits', 'links', 'audio', 'files', 'mats', 'ownDone']) if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
+  for (const k of ['rec', 'hw', 'saved', 'taught', 'edits', 'links', 'audio', 'files', 'mats', 'ownDone', 'rep', 'pend']) if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
+  out.pauses = (Array.isArray(out.pauses) ? out.pauses : []).filter((x) => x && /^\d{4}-\d\d-\d\d$/.test(x.from) && /^\d{4}-\d\d-\d\d$/.test(x.to) && x.from <= x.to).map((x) => ({ id: String(x.id || uid()), from: x.from, to: x.to, label: String(x.label || '').slice(0, 40), gids: Array.isArray(x.gids) ? x.gids.map(String) : [], disc: (Array.isArray(x.disc) ? x.disc : []).filter((d) => d && d.gid && /^\d{4}-\d\d$/.test(d.ym) && +d.amount > 0).map((d) => ({ gid: String(d.gid), ym: d.ym, amount: +d.amount })) })); // breaks: no lessons from..to (gids empty = every group)
   if (!Array.isArray(out.groups)) out.groups = [];
   out.groups = out.groups.filter((g) => g && typeof g === 'object').map((g) => ({
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
@@ -24,7 +25,8 @@ function normalize(d) {
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', len: Math.min(240, Math.max(20, +g.len || 80)),
     ...(g.lens && typeof g.lens === 'object' ? { lens: Object.fromEntries(Object.entries(g.lens).filter(([k, v]) => /^[0-6]$/.test(k) && +v >= 5 && +v <= 600).map(([k, v]) => [k, Math.round(+v)])) } : {}),
     ...(g.times && typeof g.times === 'object' ? { times: Object.fromEntries(Object.entries(g.times).filter(([k, v]) => /^[0-6]$/.test(k) && /^\d\d:\d\d$/.test(v))) } : {}), week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
-    students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}) })).filter((s) => s.name),
+    students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}), ...(/^\d{4}-\d\d$/.test(s.until || '') ? { until: s.until } : {}) })).filter((s) => s.name),
+    left: (Array.isArray(g.left) ? g.left : []).filter((s) => s && s.id && s.name && /^\d{4}-\d\d$/.test(s.until || '')).map((s) => ({ id: String(s.id), name: String(s.name), until: s.until, ...(s.added ? { added: +s.added } : {}) })), // students who stopped coming: their old months stay on the books
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
   }));
   const P = out.pay && typeof out.pay === 'object' && !Array.isArray(out.pay) ? out.pay : {}, bp = blankPay();

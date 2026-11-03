@@ -86,7 +86,7 @@ function publishRoster() {
 // The list Budget pops up: { op: 'add' | 'del', id, person, group, gid, sid, m, amount, date }
 const tbRead = () => { try { const l = JSON.parse(localStorage.getItem(TB_KEY) || '[]'); return Array.isArray(l) ? l.filter((x) => x && x.op) : []; } catch (e) { return []; } };
 function tbSend(op, p) {
-  const g = S.groups.find((x) => x.students.some((t) => t.id === p.sid)), st = g && g.students.find((t) => t.id === p.sid);
+  const g = S.groups.find((x) => stuAll(x).some((t) => t.id === p.sid)), st = g && stuOf(g, p.sid);
   let l = tbRead();
   if (op === 'del' && l.some((x) => x.op === 'add' && x.id === p.id)) l = l.filter((x) => x.id !== p.id); // Budget never saw it: just drop it
   else l.push({ op, id: p.id, person: st ? st.name : '', group: g ? g.name : '', gid: g ? g.id : '', sid: p.sid, m: p.m, amount: +p.amount, date: p.date, at: Date.now() });
@@ -210,7 +210,7 @@ function editPanel(g, st, m) { // one month: what it costs, its discount, what w
     <div class="pm-btns"><button class="tp-cta" data-pmsave="${st.id}|${g.id}|${m}">Save</button>${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div></div>`;
 }
 function sheetPayRec(s) {
-  const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
   const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id], fee = baseFee(g, st);
   const owe = L.rows.filter((r) => r.charge - r.covered > 0);
   const firsts = []; for (let m = S.pay.start; m <= ymAdd(ym, 3); m = ymAdd(m, 1)) firsts.push(m);
@@ -236,7 +236,7 @@ const abc = (sts) => [...sts].sort((a, b) => a.name.localeCompare(b.name, undefi
 /* ---------- the group's page: numbered lists, who has not paid and who paid ---------- */
 function sheetOweGrp(s) {
   const g = gById(s.g), ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1]; if (!g) return '';
-  const all = abc(g.students).map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free').map((x, i) => ({ ...x, n: i + 1 })); // A–Z, each keeps its number
+  const all = abc(feeStu(g, ym, true)).map((st) => ({ st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free').map((x, i) => ({ ...x, n: i + 1 })); // A–Z, each keeps its number
   const owe = all.filter((x) => x.L.debt > 0), paid = all.filter((x) => !(x.L.debt > 0));
   const oweRow = ({ st, L, n }) => oweLine(g, st, L, n);
   const paidRow = ({ st, L, n }) => `<div class="pl-row ok"><span class="pl-n">${n}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`;
@@ -251,7 +251,7 @@ function sheetOweGrp(s) {
 function sheetPayPick(s) {
   const gs = feeGroups(), ym = ymOf(TODAY);
   return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
-    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${g.students.length}</em></div><div class="pl-list">${abc(g.students).map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
+    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${feeStu(g, ym, true).length}</em></div><div class="pl-list">${abc(feeStu(g, ym, true)).map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
       return ms.length ? oweLine(g, st, L, i + 1) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
 }
 
@@ -261,7 +261,7 @@ function sheetPayPick(s) {
   const mine = (b, d) => {
     if (d.payundo !== undefined) { if (undoFn) { const f = undoFn; undoFn = null; f(); save(); draw(); toast('Undone'); } return true; }
     if (d.paym) {
-      const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       const charge = chargeOf(g, st, m), paid = paidIn(sid, m);
       if (paid || !charge) { if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } else { T.sheet = { s: 'payrec', g: gid, sid, open: m }; draw(); } return true; }
       const p = addPay(sid, m, charge - Math.min(charge, ledger(g, st, m).rows.find((r) => r.m === m).covered)); save(); draw();
@@ -269,7 +269,7 @@ function sheetPayPick(s) {
       return true;
     }
     if (d.unarm !== undefined) { // "Not paid" on a paid row: first tap asks, second tap does it
-      const [sid, gid, m] = d.unarm.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const [sid, gid, m] = d.unarm.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       if (b.classList.contains('on')) { const gone = delPays(sid, m); save(); draw(); payToast(`${st.name} · ${ymName(m)} · not paid`, () => { gone.forEach((q) => { const c = { ...q, id: uid() }; S.pay.pays.push(c); tbSend('add', c); }); }); return true; }
       b.classList.add('on'); b.textContent = 'Yes, not paid'; b._t = Date.now(); return true;
     }
@@ -284,14 +284,14 @@ function sheetPayPick(s) {
       return true;
     }
     if (d.payall) { // "Yes, paid" after the tick: everything owed until this month is paid, each month with its own amount
-      const [sid, gid, upTo] = d.payall.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const [sid, gid, upTo] = d.payall.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       const rows = ledger(g, st, upTo).rows.filter((r) => r.charge - r.covered > 0);
       const made = rows.map((r) => addPay(sid, r.m, r.charge - r.covered)); save(); draw();
       payToast(`${st.name} · ${rows.map((r) => ymLabel(r.m)).join(' + ')} · ${dMoney(made.reduce((q, p) => q + p.amount, 0))} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => !made.includes(x)); made.forEach((p) => tbSend('del', p)); });
       return true;
     }
     if (d.pmsave) {
-      const [sid, gid, m] = d.pmsave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), v = numVal('f-pmamt'); if (!st) return true;
+      const [sid, gid, m] = d.pmsave.split('|'), g = gById(gid), st = g && stuOf(g, sid), v = numVal('f-pmamt'); if (!st) return true;
       if (document.getElementById('f-pmdisc')) { const k = sid + '|' + m, dv = numVal('f-pmdisc'); if (dv) S.pay.sdisc[k] = dv; else delete S.pay.sdisc[k]; } // the discount first: it changes what the month costs
       if (v !== paidIn(sid, m)) { delPays(sid, m); if (v > 0) addPay(sid, m, v); } // unchanged amount: Budget is not asked again
       if (T.sheet) T.sheet.open = null; save(); draw();
@@ -300,15 +300,15 @@ function sheetPayPick(s) {
     }
     if (d.pmedit) { const [sid, gid, m] = d.pmedit.split('|'); if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } return true; }
     if (d.pmscope) { b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return true; }
-    if (d.pmlessons) { const [sid, gid, m] = d.pmlessons.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), el = document.getElementById('f-pmfee'); if (st && el) el.value = dMoney(lessonShare(g, st, m).amount); return true; }
+    if (d.pmlessons) { const [sid, gid, m] = d.pmlessons.split('|'), g = gById(gid), st = g && stuOf(g, sid), el = document.getElementById('f-pmfee'); if (st && el) el.value = dMoney(lessonShare(g, st, m).amount); return true; }
     if (d.pmfeesave) {
-      const [sid, gid, m] = d.pmfeesave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid), v = numVal('f-pmfee'), all = !!document.querySelector('.pm-scope [data-pmscope="all"].on'), gf = (planOf(g) || {}).fee || 0; if (!st) return true;
+      const [sid, gid, m] = d.pmfeesave.split('|'), g = gById(gid), st = g && stuOf(g, sid), v = numVal('f-pmfee'), all = !!document.querySelector('.pm-scope [data-pmscope="all"].on'), gf = (planOf(g) || {}).fee || 0; if (!st) return true;
       if (all) { if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; delete S.pay.sfee[sid + '|' + m]; }
       else S.pay.sfee[sid + '|' + m] = v;
       save(); draw(); toast(all ? `${st.name.split(' ')[0]}: ${dMoney(v)} so'm every month from now` : `${st.name.split(' ')[0]}: ${dMoney(v)} so'm for ${ymName(m)} only`); return true;
     }
     if (d.pmnone) {
-      const [sid, gid, m] = d.pmnone.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const [sid, gid, m] = d.pmnone.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       const gone = delPays(sid, m); if (T.sheet) T.sheet.open = null; save(); draw();
       payToast(`${st.name} · ${ymName(m)} · not paid`, () => { gone.forEach((p) => { const q = { ...p, id: uid() }; S.pay.pays.push(q); tbSend('add', q); }); });
       return true;

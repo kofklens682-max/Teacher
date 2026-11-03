@@ -23,6 +23,20 @@ const ymName = (ym) => { const [y, m] = ym.split('-').map(Number); return MONTHS
 const dDate = (k) => { const d = fromIso(k); return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0, 3); };
 const numVal = (id) => +String((document.getElementById(id) || {}).value || '').replace(/\D/g, '') || 0;
 
+/* ---------- students who stopped coming (3 Nov 2026) ----------
+   A student can leave FROM a month: s.until = the last month he pays (also kept for months in the past). While that month is not over he
+   stays in g.students; afterwards he moves to g.left, so the group, the registers and the counts no longer show him, but his old months
+   stay on the books: October unpaid stays unpaid, and he still appears on "Who still owes" until it is paid. */
+const stuAll = (g) => g.students.concat(g.left || []);
+const stuOf = (g, sid) => stuAll(g).find((x) => x.id === sid);
+const soloEnd = (g) => (g.solo && !g.students.length && g.left && g.left.length ? g.left[0].until : null); // an individual student who stopped: no lessons after his last month
+const activeIn = (s, ym) => !s.until || s.until >= ym;
+function feeStu(g, ym, debtors) { // who is in the group in a month; with debtors also those who left earlier but still owe (marked "(left)")
+  const out = stuAll(g).filter((s) => activeIn(s, ym));
+  if (debtors) stuAll(g).forEach((s) => { if (!activeIn(s, ym) && ledger(g, s, ym).debt > 0) out.push({ ...s, name: s.name + ' (left)' }); });
+  return out;
+}
+
 /* ---------- the payment rules ---------- */
 const planOf = (g) => S.pay.plan[g.id] || null;
 const isSingle = (g) => (planOf(g) || {}).kind === 'single';
@@ -31,6 +45,7 @@ const feeGroups = () => S.groups.filter(hasFee);
 function lessonsCame(g, s, ym) { return savedDates(g).filter((k) => k.startsWith(ym) && rec(g, fromIso(k)).get(s.id) !== 'absent').length; }
 function chargeOf(g, s, ym) {
   const P = S.pay, p = planOf(g) || {};
+  if (s.until && ym > s.until) return 0; // he had left
   if (p.kind === 'single') return lessonsCame(g, s, ym) * (p.rate || 0);
   const own = P.sfee && P.sfee[s.id + '|' + ym]; if (own != null) return Math.max(0, own); // 1 Nov: this student's fee for this month only
   const skip = P.dex && (P.dex[g.id + '|' + ym] || []).includes(s.id); // left out of the group discount
@@ -64,7 +79,7 @@ const stack = (c) => { const t = c.paid + c.credit + c.part + c.unpaid || 1; ret
 function statusCounts(ym) { // students by payment status, only in groups with a fee (no money totals: that is Budget's job)
   const out = { paid: 0, credit: 0, part: 0, unpaid: 0, per: {} };
   feeGroups().forEach((g) => { const c = out.per[g.id] = { paid: 0, credit: 0, part: 0, unpaid: 0, n: 0 };
-    g.students.forEach((s) => { const st = ledger(g, s, ym).st; if (st === 'free') return; const k = st === 'prepaid' ? 'credit' : st; c[k]++; c.n++; out[k]++; }); }); // 'free' = nothing to pay this month (a private student with no lessons yet)
+    feeStu(g, ym).forEach((s) => { const st = ledger(g, s, ym).st; if (st === 'free') return; const k = st === 'prepaid' ? 'credit' : st; c[k]++; c.n++; out[k]++; }); }); // 'free' = nothing to pay this month (a private student with no lessons yet)
   out.n = out.paid + out.credit + out.part + out.unpaid; out.ok = out.paid + out.credit;
   return out;
 }
@@ -136,7 +151,7 @@ function scPay() {
   const chips = `<div class="tp-chips2 dr-flt">${flt.map(([k, t, n]) => `<button class="${F === k ? 'on' : ''}" data-payf="${k}">${t} <em>${n}</em></button>`).join('')}</div>`;
   const keep = (L) => F === 'all' || (F === 'owe' ? L.debt > 0 : F === 'credit' ? L.debt === 0 && L.credit > 0 : L.debt === 0 && L.credit === 0);
   const secs = gs.map((g) => {
-    const rows = g.students.map((s) => ({ s, L: ledger(g, s, ym) })).filter((r) => keep(r.L)).sort((x, y) => (y.L.debt > 0) - (x.L.debt > 0) || y.L.debt - x.L.debt);
+    const rows = feeStu(g, ym, true).map((s) => ({ s, L: ledger(g, s, ym) })).filter((r) => keep(r.L)).sort((x, y) => (y.L.debt > 0) - (x.L.debt > 0) || y.L.debt - x.L.debt);
     if (!rows.length) return '';
     const d = S.pay.disc[g.id + '|' + ym] || 0, single = isSingle(g), p = planOf(g);
     const list = rows.map(({ s, L }) => { const [txt, cls] = PST[L.st];
@@ -148,7 +163,7 @@ function scPay() {
 
 /* ---------- sheets: record a payment, a group discount ---------- */
 function sheetPayRec(s) {
-  const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
   const ym = payState().ym, L = ledger(g, st, ym), c = L.cur, sd = S.pay.sdisc[st.id + '|' + ym] || 0, gd = S.pay.disc[g.id + '|' + ym] || 0;
   const want = L.debt > 0 ? L.debt : c.charge;
   const hist = L.mine.slice(-4).reverse().map((p) => `<div class="dr-hist"><span>${dDate(p.date)}</span><b>${dMoney(p.amount)}</b><button class="dr-del${s.del === p.id ? ' sure' : ''}" data-paydel="${p.id}" aria-label="Remove this payment">${s.del === p.id ? 'Tap again to remove' : ic('X')}</button></div>`).join('');
@@ -199,7 +214,7 @@ function feesClick(b, d) {
     toast(waiting ? 'Payment removed (Budget will not ask about it)' : 'Payment removed. If you added it in Budget, remove it there too'); return true;
   }
   if (d.paygo) {
-    const [sid, gid] = d.paygo.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+    const [sid, gid] = d.paygo.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
     const ym = payState().ym, amt = numVal('f-payamt'), k = sid + '|' + ym;
     if (document.getElementById('f-paydisc')) { const dsc = numVal('f-paydisc'); if (dsc) S.pay.sdisc[k] = dsc; else delete S.pay.sdisc[k]; }
     if (amt) {

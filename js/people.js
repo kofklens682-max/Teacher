@@ -8,7 +8,7 @@ function stuPct(g, st) { // % of the taken lessons this student was here (late c
   const here = ds.filter((k) => rec(g, fromIso(k)).get(st.id) !== 'absent').length; return Math.round((here / ds.length) * 100);
 }
 function sheetStu(s) {
-  const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
   const fee = hasFee(g) && !isSingle(g), own = S.pay.stuFee[st.id], gf = (planOf(g) || {}).fee || 0, pc = stuPct(g, st);
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>Student</b><button class="tp-back strong" data-stusave="${st.id}|${g.id}">Save</button></div>
     <div class="sp-top"><span class="sp-av" style="background:${avColor(st.name)}">${esc(st.name[0].toUpperCase())}</span><b>${esc(st.name)}</b><span>${esc(g.name)}${g.solo ? ' · individual' : ''} · ${pc === null ? 'no lessons yet' : pc + '% here'}</span></div>
@@ -56,7 +56,7 @@ function scSolo(f) {
   return `${bar}<div class="tp-inner sc-wrap">
     <div><div class="tp-eyebrow">Individual · ${esc(timesText(g))}</div><div class="tp-lt" style="font-size:28px">${esc(st ? st.name : g.name)}</div></div>
     ${st ? `<button class="sc-prof" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}"><span class="sp-av" style="background:${avColor(st.name)}">${esc(st.name[0].toUpperCase())}</span><span><b>${esc(st.name)}</b><small>${esc(LVNAME(g.lvl))}${planned(g.lvl) ? ` · Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : ''}</small></span>${ic('ChevronRight')}</button>` : ''}
-    ${soloCal(g, f.ym)}
+    ${!st && g.left && g.left.length ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${esc(g.left[0].name)} stopped coming after ${ymName(g.left[0].until)}.</b> The lessons and payments up to then are kept.</p></div>` : ''}${soloCal(g, f.ym)}
     <p class="tp-small" style="text-align:left">Only the days ${esc(st ? st.name.split(' ')[0] : 'the student')} comes are shown. Tap one to mark it done, canceled or postponed. Marking today's lesson done moves ${esc(st ? st.name.split(' ')[0] : 'the student')} to the next lesson.</p></div>`;
 }
 function sheetSoloDay(s) {
@@ -93,7 +93,7 @@ SHEETS.soloday = (s) => sheetSoloDay(s);
   const disarmTiles = (keep) => root && root.querySelectorAll('.pm.pm-arm').forEach((t) => { if (t !== keep) { t.classList.remove('pm-arm'); if (t._h) t.innerHTML = t._h; } });
   home2Click = function (b, d) {
     if (d.paym && b.classList.contains('pm')) { // a month tile on the student's page: first tap asks, the second pays (like the tick)
-      const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid);
+      const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && stuOf(g, sid);
       if (st && !paidIn(sid, m) && chargeOf(g, st, m)) {
         if (!b.classList.contains('pm-arm')) { disarmTiles(b); b._h = b.innerHTML; b._t = Date.now(); b.classList.add('pm-arm'); b.innerHTML = `<b>${ymLabel(m)}</b><span>Yes, paid?</span><i>${ic('Check')}</i>`; return true; }
         if (Date.now() - b._t < 400) return true; // a double tap is not a yes
@@ -101,7 +101,7 @@ SHEETS.soloday = (s) => sheetSoloDay(s);
       }
     }
     if (d.stusave) {
-      const [sid, gid] = d.stusave.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const [sid, gid] = d.stusave.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
       const nm = val('f-sname').slice(0, 60); if (!nm) { toast('Type the name first'); return true; }
       st.name = nm;
       if (document.getElementById('f-sfee')) { const v = numVal('f-sfee'), gf = (planOf(g) || {}).fee || 0; if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; }

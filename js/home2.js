@@ -71,7 +71,7 @@ function secPaid() { // the big picture: how many students, who paid, who did no
     <div class="h2-key"><div><i style="background:${STC.paid}"></i><b>${sc.ok}</b><span><strong>Paid</strong>${mn} is paid</span></div><div><i style="background:${STC.unpaid}"></i><b>${no}</b><span><strong>Not paid</strong>still owe for ${mn} or before</span></div></div></div>`);
 }
 function oweRows(g, ym) { // students of one group who have not paid, longest overdue first
-  const r = []; g.students.forEach((s) => { const L = ledger(g, s, ym); if (L.debt > 0) r.push({ g, s, L, m: L.rows.filter((x) => x.charge - x.covered > 0) }); });
+  const r = []; feeStu(g, ym, true).forEach((s) => { const L = ledger(g, s, ym); if (L.debt > 0) r.push({ g, s, L, m: L.rows.filter((x) => x.charge - x.covered > 0) }); });
   return r.sort((x, y) => y.m.length - x.m.length || y.L.debt - x.L.debt);
 }
 function secOwe() { // groups, not people: tap a group to see who has not paid
@@ -174,14 +174,15 @@ function secOweB() { // like an iPhone list: one section per group (its header s
 }
 function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
   const D = TODAY, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
-  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, next = list.find((g) => !doneOn(g, D));
-  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next lesson</span><span class="hn-when">${esc(timeOn(next, D))}</span></div>
+  // 3 Nov (user): a lesson that is still going is "Now", never "taught"; one that is over and not marked says so
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, left = list.filter((g) => !doneOn(g, D)), next = left.find((g) => !lessonEnded(g, D)) || left[0], now = nowMin(); // the one going or coming; else the first one over and not marked yet
+  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">${inProgress(next, D) ? 'Now' : lessonEnded(next, D) ? 'Not marked yet' : 'Next lesson'}</span><span class="hn-when">${inProgress(next, D) ? 'ends in ' + inMin(endMin(next, D) - now) : esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${lessonLine(next)} · ${stu(next.students.length)}</span>
       <div class="hn-btns"><button ${homeOpen(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
     : list.length ? `<div class="at-all h-in">${ic('Check')}<b>All lessons are taught</b><span>${esc(dayName(D))}</span></div>`
     : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`;
   const rest = list.filter((g) => g !== next).map((g) => { const done = doneOn(g, D);
-    return `<button class="tp-lrow at-other" style="--c:${hc(g)}" ${homeOpen(g)}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)}</b><span>${esc(timeOn(g, D))} · ${done ? 'taught' : lessonLine(g)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
+    return `<button class="tp-lrow at-other" style="--c:${hc(g)}" ${homeOpen(g)}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)}</b><span>${esc(timeOn(g, D))} · ${done ? (repOn(g, D) ? 'taught · same lesson next time' : 'taught') : lessonEnded(g, D) ? 'not marked' : inProgress(g, D) ? 'now' : lessonLine(g)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
   return card('Today', list.length ? `${list.length} lesson${list.length === 1 ? '' : 's'}` : '', hero + (rest ? `<div class="at-list" style="margin-top:10px">${rest}</div>` : ''));
 }
 const SECS = { next: secNext, overview: secOverview, today: secTodayHero, owe: secOweB, extras: secExtras };
@@ -228,7 +229,7 @@ function keepPay() {
   if (a) s.amt = a.value; if (d) s.disc = d.value; if (b) s.byName = b.value;
 }
 function sheetPayRec(s) {
-  const g = gById(s.g), st = g && g.students.find((x) => x.id === s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
   const ym = payState().ym, L = ledger(g, st, ym), c = L.cur, sd = S.pay.sdisc[st.id + '|' + ym] || 0, gd = S.pay.disc[g.id + '|' + ym] || 0;
   s.date = s.date || iso(TODAY); s.by = s.by || 'Student';
   const want = L.debt > 0 ? L.debt : c.charge, amt = s.amt !== undefined ? s.amt : want || '';
@@ -342,7 +343,7 @@ function undoTaught(g, k) {
 /* ---------- taps and typing ---------- */
 const pickDate = (k) => { keepPay(); keepX(); T.sheet.date = k; draw(); };
 function covRefresh() {
-  const s = T.sheet, g = s && gById(s.g), st = g && g.students.find((x) => x.id === s.sid), el = document.getElementById('h2-cov'); if (el && st) el.innerHTML = coverLine(g, st, numVal('f-payamt'));
+  const s = T.sheet, g = s && gById(s.g), st = g && stuOf(g, s.sid), el = document.getElementById('h2-cov'); if (el && st) el.innerHTML = coverLine(g, st, numVal('f-payamt'));
 }
 function home2Change(t) {
   if (t.id === 'f-payamt') { covRefresh(); return true; }
@@ -361,7 +362,7 @@ function home2Click(b, d) {
   if (d.payby) { keepPay(); keepX(); T.sheet.by = d.payby; draw(); return true; }
   if (d.payfill !== undefined) { const el = document.getElementById('f-payamt'); if (el) { el.value = d.payfill === '0' ? '' : d.payfill; covRefresh(); } return true; }
   if (d.paygo) {
-    const [sid, gid] = d.paygo.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+    const [sid, gid] = d.paygo.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
     const s = T.sheet, ym = payState().ym, amt = numVal('f-payamt'), k = sid + '|' + ym, date = s.date && s.date <= iso(TODAY) ? s.date : iso(TODAY), by = byValue(s);
     if (document.getElementById('f-paydisc')) { const dsc = numVal('f-paydisc'); if (dsc) S.pay.sdisc[k] = dsc; else delete S.pay.sdisc[k]; }
     if (amt) {

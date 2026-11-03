@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v60';
+const VERSION = 'teacher-v61';
 const SHELL = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const SHELL = [
   './bridge.css',
   './js/app.js',
   './js/people.js',
+  './js/leave.js',
   './js/lights.js',
   './manifest.webmanifest',
   './icons/icon-192.png',

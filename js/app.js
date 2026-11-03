@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 5.7';
+const VERSION_LABEL = 'Teacher 5.8';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -37,15 +37,23 @@ const dayName = (d) => (iso(d) === iso(TODAY) ? 'Today' : iso(d) === iso(addDays
 // ---------- groups ----------
 const onWeekday = (g, d) => g.days.includes(wd(d));
 // an individual student's calendar wins: a day taken away, or a lesson canceled / postponed, is not a lesson today; an added day is
+// a break (holiday, trip...) takes the lessons away for its days; the plan simply waits
+const pausedOn = (g, d) => { const k = iso(d); return (S.pauses || []).some((p) => k >= p.from && k <= p.to && (!p.gids.length || p.gids.includes(g.id))); };
 const hasLesson = (g, d) => {
+  if (pausedOn(g, d)) return false;
   if (!g.solo) return onWeekday(g, d);
+  const ended = soloEnd(g); if (ended && ymOf(d) > ended) return false;
   const c = S.cal && S.cal[g.id], k = iso(d); if (!c) return onWeekday(g, d);
   const gone = (c.st && (c.st[k] === 'cancel' || c.st[k] === 'moved')) || (c.off && c.off[k]);
   return !gone && ((c.add && c.add[k]) || onWeekday(g, d));
 };
 const taughtOn = (g, d) => (S.taught[g.id] || {})[iso(d)];
-// taught: a book course moved on, an own-program lesson marked, the register saved, or an individual's calendar day marked done
-const doneOn = (g, d) => { const k = iso(d); return !!(taughtOn(g, d) || (S.ownDone[g.id] || {})[k] || (S.saved[g.id] || {})[k] || ((S.cal && S.cal[g.id] && S.cal[g.id].st) || {})[k] === 'done'); };
+// 3 Nov (user): a lesson is not "taught" while it is still going. A saved register counts only once the lesson has ended
+// (until then it is "in progress"); "Stay on this lesson" (S.rep) counts as held but never moves the plan.
+const lessonEnded = (g, d) => iso(d) < iso(TODAY) || (iso(d) === iso(TODAY) && nowMin() >= endMin(g, d));
+const repOn = (g, d) => !!(S.rep[g.id] || {})[iso(d)];
+const doneOn = (g, d) => { const k = iso(d); return !!(taughtOn(g, d) || repOn(g, d) || (S.ownDone[g.id] || {})[k] || ((S.saved[g.id] || {})[k] && lessonEnded(g, d)) || ((S.cal && S.cal[g.id] && S.cal[g.id].st) || {})[k] === 'done'); };
+const inProgress = (g, d) => !doneOn(g, d) && iso(d) === iso(TODAY) && startMin(g, d) <= nowMin() && !lessonEnded(g, d);
 function advance(g, n) {
   let w = g.week, l = g.les + n; const L = lv(g.lvl);
   const per = (k) => (L.turbo && k >= 1 && k <= L.units.length ? L.units[k - 1].lessons.length : 3); // IELTS Turbo weeks have more lessons
@@ -223,7 +231,7 @@ function scLesson(f) {
       <div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>${[...(l.homework || []), ...(ed.hw ? [ed.hw] : [])].map((h) => `<p class="hw">${ic('Square')}${esc(h)}</p>`).join('') || '<p>None</p>'}</div>
       ${l.check ? `<div class="tp-card2 warn">${ic('ClipboardList')}<p><b>Check today:</b> ${esc(l.check)}</p></div>` : ''}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
-        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `Saving the attendance marks this lesson as taught and moves ${esc(g.name)} to the next one.`}</p>`
+        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next one.`}</p>${repeatBlock(g)}`
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Lesson ${g.les}.</p>` : ''}
     </div>`;
 }
@@ -250,7 +258,7 @@ function scKids(f) {
       ${k.tr.length ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('MessageCircle')}Translation check</div>${[...k.tr, ...k.ch].map(([ru, en], i) => `<p class="rt-row"><b>${i + 1}</b><span>${i >= k.tr.length ? '★ ' : ''}${esc(ru)}${show ? `<small>${esc(en)}</small>` : ''}</span></p>`).join('')}<button class="tp-pill" data-kshow="${key}">${show ? 'Hide answers' : 'Show answers'}</button></div>` : ''}
       ${matsBlock(key)}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
-        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `Saving the attendance marks this day as taught and moves ${esc(g.name)} to the next one.`}</p>`
+        <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next day.`}</p>${repeatBlock(g)}`
         : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>` : ''}
     </div>`;
 }
@@ -283,7 +291,7 @@ function scOwn(f) {
       ${matsBlock(key)}
       <p class="tp-small">${n} lesson${n === 1 ? '' : 's'} taught so far</p>
       <button class="tp-cta ${done ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${done ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
-      <p class="tp-small">Saving the attendance marks the day as taught.</p>
+      <p class="tp-small">When the lesson ends, the day counts as taught.</p>
     </div>`;
 }
 // Your own files for one lesson (worksheets, pictures, slides, recordings): kept on this phone, listed in S.mats[key]
@@ -377,7 +385,7 @@ function scRegister(f) {
       <div><b>${dayName(d)}</b><span>${rec(g, d).saved ? 'taken' : lessonOpen(g, d) ? 'not taken yet' : 'coming up · ' + esc(timeOn(g, d))}</span></div>
       <button class="tp-iconbtn" ${nxt ? `data-lessonday="${iso(nxt)}"` : 'disabled'} aria-label="Next lesson">${ic('ChevronRight')}</button></div>
     ${hasLesson(g, d) ? '' : `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${DAYS_LONG[wd(d)]} is not a lesson day for this group.</b> Lessons are on ${g.days.map((x) => DAYS[x]).join(', ') || 'no days'}.</p><button class="tp-pill" data-rmreg="${iso(d)}" data-g="${g.id}">${ic('Trash2')} Remove this register</button></div>`}${tapList(g, d)}
-    ${histGrid(g, f.date)}${add}</div>`;
+    ${histGrid(g, f.date)}${f.date === iso(TODAY) ? repeatBlock(g) : ''}${add}</div>`;
 }
 
 /* ===================== Books: your PDFs, audio and links per level ===================== */
@@ -1039,14 +1047,14 @@ function onClick(e) {
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
     const r = rec(g, dt, true);
     g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
-    (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; autoTaught(g, d.date); save();
+    (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; if (lessonEnded(g, dt)) autoTaught(g, d.date); else (S.pend[g.id] = S.pend[g.id] || {})[d.date] = true; save(); // still going: it counts as taught when it ends
     const here = g.students.filter((s) => r.get(s.id) !== 'absent').length, hw = g.students.filter((s) => r.get(s.id) !== 'absent' && r.hwOf(s.id)).length;
-    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework`);
+    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework${lessonEnded(g, dt) ? '' : '. Counts as taught when the lesson ends.'}`);
   }
   if (d.lessonday) { top.date = d.lessonday; if (R.screen) R.screen._swap = true; return draw(); }
   if (d.rmreg) {
     const g = gById(d.g); if (!g) return;
-    [S.rec, S.hw, S.saved].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; }); undoTaught(g, d.rmreg);
+    [S.rec, S.hw, S.saved, S.pend, S.rep].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; }); undoTaught(g, d.rmreg);
     save(); const p = lastLesson(g); top.date = p ? iso(p) : null; if (R.screen) R.screen._swap = true; toast('Register removed'); return draw();
   }
   if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
