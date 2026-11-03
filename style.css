@@ -536,7 +536,7 @@
 .ht-tile.add{padding:12px}
 .tp-card2 p.ex{font-size:13.5px;color:var(--text2)}
 .tp-words.col span{background:#E6F7F1}
-.tp-words.pv span{background:#FFF1E2}
+.tp-words.phv span{background:#FFF1E2}
 .rg-nav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:16px;padding:8px;box-shadow:var(--shadow)}
 .rg-nav>div{text-align:center}
 .rg-nav b{display:block;font-size:15px}

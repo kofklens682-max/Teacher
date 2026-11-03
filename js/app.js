@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 6.0';
+const VERSION_LABEL = 'Teacher 6.1';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -216,10 +216,10 @@ function scLesson(f) {
       ${l.exit ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('ListChecks')}Exit check · 3 min</div><p>${esc(l.exit)}</p></div>` : ''}
       ${l.grammarTopic || l.grammar ? `<div class="tp-card2"><div class="h" style="color:#7B61FF">${ic('Puzzle')}Grammar topic</div><p class="big">${esc(l.grammarTopic || l.grammar)}</p>${l.grammarTopic && l.grammar ? `<p class="ex">${esc(l.grammar)}</p>` : ''}${l.bgiu && l.bgiu.length && !hasPack ? `<p class="sub">${L.id === 'A1' ? "Teacher's reference" : 'Students practice in'}: ${esc(l.gbook || 'Basic Grammar in Use (American)')}, unit${l.bgiu.length > 1 ? 's' : ''} ${l.bgiu.join(', ')}</p>` : ''}${l.grammarExtra ? `<p class="sub">Also: ${esc(l.grammarExtra.book)}, unit${l.grammarExtra.units.length > 1 ? 's' : ''} ${l.grammarExtra.units.join(', ')}</p>` : ''}</div>` : ''}
       ${l.reading ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('BookOpenCheck')}Reading</div><p>${esc(l.reading)}</p></div>` : ''}
-      ${l.words.length || l.revise ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${l.pool ? esc(l.vocabTopic || '') + ' · word pool of ' + l.words.length + ' (pick 25-30)' : l.words.length ? esc(l.vocabTopic || '') + ' · ' + l.words.length + (l.revise ? ' new' : '') + ' words' : 'Words to revise'}</p>${chips(l.words)}${chips(l.words)}
+      ${l.words.length || l.revise ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${l.pool ? esc(l.vocabTopic || '') + ' · word pool of ' + l.words.length + ' (pick 25-30)' : l.words.length ? esc(l.vocabTopic || '') + ' · ' + l.words.length + (l.revise ? ' new' : '') + ' words' : 'Words to revise'}</p>${chips(l.words)}
         ${l.revise ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('RotateCcw')}Revision words</div>${chips(l.revise)}` : ''}
         ${l.collocations ? `<div class="h" style="color:#0FA37F;margin-top:8px">${ic('Link')}Collocations</div>${chips(l.collocations, 'col')}` : ''}
-        ${l.phrasal && l.phrasal.length ? `<div class="h" style="color:#E8770E;margin-top:8px">${ic('ArrowUpRight')}Phrasal verbs</div>${chips(l.phrasal, 'pv')}` : ''}${books}</div>` : ''}
+        ${l.phrasal && l.phrasal.length ? `<div class="h" style="color:#E8770E;margin-top:8px">${ic('ArrowUpRight')}Phrasal verbs</div>${chips(l.phrasal, 'phv')}` : ''}${books}</div>` : ''}
       ${l.watch ? `<div class="tp-card2"><div class="h" style="color:#FF5A5F">${ic('CirclePlay')}Watch & talk</div><p class="big">${esc(l.watch)}</p>${l.watchAlt ? `<p class="sub">${esc(l.watchAlt)}</p>` : ''}${l.retell ? '' : '<p class="sub">Watch once for the main idea, then again with 3 questions; translate 5 lines; retell in pairs.</p>'}</div>` : ''}
       ${l.review ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('RotateCcw')}Review · 15 min</div><p>${esc(l.review)}</p></div>` : ''}
       ${l.use ? `<div class="tp-card2"><div class="h" style="color:#E8770E">${ic('Sparkles')}Use it in real life</div><p>${esc(l.use)}</p></div>` : ''}
