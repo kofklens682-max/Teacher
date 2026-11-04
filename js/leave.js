@@ -227,3 +227,68 @@ SECS.tomorrow = function () {
     return _h(b, d);
   };
 }
+
+/* ---------- left without paying (4 Nov 2026, user) ----------
+   A student goes away and never pays. One button: they stop coming after the month you choose, and what they owe up to then is
+   written off (S.pay.lost[sid] = { gid, ms: { ym: amount }, date, note }). It leaves "Who still owes" but is kept, with the reason, and can be undone. */
+const lostOf = (sid) => (S.pay.lost || {})[sid];
+{
+  const _c = chargeOf;
+  chargeOf = function (g, s, ym) { const v = _c(g, s, ym), L = lostOf(s.id); return L && L.ms[ym] ? Math.max(0, v - L.ms[ym]) : v; };
+}
+function lastCame(g, st) { const ks = savedDates(g).filter((k) => rec(g, fromIso(k)).get(st.id) !== 'absent'); return ks.length ? ks[ks.length - 1].slice(0, 7) : ''; }
+function sheetNoPay(s) {
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const cur = ymOf(TODAY), first = st.name.split(' ')[0], fm = firstMonth(g, st);
+  const opts = [-3, -2, -1, 0].map((n) => ymAdd(cur, n)).filter((m) => m >= fm && (!st.until || m <= st.until));
+  const last = s.last || (st.until && st.until < cur ? st.until : [lastCame(g, st)].filter((m) => opts.includes(m))[0] || opts[opts.length - 1] || cur);
+  const L = ledger(g, st, last), ms = L.rows.filter((r) => r.charge - r.covered > 0);
+  return `<div class="tp-sh-h"><button class="tp-back" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}">${ic('ChevronLeft')} Back</button><b>Left without paying</b><button class="tp-back strong" data-nopaygo="${st.id}|${g.id}|${last}">Save</button></div>
+    <div class="tp-f"><span>The last month ${esc(first)} was in the group</span><div class="tp-chips2 dr-fill">${opts.map((m) => `<button class="${m === last ? 'on' : ''}" data-nopaym="${m}">${ymName(m)}</button>`).join('')}</div></div>
+    <label class="tp-f"><span>Why (only you see this)</span><input id="f-nopay" value="${esc(s.note || '')}" placeholder="Left in September, did not pay August" autocomplete="off"></label>
+    <div class="tp-card2 warn"><div class="h">${ic('CalendarX2')}What happens</div>
+      <p>${esc(first)} is not in ${esc(g.name)} from <b>${ymName(ymAdd(last, 1))}</b>.</p>
+      <p>${ms.length ? `<b>${dMoney(L.debt)} so'm</b> (${ms.map((r) => ymName(r.m)).join(', ')}) is written off: it leaves "Who still owes" and the counts, and is kept here with the reason.` : 'Nothing is owed up to then, so nothing is written off.'}</p>
+      <p>If ${esc(first)} pays later after all, open this again and tap <b>Undo</b>.</p></div>`;
+}
+SHEETS.nopay = (s) => sheetNoPay(s);
+function noPayGo(g, st, last, note) {
+  const L = ledger(g, st, last), ms = {}; L.rows.forEach((r) => { if (r.charge - r.covered > 0) ms[r.m] = r.charge - r.covered; });
+  const was = { until: st.until, lost: lostOf(st.id) };
+  S.pay.lost = S.pay.lost || {}; S.pay.lost[st.id] = { gid: g.id, ms, date: iso(TODAY), note: (note || '').trim().slice(0, 80), amount: L.debt, name: st.name };
+  if (!st.until || st.until > last) st.until = last;
+  settleLeft(); save(); closeSheetNow();
+  payToast(`${st.name}: ${L.debt ? dMoney(L.debt) + " so'm written off" : 'stopped coming'}`, () => undoNoPay(g, st.id, was));
+}
+function undoNoPay(g, sid, was) { // was = how it was a moment ago (the 8-second Undo); later, only the write-off goes and the money is owed again
+  if (was && was.lost) S.pay.lost[sid] = was.lost; else delete S.pay.lost[sid];
+  if (!was) return;
+  const i = (g.left || []).findIndex((x) => x.id === sid), back = i >= 0 ? g.left.splice(i, 1)[0] : null;
+  if (back) g.students.push({ id: back.id, name: back.name, ...(back.added ? { added: back.added } : {}) });
+  const s2 = stuOf(g, sid); if (s2) { if (was.until) s2.until = was.until; else delete s2.until; }
+  settleLeft();
+}
+// the student's months: the button under the grid, or the note once written off
+{
+  const _p = sheetPayRec;
+  sheetPayRec = function (s) {
+    const h = _p(s), g = gById(s.g), st = g && stuOf(g, s.sid); if (!st || !hasFee(g)) return h;
+    const lo = lostOf(st.id);
+    const add = lo ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>Left without paying${lo.amount ? ': ' + dMoney(lo.amount) + " so'm written off" : ''}</b> · ${dDate(lo.date)}${lo.note ? '<br>' + esc(lo.note) : ''}</p></div><button class="tp-cta ghost" data-nopayundo="${st.id}|${g.id}">${ic('RotateCcw')}Undo: ${esc(st.name.split(' ')[0])} paid after all</button>`
+      : ledger(g, st, ymOf(TODAY)).debt > 0 ? `<button class="tp-cta ghost" data-sheet="nopay" data-g="${g.id}" data-sid="${st.id}">${ic('CalendarX2')}Left without paying</button>` : '';
+    return h + add;
+  };
+  const _o = sheetOweGrp;
+  sheetOweGrp = function (s) {
+    const h = _o(s), g = gById(s.g); if (!g) return h;
+    const lost = Object.entries(S.pay.lost || {}).filter(([, x]) => x.gid === g.id); if (!lost.length) return h;
+    return h + `<div class="pl-h"><span class="d"></span>Left without paying<em>${lost.length}</em></div><div class="pl-list">${lost.map(([sid, x]) => `<div class="pl-row"><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${sid}"><b>${esc((stuOf(g, sid) || x).name || '')}</b><span>${dMoney(x.amount || 0)} so'm written off · ${dDate(x.date)}${x.note ? ' · ' + esc(x.note) : ''}</span></button></div>`).join('')}</div>`;
+  };
+  const _h = home2Click;
+  home2Click = function (b, d) {
+    if (d.nopaym) { T.sheet.note = (document.getElementById('f-nopay') || {}).value || T.sheet.note; T.sheet.last = d.nopaym; draw(); return true; }
+    if (d.nopaygo) { const [sid, gid, last] = d.nopaygo.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (st) noPayGo(g, st, last, (document.getElementById('f-nopay') || {}).value); return true; }
+    if (d.nopayundo) { if (!confirmTwice(b, 'Tap again to undo')) return true; const [sid, gid] = d.nopayundo.split('|'), g = gById(gid); if (g) { undoNoPay(g, sid, null); save(); draw(); toast('Undone: the money is owed again'); } return true; }
+    return _h(b, d);
+  };
+}

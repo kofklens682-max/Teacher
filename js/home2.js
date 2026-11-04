@@ -193,7 +193,7 @@ function pgHomeNew() {
   const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
   const quick = `<div class="h2-quick"><button data-sheet="paypick">${ic('Wallet')}Mark who paid</button><button data-sheet="extra">${ic('Package')}Extra charge</button></div>`;
-  return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => SECS[id]()).join('');
+  return head + quick + cfg.order.filter((id) => !cfg.hide.includes(id)).map((id) => (typeof SECS[id] === 'function' ? SECS[id]() : '')).join(''); // a part added by a later file (Tomorrow, in leave.js) shows once that file has loaded, never an error
 }
 function sheetHomeCfg() {
   const cfg = homeCfg();
