@@ -26,6 +26,8 @@ html .tp-ind { background: radial-gradient(120% 90% at 30% 0%, rgba(255,255,255,
 /* small floating glass: the three dots, the profile button, Back / Done in the bars, the quick buttons on Home */
 .tp-lights, .tp-avatar, .tp-pushbar .tp-back, .h2-quick button {
   background: var(--gl-bg) !important; -webkit-backdrop-filter: var(--gl-blur); backdrop-filter: var(--gl-blur); box-shadow: var(--gl-rim), 0 6px 16px -6px rgba(20,25,60,.22) !important; }
+/* 6 Nov 2026 (user's phone screenshot: "< Units" sat in a white square): the Back button in the top bar is a round glass pill, like iOS */
+.tp-pushbar .tp-back { border-radius: 999px; padding: 7px 14px 7px 9px; min-height: 36px; box-sizing: border-box; }
 .tp-avatar { background: linear-gradient(160deg, #4DA3FF, #007AFF) !important; box-shadow: inset 1px 1.2px 0 rgba(255,255,255,.6), inset 0 0 12px rgba(255,255,255,.2), 0 6px 16px -6px rgba(0,122,255,.6) !important; }
 /* the toast */
 .tp-toast { background: rgba(28,28,30,.72) !important; -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: inset 1px 1px 0 rgba(255,255,255,.18), inset 0 0 0 .5px rgba(255,255,255,.12), 0 14px 30px rgba(0,0,0,.25) !important; }
@@ -36,3 +38,12 @@ html .tp-sheet .panel > .tp-sh-h:first-child { background: rgba(244,245,249,.94)
 /* while the page scrolls, the bars drop the live blur for a moment (smooth scrolling on phones), as before */
 html.moving .tp-tabs, html.moving .tp-lights, html.moving .h2-quick button { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 @media (prefers-reduced-transparency: reduce) { html .tp-tabs, .tp-lights, .tp-avatar, .tp-pushbar .tp-back, .h2-quick button, html .tp-sheet .panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--card, #fff) !important; } }
+/* 6 Nov 2026 (user: "there are lags" on the phone): every small glass button had its own live blur (about 8 per screen, and
+   the other tabs' pages keep theirs too); on an Android phone each one is redrawn on every frame of a swipe or a slide.
+   Behind them is only the plain page colour, so the blur showed nothing: they are now solid frosted white, which looks the
+   same and costs nothing. Only the tab bar keeps the live blur, and it is a little lighter. */
+:root { --gl-blur: blur(18px) saturate(1.8); }
+.tp-lights, .tp-avatar, .tp-pushbar .tp-back, .h2-quick button { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.tp-lights, .tp-pushbar .tp-back, .h2-quick button { background: linear-gradient(135deg, rgba(255,255,255,.97), rgba(255,255,255,.86)) !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tp-lights, :root:not([data-theme="light"]) .tp-pushbar .tp-back, :root:not([data-theme="light"]) .h2-quick button { background: rgba(58,58,60,.92) !important; } }
+.tp-hdr > div:first-child { min-width: 0; } .tp-hdr .tp-eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 6 Nov 2026: the date above the title stays on one line next to the buttons */

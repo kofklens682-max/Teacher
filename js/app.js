@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 6.4.1';
+const VERSION_LABEL = 'Teacher 6.4.2';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -25,6 +25,8 @@ const avColor = (s) => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC
 const gById = (id) => S.groups.find((g) => g.id === id);
 const weekOf = (lid, n) => { const u = lv(lid).units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
 
+// 6 Nov 2026 (user's screenshot: "Unit 5 · Unit 5 · Unit 5"): the same part written twice is shown once
+function goalText(g) { return [...new Set(String(g || '').split(' · '))].join(' · '); }
 // ---------- dates (the real today; refreshed when the app comes back) ----------
 const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 let TODAY = midnight(new Date());
@@ -191,7 +193,7 @@ function scWeek(f) {
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Units</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
       <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i, true)}<div><div class="tp-eyebrow">${esc(LVNAME(L.id))} · ${u.final ? 'One lesson' : 'Week ' + u.n}</div><div class="tp-lt" style="font-size:28px">${esc(u.title)}</div></div></div>
-      <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : L.kids ? 'This week' : 'By the end of the week they can say'}</small>${u.final || L.kids ? esc(u.goal) : `“${esc(u.goal)}”`}</div></div>
+      <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : L.kids ? 'This week' : 'By the end of the week they can say'}</small>${u.final || L.kids ? esc(goalText(u.goal)) : `“${esc(goalText(u.goal).replace(/^["“”]+|["“”]+$/g, ''))}”`}</div></div>
       <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${esc(l.skill || l.grammarTopic || l.grammar || (l.kd && l.kd.goal) || '')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
       ${u.skill ? `<div class="tp-card2"><div class="h">${ic('MessageCircle')}Speaking</div><p>${esc(u.skill)}</p>${u.writing ? `<div class="h" style="margin-top:10px">${ic('PenLine')}Writing</div><p>${esc(u.writing)}</p>` : ''}${u.eew ? `<div class="h" style="margin-top:10px">${ic('BookA')}Word book</div><p>${esc(u.eew)}</p>` : ''}${u.reading ? `<div class="h" style="margin-top:10px">${ic('BookOpen')}Reader</div><p>${esc(u.reading)}</p>` : ''}${u.mock ? `<div class="h" style="margin-top:10px">${ic('ClipboardCheck')}Mock test</div><p>${esc(u.mock)}</p>` : ''}</div>` : ''}
     </div>`;
@@ -323,7 +325,7 @@ function tapList(g, d) {
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
 function pgAtt() {
-  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">Today · ${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><div class="hdr-btns">${lightsHtml('tabs')}${S.groups.length ? `<button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button>` : ''}</div></div>`;
+  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}</div><div class="tp-lt">Attendance</div></div><div class="hdr-btns">${lightsHtml('tabs')}${S.groups.length ? `<button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button>` : ''}</div></div>`;
   if (!S.groups.length) return `${head}<div class="tp-empty2">${ic('ClipboardCheck')}<b>No groups yet</b><span>Add a group on Home; its register appears here on its lesson days.</span></div>`;
   // the week strip: this week, Monday to Sunday; the glass circle slides to the chosen day
   const mon = addDays(TODAY, -wd(TODAY)), days = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(mon, i));
