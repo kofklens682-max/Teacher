@@ -135,10 +135,7 @@ function pvEnsure(reuseStep) {
   if (PV.el) return;
   const el = document.createElement('div'); el.className = 'pv';
   el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
-  const from = typeof Morph !== 'undefined' && Morph.src(); // 5 Nov 2026: the file grows out of the button that opened it (js/morph.js)
-  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn();
-  if (from) { el.classList.add('morph'); void el.offsetHeight; if (Morph.open(el, from, '0px')) { el._src = from; el.classList.add('show'); lightsPlay(el); setTimeout(() => el.classList.remove('morph'), Morph.OPEN + 30); pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages')); return; } el.classList.remove('morph'); }
-  void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
+  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
   pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages'));
 }
 function pvMsg(t) { if (PV.el) { PV.el.querySelector('.pv-msg').textContent = t || ''; PV.el.classList.toggle('msg', !!t); } }
@@ -152,8 +149,6 @@ async function pvOpen(ref, title, gid) {
   const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
     const lib = await pvLib(), blob = await packGet(name), doc = await lib.getDocument({ data: await blob.arrayBuffer() }).promise;
-    // 5 Nov 2026: the pages are drawn only after the zoom has finished (drawing them during it cost frames), then fade in
-    await new Promise((ok) => { const w = () => (!PV.el || !PV.el.classList.contains('morph') ? ok() : setTimeout(w, 40)); w(); });
     clearTimeout(slow); if (seq !== PV.seq || !PV.el) return; PV.doc = doc; pvMsg(''); await pvLayout();
   } catch (e) { if (seq === PV.seq) pvMsg('Connect to the internet once to get this file'); }
 }
@@ -240,8 +235,6 @@ function pvGestures(sc, wrap) {
 }
 function pvClose() {
   const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect();
-  if (el._src && !el.style.transform && typeof Morph !== 'undefined') { el.classList.add('morph'); if (Morph.close(el, el._src, '0px', () => el.remove())) { setTimeout(() => el.remove(), Morph.CLOSE + 150); return; } el.classList.remove('morph'); }
-  if (el._src && typeof Morph !== 'undefined') Morph.show(el._src);
   el.classList.remove('show'); el.classList.add('out'); setTimeout(() => el.remove(), 480);
 }
 document.addEventListener('click', (e) => {
