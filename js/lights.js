@@ -174,13 +174,25 @@ function pvBuild() {
   const w = Math.max(280, (sc.clientWidth - 16) * PV.zoom), dpr = Math.min(window.devicePixelRatio || 1, 2, 2600 / w); // a page is never drawn wider than ~2600 pixels (memory)
   if (PV.io) PV.io.disconnect();
   PV.io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !e.target._done) { e.target._done = 1; pvPage(e.target, dpr); } }), { root: sc, rootMargin: PV.zoom > 1.5 ? '40% 0px' : '120% 0px' });
+  // 6 Nov 2026 (user: "when I zoom in the PDF it reloads every time"): the pages used to be thrown away and drawn again from
+  // white on every zoom. Now the same pages stay: they get the new size at once (the picture already there is stretched to
+  // it, a little soft for a moment), and the sharp picture is laid on top when it is ready. Nothing goes white.
+  const boxes = [...wrap.children];
+  if (boxes.length === PV.sizes.a.length && boxes.every((b, i) => b._pg === PV.sizes.a[i].pg)) {
+    boxes.forEach((box, i) => { box.style.width = w + 'px'; box.style.height = Math.round(w * PV.sizes.a[i].r) + 'px'; box._w = w; box._done = 0;
+      box.querySelectorAll('canvas').forEach((c) => { c.classList.add('on', 'pv-under'); c.classList.remove('pv-top'); c.style.width = ''; c.style.height = ''; }); PV.io.observe(box); });
+    return;
+  }
   const under = wrap.querySelector('.pv-under'); wrap.innerHTML = '';
   PV.sizes.a.forEach(({ pg, r }, i) => { const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px'; box._pg = pg; box._w = w; if (!i && under && PV.zoom === 1) box.appendChild(under); box._i = i; wrap.appendChild(box); PV.io.observe(box); });
 }
 function pvPage(box, dpr) {
   const vp0 = box._pg.getViewport({ scale: 1 }), s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
-  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { if (!box.isConnected) return; const u = box.querySelector('.pv-under'); box.appendChild(c); if (u) { c.classList.add('on', 'pv-top'); setTimeout(() => u.remove(), 400); } else requestAnimationFrame(() => c.classList.add('on'));
+  const w0 = box._w;
+  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { if (!box.isConnected || box._w !== w0) return; // zoomed again meanwhile: a newer drawing is on its way
+    const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
+    if (u.length) { c.classList.add('on', 'pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => { if (c.isConnected) { u.forEach((x) => x.remove()); c.classList.remove('pv-top'); } })); } else requestAnimationFrame(() => c.classList.add('on'));
     if (!box._i && PV.zoom === 1 && PV.name) PV.thumbs[PV.name] = { c, r: c.height / c.width }; }).catch(() => {});
 }
 // Zoom with the fingers: the page follows the pinch smoothly (any size from fit-to-width up to 4x), and is drawn sharp when the fingers lift.
