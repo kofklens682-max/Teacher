@@ -135,7 +135,7 @@ function pvEnsure(reuseStep) {
   if (PV.el) return;
   const el = document.createElement('div'); el.className = 'pv';
   el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
-  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
+  root.appendChild(el); PV.el = el; pvTurn(true); if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
   pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages'));
 }
 function pvMsg(t) { if (PV.el) { PV.el.querySelector('.pv-msg').textContent = t || ''; PV.el.classList.toggle('msg', !!t); } }
@@ -245,8 +245,13 @@ function pvGestures(sc, wrap) {
   sc.addEventListener('pointerup', up); sc.addEventListener('pointercancel', up);
   sc.addEventListener('wheel', (e) => { if (!e.ctrlKey) return; e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01), 90); }, { passive: false });
 }
+// 6 Nov 2026 (user: "I want to open it horizontally and vertically"): the app stays upright, but while a file is open the phone
+// may be turned sideways; the pages then fit the new width (kept on screen, no reload), and closing the file turns it upright.
+function pvTurn(free) { try { const o = screen.orientation; if (o && o.lock) o.lock(free ? 'any' : 'portrait-primary').catch(() => {}); } catch (e) { /* this phone cannot */ } }
+let pvTurnT = 0, pvLastW = 0;
+window.addEventListener('resize', () => { clearTimeout(pvTurnT); pvTurnT = setTimeout(() => { if (!PV.el || !PV.sizes || !PV.doc) return; const sc = PV.el.querySelector('.pv-scroll'); if (sc.clientWidth === pvLastW) return; pvLastW = sc.clientWidth; const top = sc.scrollTop / Math.max(1, sc.scrollHeight); pvBuild(); sc.scrollTop = top * sc.scrollHeight; }, 160); });
 function pvClose() {
-  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect();
+  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false);
   el.classList.remove('show'); el.classList.add('out'); setTimeout(() => el.remove(), 480);
 }
 document.addEventListener('click', (e) => {
