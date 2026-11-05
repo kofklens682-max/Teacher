@@ -5,7 +5,7 @@
    group first), green = attendance, orange = the Budget app.
    Files (PDF) open inside the app (pdf.js, kept offline in media\pdfjs), so the dots stay on top of them. */
 const BUDGET_URL = 'https://kofklens682-max.github.io/Budget/';
-const PV = { el: null, ctx: null, doc: null, zoom: 1, lib: null, seq: 0 };
+const PV = { el: null, ctx: null, doc: null, zoom: 1, lib: null, seq: 0, thumbs: {} };
 
 const DOT_KEY = 'teacher-dots';
 const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['ClipboardCheck', 'Attendance of this group'], atttab: ['ClipboardCheck', 'Attendance tab'], budget: ['Wallet', 'Budget app'],
@@ -14,7 +14,7 @@ const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['C
   settings: ['UserRound', 'Profile and settings'], arrange: ['Sliders', 'Arrange Home'], share: ['Share2', 'Share this file'], top: ['ArrowUp', 'Scroll to the top'], close: ['X', 'Close / go back'] };
 // 4 Nov 2026 (user): a dot means a JOB, not one file name. Each level calls its files differently (kids: Vocabulary and speaking /
 // Grammar explained; teens: Reading / Lesson), so a dot opens the first file of its job that the lesson has.
-const ROLE = { q: ['q', 'y', 'r'], y: ['y', 'q', 'r'], r: ['r', 'y', 'q'], e: ['e', 'l'], l: ['l', 'e'], z: ['z', 'x'], x: ['x', 'z'], m: ['m', 'x'] };
+const ROLE = { q: ['q', 'y', 'r'], y: ['y', 'q', 'r'], r: ['r', 'y', 'q'], e: ['e', 'l'], l: ['l', 'e'], z: ['z', 'x', 'is', 'iw'], x: ['x', 'z', 'is', 'iw'], m: ['m', 'x'] };
 const ROLE_NAME = { q: 'Vocabulary (words and reading)', y: 'Vocabulary (words and reading)', r: 'Reading / vocabulary', e: 'Lesson (grammar explained)', l: 'Lesson (grammar explained)', z: 'Big screen slides, else Exercises', x: 'Exercises', m: 'Murphy explained, else Exercises' };
 PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + (ROLE_NAME[k] || name)]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
 ACTIONS.none = ['X', 'Nothing (hide this dot)'];
@@ -135,7 +135,10 @@ function pvEnsure(reuseStep) {
   if (PV.el) return;
   const el = document.createElement('div'); el.className = 'pv';
   el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
-  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
+  const from = typeof Morph !== 'undefined' && Morph.src(); // 5 Nov 2026: the file grows out of the button that opened it (js/morph.js)
+  root.appendChild(el); PV.el = el; if (!reuseStep) stepIn();
+  if (from) { el.classList.add('morph'); void el.offsetHeight; if (Morph.open(el, from, '0px')) { el._src = from; el.classList.add('show'); lightsPlay(el); setTimeout(() => el.classList.remove('morph'), Morph.OPEN + 30); pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages')); return; } el.classList.remove('morph'); }
+  void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
   pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages'));
 }
 function pvMsg(t) { if (PV.el) { PV.el.querySelector('.pv-msg').textContent = t || ''; PV.el.classList.toggle('msg', !!t); } }
@@ -145,11 +148,24 @@ async function pvOpen(ref, title, gid) {
   const hadSheet = !!T.sheet, hadViewer = !!PV.el; if (hadSheet) { T.sheet = null; draw(); } // the list closes; its history step is reused (or given back)
   if (hadSheet && hadViewer) { R.skipPop = (R.skipPop || 0) + 1; try { history.back(); } catch (e) { R.skipPop--; } }
   pvEnsure(hadSheet && !hadViewer); PV.ctx = { key, kind, gid: gid || (lightCtxBase() || {}).gid || null };
-  PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-pages').innerHTML = ''; PV.el.querySelector('.pv-scroll').scrollTop = 0; pvMsg('Opening…');
+  PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-scroll').scrollTop = 0; PV.name = name; pvPlaceholder(name);
+  const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
     const lib = await pvLib(), blob = await packGet(name), doc = await lib.getDocument({ data: await blob.arrayBuffer() }).promise;
-    if (seq !== PV.seq || !PV.el) return; PV.doc = doc; pvMsg(''); await pvLayout();
+    // 5 Nov 2026: the pages are drawn only after the zoom has finished (drawing them during it cost frames), then fade in
+    await new Promise((ok) => { const w = () => (!PV.el || !PV.el.classList.contains('morph') ? ok() : setTimeout(w, 40)); w(); });
+    clearTimeout(slow); if (seq !== PV.seq || !PV.el) return; PV.doc = doc; pvMsg(''); await pvLayout();
   } catch (e) { if (seq === PV.seq) pvMsg('Connect to the internet once to get this file'); }
+}
+// 6 Nov 2026 (user: "the last frames are reconstructing"): the file used to grow as an empty grey screen and the pages
+// appeared only after the zoom. Now the first page is already there while it grows: a white page of the right shape, and
+// for a file opened before, a picture of its first page (kept from the last time). The sharp page then simply lies on top.
+function pvPlaceholder(name) {
+  const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll'); PV.doc = null;
+  const t = PV.thumbs[name], w = Math.max(280, (sc.clientWidth || innerWidth) - 16), r = t ? t.r : 1.4142;
+  wrap.innerHTML = ''; const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px';
+  if (t) { const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d').drawImage(t.c, 0, 0); c.className = 'on pv-under'; box.appendChild(c); }
+  wrap.appendChild(box);
 }
 function lightCtxBase() { const keep = PV.ctx; PV.ctx = null; const c = lightCtx(); PV.ctx = keep; return c; }
 // Page sizes are remembered, so changing the zoom builds the boxes at once (no waiting).
@@ -159,16 +175,18 @@ async function pvLayout() {
 }
 function pvBuild() {
   if (!PV.el || !PV.sizes) return;
-  const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll'); wrap.innerHTML = '';
+  const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll');
   const w = Math.max(280, (sc.clientWidth - 16) * PV.zoom), dpr = Math.min(window.devicePixelRatio || 1, 2, 2600 / w); // a page is never drawn wider than ~2600 pixels (memory)
   if (PV.io) PV.io.disconnect();
   PV.io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !e.target._done) { e.target._done = 1; pvPage(e.target, dpr); } }), { root: sc, rootMargin: PV.zoom > 1.5 ? '40% 0px' : '120% 0px' });
-  PV.sizes.a.forEach(({ pg, r }) => { const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px'; box._pg = pg; box._w = w; wrap.appendChild(box); PV.io.observe(box); });
+  const under = wrap.querySelector('.pv-under'); wrap.innerHTML = '';
+  PV.sizes.a.forEach(({ pg, r }, i) => { const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px'; box._pg = pg; box._w = w; if (!i && under && PV.zoom === 1) box.appendChild(under); box._i = i; wrap.appendChild(box); PV.io.observe(box); });
 }
 function pvPage(box, dpr) {
   const vp0 = box._pg.getViewport({ scale: 1 }), s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
-  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { if (!box.isConnected) return; box.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); }).catch(() => {});
+  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { if (!box.isConnected) return; const u = box.querySelector('.pv-under'); box.appendChild(c); if (u) { c.classList.add('on', 'pv-top'); setTimeout(() => u.remove(), 400); } else requestAnimationFrame(() => c.classList.add('on'));
+    if (!box._i && PV.zoom === 1 && PV.name) PV.thumbs[PV.name] = { c, r: c.height / c.width }; }).catch(() => {});
 }
 // Zoom with the fingers: the page follows the pinch smoothly (any size from fit-to-width up to 4x), and is drawn sharp when the fingers lift.
 // One finger scrolls (with a little glide), a double tap zooms in or back out, Ctrl + wheel zooms on a computer.
@@ -222,6 +240,8 @@ function pvGestures(sc, wrap) {
 }
 function pvClose() {
   const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect();
+  if (el._src && !el.style.transform && typeof Morph !== 'undefined') { el.classList.add('morph'); if (Morph.close(el, el._src, '0px', () => el.remove())) { setTimeout(() => el.remove(), Morph.CLOSE + 150); return; } el.classList.remove('morph'); }
+  if (el._src && typeof Morph !== 'undefined') Morph.show(el._src);
   el.classList.remove('show'); el.classList.add('out'); setTimeout(() => el.remove(), 480);
 }
 document.addEventListener('click', (e) => {

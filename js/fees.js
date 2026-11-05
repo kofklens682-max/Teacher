@@ -159,7 +159,7 @@ function scPay() {
     const d = S.pay.disc[g.id + '|' + ym] || 0, single = isSingle(g), p = planOf(g);
     const list = rows.map(({ s, L }) => { const [txt, cls] = PST[L.st];
       return `<button class="dr-stu" data-sheet="payrec" data-g="${g.id}" data-sid="${s.id}"><span class="dr-av st-${cls}" style="background:${avColor(s.name)}">${esc(s.name[0])}</span><span class="tx"><b>${esc(s.name)}</b><span>${esc(rowText(g, L))}${single ? ` · ${lessonsCame(g, s, ym)} lessons` : ''}</span></span><span class="dr-pill ${cls}">${txt}</span></button>`; }).join('');
-    return `<div class="dr-gsec" style="${gvg(g)}"><div class="dr-gh"><span class="dot"></span><div><b>${esc(g.name)}</b><span>${single ? 'Per lesson · ' + dMoney(p.rate) : dMoney(p.fee) + ' a month'}${d ? ` · −${dMoney(d)} this month` : ''}</span></div>${single ? '' : `<button class="dr-disc" data-sheet="gdisc" data-g="${g.id}">${ic('Percent')}Discount</button>`}</div><div class="dr-sl">${list}</div></div>`;
+    return `<div class="dr-gsec" style="${gvg(g)}"><div class="dr-gh"><span class="dot"></span><div><b>${esc(g.name)}</b><span>${single ? 'Per lesson · ' + dMoney(p.rate) : dMoney(p.fee) + ' a month'}${d ? ` · −${dMoney(d)} this month` : ''}</span></div><button class="dr-disc" data-sheet="disc" data-g="${g.id}">${ic('Percent')}Discount</button></div><div class="dr-sl">${list}</div></div>`;
   }).join('');
   return `${bar}<div class="tp-inner" style="--g1:#34C759;--g2:#0F9D8F">${head}${nav}${over}<div class="tp-sec"><h4>By group</h4></div>${byg}${chips}${secs || `<div class="tp-empty2">${ic('Check')}<b>Nobody here</b><span>Nothing matches this filter.</span></div>`}</div>`;
 }

@@ -135,6 +135,7 @@ function secNext() { // one lesson big (the one that is on, or the next); today'
   const state = (x) => { const tg = x.g && doneOn(x.g, TODAY); return tg ? ['done', 'Taught'] : x.to <= now ? ['past', 'Not marked'] : x.from <= now ? ['now', 'Now'] : ['soon', 'in ' + inMin(x.from - now)]; };
   const rest = list.filter((x) => x !== b), small = rest.length ? `<div class="hn-more">${rest.map((x) => { const [k, t] = state(x);
     return `<${x.g ? `button ${homeOpen(x.g)}` : 'div'} class="hn-mr ${k}"><span class="hn-ic">${k === 'done' ? ic('Check') : k === 'past' ? ic('Clock') : ''}</span><span class="hn-t">${hm(x.from)}</span><span class="hn-x"><b>${esc(x.name)}</b><small>${lessonLine(x.g)}</small></span><em>${t}</em></${x.g ? 'button' : 'div'}>`; }).join('')}</div>` : '';
+  if (!b && list.every((x) => !x.g || doneOn(x.g, TODAY))) { const gs = list.map((x) => x.g).filter(Boolean); if (gs.length) return doneCard(gs, TODAY); }
   if (!b) return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">Today</span><span class="hn-when">all done</span></div><b class="hn-name">No more lessons today</b>${small}</div>`;
   return `<div class="hn-next h-in"><div class="hn-top"><span class="hn-tag">${on ? 'Now' : 'Up next'}</span><span class="hn-when">${on ? 'ends in ' + inMin(b.to - now) : 'in ' + inMin(b.from - now)}</span></div>
     <b class="hn-name">${esc(b.name)}</b><span class="hn-sub">${hm(b.from)}–${hm(b.to)} · ${lessonLine(g)}${st ? ` · ${st} student${st === 1 ? '' : 's'}` : ''}</span>
@@ -173,6 +174,16 @@ function secOweB() { // like an iPhone list: one section per group (its header s
     return `<div class="io-card">${head}${body}</div>`; };
   return card('Who still owes', mn, `<div class="io-list h-in">${gs.map(sec).join('')}</div>`);
 }
+// 4 Nov 2026 (user): "all lessons are taught" is a widget, not a line: a green card with a ring that draws itself, how many came, each group ticked, and the next lesson
+function doneCard(list, D) {
+  const came = list.reduce((n, g) => { const r = rec(g, D); return n + (r.saved ? g.students.filter((s) => r.get(s.id) !== 'absent').length : 0); }, 0), all = list.reduce((n, g) => n + g.students.length, 0);
+  let nx = null; S.groups.forEach((g) => { const d = lessonDay(g, D, 1); if (d && (!nx || d < nx.d || (+d === +nx.d && startMin(g, d) < startMin(nx.g, nx.d)))) nx = { d, g }; });
+  const nxt = nx ? `${DAYS[wd(nx.d)]} ${nx.d.getDate()} ${MONTHS[nx.d.getMonth()].slice(0, 3)} · ${esc(nx.g.name)} · ${esc(timeOn(nx.g, nx.d))}` : '';
+  return `<div class="dn-card h-in"><div class="dn-top"><span class="dn-ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" class="t"/><circle cx="32" cy="32" r="27" class="a"/><path d="M21 33l7 7 15-15" class="k"/></svg></span>
+    <div class="dn-tx"><span class="dn-tag">${esc(dayName(D))}</span><b>All lessons taught</b><span>${list.length} of ${list.length} lesson${list.length === 1 ? '' : 's'}${all ? ` · ${came} of ${all} students came` : ''}</span></div></div>
+    <div class="dn-gs">${list.map((g, i) => `<button class="dn-g" style="--c:${hc(g)};--i:${i}" ${homeOpen(g)}>${ic('Check')}<b>${esc(g.name)}</b><small>${esc(timeOn(g, D))}</small></button>`).join('')}</div>
+    ${nxt ? `<div class="dn-next">${ic('CalendarDays')}<span>Next lesson</span><b>${nxt}</b></div>` : ''}</div>`;
+}
 function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
   const D = TODAY, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
   // 3 Nov (user): a lesson that is still going is "Now", never "taught"; one that is over and not marked says so
@@ -180,11 +191,11 @@ function secTodayHero() { // the same big card Attendance used to show: the next
   const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">${inProgress(next, D) ? 'Now' : lessonEnded(next, D) ? 'Not marked yet' : 'Next lesson'}</span><span class="hn-when">${inProgress(next, D) ? 'ends in ' + inMin(endMin(next, D) - now) : esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${lessonLine(next)} · ${stu(next.students.length)}</span>
       <div class="hn-btns"><button ${homeOpen(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
-    : list.length ? `<div class="at-all h-in">${ic('Check')}<b>All lessons are taught</b><span>${esc(dayName(D))}</span></div>`
+    : list.length ? doneCard(list, D)
     : `<div class="tp-empty2 h-in">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`;
   const rest = list.filter((g) => g !== next).map((g) => { const done = doneOn(g, D);
     return `<button class="tp-lrow at-other" style="--c:${hc(g)}" ${homeOpen(g)}><span class="at-dot"></span><span class="tx"><b>${esc(g.name)}</b><span>${esc(timeOn(g, D))} · ${done ? (repOn(g, D) ? 'taught · same lesson next time' : 'taught') : lessonEnded(g, D) ? 'not marked' : inProgress(g, D) ? 'now' : lessonLine(g)}</span></span><span class="tp-chev">${ic(done ? 'Check' : 'ChevronRight')}</span></button>`; }).join('');
-  return card('Today', list.length ? `${list.length} lesson${list.length === 1 ? '' : 's'}` : '', hero + (rest ? `<div class="at-list" style="margin-top:10px">${rest}</div>` : ''));
+  return card('Today', list.length ? `${list.length} lesson${list.length === 1 ? '' : 's'}` : '', hero + (rest && next ? `<div class="at-list" style="margin-top:10px">${rest}</div>` : '')); // all taught: the groups are inside the widget
 }
 const SECS = { next: secNext, overview: secOverview, today: secTodayHero, owe: secOweB, extras: secExtras };
 function pgHomeNew() {

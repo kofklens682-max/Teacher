@@ -14,6 +14,7 @@ function sheetStu(s) {
     <div class="sp-top"><span class="sp-av" style="background:${avColor(st.name)}">${esc(st.name[0].toUpperCase())}</span><b>${esc(st.name)}</b><span>${esc(g.name)}${g.solo ? ' · individual' : ''} · ${pc === null ? 'no lessons yet' : pc + '% here'}</span></div>
     <label class="tp-f"><span>Name</span><input id="f-sname" value="${esc(st.name)}" autocomplete="off"></label>
     ${fee ? `<label class="tp-f"><span>Monthly fee (so'm)${own ? '' : ' · now the group fee'}</span><input id="f-sfee" inputmode="numeric" value="${dMoney(own ?? gf)}" autocomplete="off"></label>` : ''}
+    ${hasFee(g) ? `<button class="tp-cta ghost" data-sheet="disc" data-g="${g.id}" data-sid="${st.id}">${ic('Percent')}Discount for some months</button>` : ''}
     ${hasFee(g) ? `<button class="tp-cta ghost" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}">${ic('Wallet')}Payments, month by month</button>` : ''}
     <button class="tp-danger" data-sturm="${st.id}|${g.id}">Remove ${esc(st.name.split(' ')[0])} from ${esc(g.name)}</button>
     <p class="tp-small">Removing keeps the past attendance and payments; the student only leaves this group. Undo is possible for 8 seconds.</p>`;

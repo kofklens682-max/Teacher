@@ -24,7 +24,7 @@ function normalize(d) {
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', len: Math.min(240, Math.max(20, +g.len || 80)),
     ...(g.lens && typeof g.lens === 'object' ? { lens: Object.fromEntries(Object.entries(g.lens).filter(([k, v]) => /^[0-6]$/.test(k) && +v >= 5 && +v <= 600).map(([k, v]) => [k, Math.round(+v)])) } : {}),
-    ...(g.times && typeof g.times === 'object' ? { times: Object.fromEntries(Object.entries(g.times).filter(([k, v]) => /^[0-6]$/.test(k) && /^\d\d:\d\d$/.test(v))) } : {}), week: Math.max(1, +g.week || 1), les: Math.min(3, Math.max(1, +g.les || 1)),
+    ...(g.times && typeof g.times === 'object' ? { times: Object.fromEntries(Object.entries(g.times).filter(([k, v]) => /^[0-6]$/.test(k) && /^\d\d:\d\d$/.test(v))) } : {}), week: Math.max(1, +g.week || 1), les: Math.min(8, Math.max(1, +g.les || 1)) /* 4 Nov 2026: IELTS Turbo weeks have 4 lessons; advance() keeps it in range */,
     students: (Array.isArray(g.students) ? g.students : []).map((s) => (typeof s === 'string' ? { id: uid(), name: s } : { id: String(s.id || uid()), name: String(s.name || ''), ...(s.added ? { added: +s.added } : {}), ...(/^\d{4}-\d\d$/.test(s.until || '') ? { until: s.until } : {}) })).filter((s) => s.name),
     left: (Array.isArray(g.left) ? g.left : []).filter((s) => s && s.id && s.name && /^\d{4}-\d\d$/.test(s.until || '')).map((s) => ({ id: String(s.id), name: String(s.name), until: s.until, ...(s.added ? { added: +s.added } : {}) })), // students who stopped coming: their old months stay on the books
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
@@ -33,6 +33,7 @@ function normalize(d) {
   const first = /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start; // 27 Oct 2026: fees count from September (once; after that the saved start is kept)
   out.pay = { start: P.sep26 ? first : (first > '2026-09' ? '2026-09' : first), sep26: 1, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
   for (const k of ['plan', 'stuFee', 'disc', 'sdisc', 'sfee', 'sfree', 'dex', 'xpaid', 'from', 'lost']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
+  out.pay.dsc = Array.isArray(P.dsc) ? P.dsc.filter((d) => d && d.id && d.gid && Array.isArray(d.months) && d.months.length && +d.v > 0 && (d.kind === 'pct' || d.kind === 'sum')).map((d) => ({ ...d, v: +d.v, sid: d.sid || null })) : []; // 4 Nov: discounts for chosen months (js/discount.js)
   out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026) is done: never again
   out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
   out.rev = +out.rev || 0;

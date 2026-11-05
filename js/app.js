@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 6.3.1';
+const VERSION_LABEL = 'Teacher 6.4';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -336,7 +336,7 @@ function pgAtt() {
   const hero = next ? `<div class="hn-next at-hero"><div class="hn-top"><span class="hn-tag">${isToday ? 'Next to mark' : D < TODAY ? 'Not marked yet' : 'Coming up'}</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + (isToday ? '' : DAYS[wd(D)] + ' ') + esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(timeOn(next, D))} · ${stu(next.students.length)}</span>
       <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
-    : list.length ? `<div class="at-all">${ic('Check')}<b>Every register is taken</b><span>${esc(dayName(D))}</span></div>` : '';
+    : list.length ? doneCard(list, D) : '';
   const pill = (g) => { const r = rec(g, D), n = g.students.length; if (r.saved) return `<span class="at-pill ok">${g.students.filter((s) => r.get(s.id) !== 'absent').length} of ${n} came</span>`; return lessonOpen(g, D) ? '<span class="at-pill wait">Not marked</span>' : `<span class="at-pill gray">opens ${esc(timeOn(g, D))}</span>`; };
   const rows = list.map((g) => { const open = !!T.open[g.id];
     return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="--c:${hc(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timeOn(g, D))} · ${stu(g.students.length)}</span></span>${pill(g)}<span class="tl-chev">${ic('ChevronDown')}</span></button><button class="at-edit" data-push="group" data-g="${g.id}" aria-label="${esc(g.name)}: students, program and edit">${ic('Users')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, D)}</div></div></div>`; }).join('');
@@ -558,7 +558,8 @@ function setHTML(el, html, swap) {
   const xs = stripsOf(el), tpl = document.createElement('template'); tpl.innerHTML = html;
   const neu = [...tpl.content.children], old = [...el.children];
   const textOnTop = [...tpl.content.childNodes].some((x) => x.nodeType === 3 && x.textContent.trim());
-  const quiet = el._html !== undefined && !swap; // a plain redraw (a tap, a tick) must not replay the entrance of every card: class "nin" (bridge.css)
+  const fresh = el._t0 !== undefined && performance.now() - el._t0 < 1500; // 4 Nov 2026: the redraw right after opening (saved data arriving) must not cut the entrance short (the pie chart did not draw)
+  const quiet = el._html !== undefined && !swap && !fresh; // a plain redraw (a tap, a tick) must not replay the entrance of every card: class "nin" (bridge.css)
   if (el._html !== undefined && !textOnTop && neu.length === old.length && neu.every((x, i) => x.tagName === old[i].tagName)) {
     neu.forEach((x, i) => {
       const o = old[i];
@@ -573,6 +574,7 @@ function setHTML(el, html, swap) {
     el.replaceChildren(tpl.content);
     if (swap && el._html !== undefined) { el.classList.remove('swapin'); void el.offsetWidth; el.classList.add('swapin'); }
   }
+  if (el._html === undefined) el._t0 = performance.now(); // only the first drawing of a screen opens this window
   el._html = html;
   restoreStrips(el, xs);
   return true;
@@ -674,12 +676,20 @@ function syncSheet() {
   setHTML(el._panel, safe(SHEETS[sh.s], sh));
   R.sheets.appendChild(el); R.sheet = el;
   bindSheetDrag(el);
+  // 4 Nov 2026: it grows out of the button that opened it (js/morph.js); with no button on the screen it slides up as before
+  const from = typeof Morph !== 'undefined' && Morph.src();
+  if (from) { el.classList.add('morph'); void el._panel.offsetHeight; if (Morph.open(el._panel, from, '26px 26px 0px 0px')) { el._src = from; afterPaint(() => el.classList.add('show')); setTimeout(() => { if (!el.classList.contains('closing')) el.classList.remove('morph'); }, Morph.OPEN + 30); return; } el.classList.remove('morph'); }
   void el._panel.offsetHeight; afterPaint(() => el.classList.add('show')); // drawn below the screen first, then it slides up
 }
 // Run fn once the browser has drawn the new element (two frames), or after 120 ms if frames are paused.
 function afterPaint(fn) { let done = false; const go = () => { if (!done) { done = true; fn(); } }; requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 120); }
 function closeAnim(el) {
   if (document.activeElement && el.contains(document.activeElement)) document.activeElement.blur();
+  const dragged = !!el._panel.style.transform; // pulled down by hand: it keeps sliding down
+  if (el._src && !dragged && typeof Morph !== 'undefined') { el.classList.add('morph', 'closing'); el._scrim.style.opacity = '';
+    if (Morph.close(el._panel, el._src, '26px 26px 0px 0px', () => el.remove())) { el.classList.remove('show'); setTimeout(() => el.remove(), Morph.CLOSE + 120); return; }
+    el.classList.remove('morph'); }
+  if (el._src && typeof Morph !== 'undefined') Morph.show(el._src); // the card it came from is shown again
   el.classList.remove('dragging'); el.classList.add('closing');
   el._panel.style.transform = ''; el._scrim.style.opacity = '';
   el.classList.remove('show');

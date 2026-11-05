@@ -178,7 +178,7 @@ function monthsOf(g, st) { // from the first month to two months ahead, and furt
 }
 const ymLabel = (m) => SHORT(m) + (m.slice(0, 4) !== ymOf(TODAY).slice(0, 4) ? ' ' + m.slice(2, 4) : '');
 // A month's discount, shown on the month (30 Oct 2026: a hidden discount made October "No charge", and its payment went to November)
-const discOf = (g, st, m) => ({ grp: S.pay.disc[g.id + '|' + m] || 0, own: S.pay.sdisc[st.id + '|' + m] || 0 });
+const discOf = (g, st, m) => ({ grp: S.pay.disc[g.id + '|' + m] || 0, own: (S.pay.sdisc[st.id + '|' + m] || 0) + (typeof dscExtra === 'function' ? dscExtra(g, st, m) : 0) }); // + the discounts for chosen months (js/discount.js)
 const baseFee = (g, st) => S.pay.stuFee[st.id] ?? (planOf(g) || {}).fee ?? 0;
 function monthGrid(g, st, open) {
   const L = ledger(g, st, monthsOf(g, st).slice(-1)[0]), cur = ymOf(TODAY);

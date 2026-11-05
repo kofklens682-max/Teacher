@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v67';
+const VERSION = 'teacher-v68';
 const SHELL = [
   './',
   './index.html',
@@ -26,6 +26,10 @@ const SHELL = [
   './bridge.css',
   './js/app.js',
   './js/people.js',
+  './js/discount.js',
+  './js/motion.js',
+  './js/morph.js',
+  './glass.css',
   './js/leave.js',
   './js/lights.js',
   './manifest.webmanifest',
@@ -53,8 +57,8 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k.startsWith('teacher-') && k !== VERSION && k !== MEDIA).map((k) => caches.delete(k))))
-      // the old slide-deck pictures and voices are not used any more: keep only the lesson files
-      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !r.url.includes('/media/packs/')).map((r) => c.delete(r))))))
+      // the old slide-deck pictures and voices are not used any more: keep only the lesson files (IELTS Turbo files keep their names when rebuilt: fetch them again)
+      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !r.url.includes('/media/packs/') || r.url.includes('/media/packs/turbo/')).map((r) => c.delete(r))))))
       .then(() => self.clients.claim())
   );
 });

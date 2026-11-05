@@ -1096,6 +1096,7 @@ html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 .pv-pages{display:flex;flex-direction:column;align-items:flex-start;gap:10px;width:max-content;min-width:100%}
 .pv-pg{background:#fff;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.14);overflow:hidden;position:relative;margin:0 auto}
 .pv-pg canvas{display:block;opacity:0;transition:opacity .3s}.pv-pg canvas.on{opacity:1}
+.pv-pg canvas.pv-under{width:100% !important;height:100% !important;transition:none}.pv-pg canvas.pv-top{position:absolute;left:0;top:0;transition:none} /* 6 Nov: page 1 is there while the file grows (js/lights.js pvPlaceholder) */
 .pv-msg{position:absolute;left:0;right:0;top:50%;text-align:center;color:#3C3C43;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s}.pv.msg .pv-msg{opacity:1}
 .pv-row.cur{background:rgba(0,122,255,.08)}.pv-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(0,122,255,.12);color:#007AFF;flex:none}.pv-ic svg{width:18px;height:18px}
 .tp-pushbar{gap:8px}.tp-pushbar>.tp-back{margin-right:auto}.tp-pushbar .tp-lights{margin:0}
