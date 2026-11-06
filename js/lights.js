@@ -173,7 +173,7 @@ async function pvLayout() {
    PV_MAXPX pixels; (2) all pages were drawn at once on the main thread -> now one at a time, the one nearest the screen first; (3) one finger
    scrolled with our own code (jerky whenever a page was drawing) -> now the phone scrolls natively; (4) a second finger touching the screen
    or a tap that only stopped the glide counted as a pinch / double tap -> now both need a clear gesture. */
-const PV_MAXPX = 6e6;
+const PV_MAXPX = 3.5e6; // 14 MB a page: the phone's graphics memory ran out above this (neon-green blocks, then a black screen)
 function pvFree(box) { // let go of a page that is far from the screen (it is drawn again when it comes back)
   if (box._task) { try { box._task.cancel(); } catch (e) { /* done */ } box._task = null; }
   if (PV.pending) PV.pending.delete(box);
@@ -182,7 +182,8 @@ function pvFree(box) { // let go of a page that is far from the screen (it is dr
   try { if (box._pg) box._pg.cleanup(); } catch (e) { /* in use */ }
 }
 function pvPump() { // draw the waiting page that is nearest to the middle of the screen, one at a time
-  if (PV.busy || !PV.el || !PV.pending || !PV.pending.size) return;
+  if (PV.busy || PV.pinching || !PV.el || !PV.pending || !PV.pending.size) return;
+  const wait = (PV.hold || 0) - performance.now(); if (wait > 0) { clearTimeout(PV.holdT); PV.holdT = setTimeout(pvPump, wait + 10); return; } // quick zooming: draw only when it has settled
   const sc = PV.el.querySelector('.pv-scroll'), r = sc.getBoundingClientRect(), mid = (r.top + r.bottom) / 2; let best = null, bd = 1e9;
   PV.pending.forEach((b) => { if (!b.isConnected) { PV.pending.delete(b); return; } const q = b.getBoundingClientRect(), d = Math.abs((q.top + q.bottom) / 2 - mid); if (d < bd) { bd = d; best = b; } });
   if (!best) return; PV.pending.delete(best); PV.busy = true; pvPage(best);
@@ -215,7 +216,7 @@ function pvPage(box) {
   const s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
   const w0 = box._w, drop = () => { c.width = c.height = 0; };
-  const task = box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }); box._task = task;
+  const task = box._pg.render({ canvasContext: c.getContext('2d', { willReadFrequently: true }), viewport: vp }); box._task = task;
   task.promise.then(() => { box._task = null; PV.busy = false;
     if (!box.isConnected || box._w !== w0 || !box._done) { drop(); return pvPump(); } // zoomed again or scrolled far away meanwhile: not needed
     const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
@@ -227,14 +228,14 @@ function pvPage(box) {
 // ONE FINGER SCROLLS NATIVELY (the phone's own smooth scrolling, also while a page is being drawn); only the pinch and the double tap are ours.
 // A pinch needs two fingers that really move apart / together (a resting thumb or a palm on the edge does nothing); a double tap needs two quick
 // taps in the same place, and a tap that only stopped a gliding page does not count. Ctrl + wheel zooms on a computer.
-const PV_MIN = 1, PV_MAX = 4;
+const PV_MIN = 1, PV_MAX = 3;
 function pvGestures(sc, wrap) {
   let g = null, t0 = null, tapAt = 0, tapX = 0, tapY = 0, tapTop = 0, lastScroll = 0;
   const clampZ = (z) => Math.max(PV_MIN, Math.min(PV_MAX, z));
   const mid = (ts) => ({ x: (ts[0].clientX + ts[1].clientX) / 2, y: (ts[0].clientY + ts[1].clientY) / 2, d: Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) || 1 });
   const edge = (t) => t.clientX < 14 || t.clientX > innerWidth - 14; // a palm on the screen edge is not a finger
   const commit = (r, fx, fy, ox, oy) => { // r = the zoom change, (fx, fy) = where the fingers are on screen, (ox, oy) = the same point inside the pages
-    sc.style.overflow = '';
+    sc.style.overflow = ''; PV.pinching = false; PV.hold = performance.now() + 250;
     let z = clampZ(PV.zoom * r); if (Math.abs(z - 1) < 0.07) z = 1; const R = z / PV.zoom; PV.zoom = z;
     wrap.style.transition = 'none'; wrap.style.transform = ''; wrap.style.willChange = '';
     pvBuild(); const sr = sc.getBoundingClientRect();
@@ -259,7 +260,7 @@ function pvGestures(sc, wrap) {
     const m = mid(e.touches);
     if (!g.on) { // wait for a clear pinch (8% change) before taking over; then freeze the native scroll and start from here (no jump)
       if (Math.abs(m.d / g.d0 - 1) < 0.08) return;
-      const wr = wrap.getBoundingClientRect(); g.on = true; g.d0 = m.d; g.ox = m.x - wr.left; g.oy = m.y - wr.top; g.wr = wr;
+      const wr = wrap.getBoundingClientRect(); g.on = true; PV.pinching = true; g.d0 = m.d; g.ox = m.x - wr.left; g.oy = m.y - wr.top; g.wr = wr;
       sc.style.overflow = 'hidden'; wrap.style.transformOrigin = g.ox + 'px ' + g.oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'none';
     }
     g.r = clampZ(PV.zoom * m.d / g.d0) / PV.zoom; g.fx = m.x; g.fy = m.y;
@@ -285,7 +286,7 @@ let pvTurnT = 0, pvLastW = 0;
 window.addEventListener('resize', () => { clearTimeout(pvTurnT); pvTurnT = setTimeout(() => { if (!PV.el || !PV.sizes || !PV.doc) return; const sc = PV.el.querySelector('.pv-scroll'); if (sc.clientWidth === pvLastW) return; pvLastW = sc.clientWidth; const top = sc.scrollTop / Math.max(1, sc.scrollHeight); pvBuild(); sc.scrollTop = top * sc.scrollHeight; }, 160); });
 function pvClose() {
   const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false);
-  if (PV.pending) PV.pending.clear(); PV.busy = false; PV.sizes = null;
+  if (PV.pending) PV.pending.clear(); PV.busy = false; PV.pinching = false; PV.sizes = null;
   el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } } }); // stop drawing; the pictures go when the file slides away
   el.classList.remove('show'); el.classList.add('out'); setTimeout(() => { el.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; }); el.remove(); }, 480);
 }
