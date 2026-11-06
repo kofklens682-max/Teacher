@@ -173,6 +173,14 @@ async function pvLayout() {
    PV_MAXPX pixels; (2) all pages were drawn at once on the main thread -> now one at a time, the one nearest the screen first; (3) one finger
    scrolled with our own code (jerky whenever a page was drawing) -> now the phone scrolls natively; (4) a second finger touching the screen
    or a tap that only stopped the glide counted as a pinch / double tap -> now both need a clear gesture. */
+/* FILE VIEWER SAFETY RULES (6 Nov 2026): the phone went neon-green and then black when these were broken. Keep them, and run
+   Tests\pdf-viewer-guard.js (node pdf-viewer-guard.js http://localhost:5199/) after ANY change here; it must say ALL PASSED before a release.
+   1. A page picture is never bigger than PV_MAXPX pixels; zoom never above PV_MAX (3). Pages far from the screen are let go (pvFree, pvSweep).
+   2. Page pictures are drawn with willReadFrequently (ordinary memory), never as graphics-card canvases.
+   3. One finger scrolls NATIVELY (.pv-scroll touch-action: pan-x pan-y). No own scrolling code, no blocking (non-passive) touchmove listener.
+   4. Nothing is drawn while the fingers pinch (PV.pinching) or for a moment after (PV.hold); one page at a time (pvPump).
+   5. No overflow:hidden / big border-radius on .pv-pg (a masked layer per page), no permanent will-change on the pages.
+   6. A pinch needs a clear change (8%), two taps in one place make a double tap, a tap that only stops a glide does not count. */
 const PV_MAXPX = 3.5e6; // 14 MB a page: the phone's graphics memory ran out above this (neon-green blocks, then a black screen)
 function pvFree(box) { // let go of a page that is far from the screen (it is drawn again when it comes back)
   if (box._task) { try { box._task.cancel(); } catch (e) { /* done */ } box._task = null; }
@@ -180,6 +188,16 @@ function pvFree(box) { // let go of a page that is far from the screen (it is dr
   box.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; c.remove(); });
   box._done = 0;
   try { if (box._pg) box._pg.cleanup(); } catch (e) { /* in use */ }
+}
+function pvStopDrawing() { // a pinch needs the main thread: stop the page that is being drawn (it is drawn again after the zoom)
+  if (PV.pending) PV.pending.clear(); PV.busy = false;
+  if (PV.el) PV.el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } b._task = null; } if (!b.querySelector('canvas')) b._done = 0; });
+}
+function pvSweep() { // after a scroll: pages near the screen get their picture, far ones let go (a backstop in case the observer missed one)
+  if (!PV.el || !PV.pending || PV.pinching) return; const sc = PV.el.querySelector('.pv-scroll'), r = sc.getBoundingClientRect(), m = r.height * (PV.zoom > 1.5 ? 0.25 : 1);
+  PV.el.querySelectorAll('.pv-pg').forEach((b) => { const q = b.getBoundingClientRect(), near = q.bottom > r.top - m && q.top < r.bottom + m;
+    if (near && !b._done) { b._done = 1; PV.pending.add(b); } else if (!near && (b._done || b.querySelector('canvas'))) pvFree(b); });
+  pvPump();
 }
 function pvPump() { // draw the waiting page that is nearest to the middle of the screen, one at a time
   if (PV.busy || PV.pinching || !PV.el || !PV.pending || !PV.pending.size) return;
@@ -197,7 +215,7 @@ function pvBuild() {
   PV.io = new IntersectionObserver((es) => { es.forEach((e) => {
     const b = e.target;
     if (e.isIntersecting) { if (!b._done) { b._done = 1; PV.pending.add(b); } } else if (b._done || b.querySelector('canvas')) pvFree(b);
-  }); pvPump(); }, { root: sc, rootMargin: PV.zoom > 1.5 ? '25% 0px' : '150% 0px' });
+  }); pvPump(); }, { root: sc, rootMargin: PV.zoom > 1.5 ? '25% 0px' : '100% 0px' });
   // 6 Nov 2026 (user: "when I zoom in the PDF it reloads every time"): the pages used to be thrown away and drawn again from
   // white on every zoom. Now the same pages stay: they get the new size at once (the picture already there is stretched to
   // it, a little soft for a moment), and the sharp picture is laid on top when it is ready. Nothing goes white.
@@ -212,7 +230,7 @@ function pvBuild() {
 }
 function pvPage(box) {
   const vp0 = box._pg.getViewport({ scale: 1 }), cssH = parseFloat(box.style.height) || box._w * 1.4142;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PV_MAXPX / (box._w * cssH))); // never more than PV_MAXPX pixels a page
+  const dpr = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(PV_MAXPX / (box._w * cssH))); // never more than PV_MAXPX pixels a page
   const s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
   const w0 = box._w, drop = () => { c.width = c.height = 0; };
@@ -220,7 +238,8 @@ function pvPage(box) {
   task.promise.then(() => { box._task = null; PV.busy = false;
     if (!box.isConnected || box._w !== w0 || !box._done) { drop(); return pvPump(); } // zoomed again or scrolled far away meanwhile: not needed
     const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
-    if (u.length) { c.classList.add('on', 'pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => { if (c.isConnected) { u.forEach((x) => { x.width = x.height = 0; x.remove(); }); c.classList.remove('pv-top'); } })); } else requestAnimationFrame(() => c.classList.add('on'));
+    if (u.length) { c.classList.add('pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add('on'))); // the sharp picture fades in over the stretched one: no flash, it just sharpens
+      setTimeout(() => { if (c.isConnected) { u.forEach((x) => { x.width = x.height = 0; x.remove(); }); c.classList.remove('pv-top'); } }, 300); } else requestAnimationFrame(() => c.classList.add('on'));
     if (!box._i && PV.zoom === 1 && PV.name) { const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); PV.thumbs[PV.name] = { c: t, r: c.height / c.width }; } // a small copy: the page itself may be let go later
     pvPump(); }).catch(() => { box._task = null; PV.busy = false; drop(); pvPump(); });
 }
@@ -235,7 +254,7 @@ function pvGestures(sc, wrap) {
   const mid = (ts) => ({ x: (ts[0].clientX + ts[1].clientX) / 2, y: (ts[0].clientY + ts[1].clientY) / 2, d: Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) || 1 });
   const edge = (t) => t.clientX < 14 || t.clientX > innerWidth - 14; // a palm on the screen edge is not a finger
   const commit = (r, fx, fy, ox, oy) => { // r = the zoom change, (fx, fy) = where the fingers are on screen, (ox, oy) = the same point inside the pages
-    sc.style.overflow = ''; PV.pinching = false; PV.hold = performance.now() + 250;
+    sc.style.overflow = ''; PV.pinching = false; PV.hold = performance.now() + 140;
     let z = clampZ(PV.zoom * r); if (Math.abs(z - 1) < 0.07) z = 1; const R = z / PV.zoom; PV.zoom = z;
     wrap.style.transition = 'none'; wrap.style.transform = ''; wrap.style.willChange = '';
     pvBuild(); const sr = sc.getBoundingClientRect();
@@ -247,7 +266,7 @@ function pvGestures(sc, wrap) {
     wrap.style.transformOrigin = ox + 'px ' + oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'transform ' + ms + 'ms cubic-bezier(.32,.72,0,1)'; wrap.style.transform = 'scale(' + rr + ')';
     clearTimeout(wrap._t); wrap._t = setTimeout(() => commit(r, x, y, ox, oy), ms + 20);
   };
-  sc.addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
+  sc.addEventListener('scroll', () => { lastScroll = performance.now(); clearTimeout(sc._sw); sc._sw = setTimeout(pvSweep, 140); }, { passive: true });
   sc.addEventListener('touchstart', (e) => {
     const n = e.touches.length;
     if (n === 1) { const t = e.touches[0]; t0 = { x: t.clientX, y: t.clientY, at: e.timeStamp, moved: 0, gliding: performance.now() - lastScroll < 150 }; g = null; return; }
@@ -260,13 +279,12 @@ function pvGestures(sc, wrap) {
     const m = mid(e.touches);
     if (!g.on) { // wait for a clear pinch (8% change) before taking over; then freeze the native scroll and start from here (no jump)
       if (Math.abs(m.d / g.d0 - 1) < 0.08) return;
-      const wr = wrap.getBoundingClientRect(); g.on = true; PV.pinching = true; g.d0 = m.d; g.ox = m.x - wr.left; g.oy = m.y - wr.top; g.wr = wr;
+      pvStopDrawing(); const wr = wrap.getBoundingClientRect(); g.on = true; PV.pinching = true; g.d0 = m.d; g.ox = m.x - wr.left; g.oy = m.y - wr.top; g.wr = wr;
       sc.style.overflow = 'hidden'; wrap.style.transformOrigin = g.ox + 'px ' + g.oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'none';
     }
     g.r = clampZ(PV.zoom * m.d / g.d0) / PV.zoom; g.fx = m.x; g.fy = m.y;
     wrap.style.transform = 'translate3d(' + (m.x - (g.wr.left + g.ox)).toFixed(1) + 'px,' + (m.y - (g.wr.top + g.oy)).toFixed(1) + 'px,0) scale(' + g.r.toFixed(4) + ')';
-    if (e.cancelable) e.preventDefault();
-  }, { passive: false });
+  }, { passive: true }); // PASSIVE: the phone scrolls without waiting for this code (a blocking touchmove listener makes scrolling lag whenever a page is drawing)
   const end = (e) => {
     if (g) { if (e.touches.length < 2) { const gg = g; g = null; if (gg.on) commit(gg.r, gg.fx, gg.fy, gg.ox, gg.oy); } return; }
     const q = t0; if (e.touches.length) return; t0 = null;
