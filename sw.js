@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v73';
+const VERSION = 'teacher-v74';
 const SHELL = [
   './',
   './index.html',
@@ -67,6 +67,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(new URL(self.registration.scope).pathname)) return;
+  const scopeP = new URL(self.registration.scope).pathname; // only the app page itself comes from the saved copy: other pages (the repair page reset.html) always come from the network
+  if (req.mode === 'navigate' && url.pathname !== scopeP && url.pathname !== scopeP + 'index.html') return;
   if (url.pathname.includes('/media/')) { // pictures and voices: from the phone if kept, else fetched once and kept
     e.respondWith(caches.open(MEDIA).then(async (cache) => {
       const hit = await cache.match(req, { ignoreSearch: true }); if (hit) return hit;

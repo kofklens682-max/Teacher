@@ -165,44 +165,76 @@ function pvPlaceholder(name) {
 function lightCtxBase() { const keep = PV.ctx; PV.ctx = null; const c = lightCtx(); PV.ctx = keep; return c; }
 // Page sizes are remembered, so changing the zoom builds the boxes at once (no waiting).
 async function pvLayout() {
-  const doc = PV.doc; if (!PV.sizes || PV.sizes.doc !== doc) { const a = []; for (let i = 1; i <= doc.numPages; i++) { const pg = await doc.getPage(i), vp = pg.getViewport({ scale: 1 }); a.push({ pg, r: vp.height / vp.width }); } if (PV.doc !== doc) return; PV.sizes = { doc, a }; }
+  const doc = PV.doc; if (!PV.sizes || PV.sizes.doc !== doc) { const pgs = await Promise.all(Array.from({ length: doc.numPages }, (_, i) => doc.getPage(i + 1))); if (PV.doc !== doc) return; PV.sizes = { doc, a: pgs.map((pg) => { const vp = pg.getViewport({ scale: 1 }); return { pg, r: vp.height / vp.width }; }) }; }
   pvBuild();
+}
+/* 6 Nov 2026 (user: the PDFs lag, zoom by themselves, and sometimes the screen goes black). Causes found: (1) every page drawn at zoom stayed in
+   memory for ever (4x zoom = 36 MB a page, 650 MB for a long file) -> now a page far from the screen is let go and a page never has more than
+   PV_MAXPX pixels; (2) all pages were drawn at once on the main thread -> now one at a time, the one nearest the screen first; (3) one finger
+   scrolled with our own code (jerky whenever a page was drawing) -> now the phone scrolls natively; (4) a second finger touching the screen
+   or a tap that only stopped the glide counted as a pinch / double tap -> now both need a clear gesture. */
+const PV_MAXPX = 6e6;
+function pvFree(box) { // let go of a page that is far from the screen (it is drawn again when it comes back)
+  if (box._task) { try { box._task.cancel(); } catch (e) { /* done */ } box._task = null; }
+  if (PV.pending) PV.pending.delete(box);
+  box.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; c.remove(); });
+  box._done = 0;
+  try { if (box._pg) box._pg.cleanup(); } catch (e) { /* in use */ }
+}
+function pvPump() { // draw the waiting page that is nearest to the middle of the screen, one at a time
+  if (PV.busy || !PV.el || !PV.pending || !PV.pending.size) return;
+  const sc = PV.el.querySelector('.pv-scroll'), r = sc.getBoundingClientRect(), mid = (r.top + r.bottom) / 2; let best = null, bd = 1e9;
+  PV.pending.forEach((b) => { if (!b.isConnected) { PV.pending.delete(b); return; } const q = b.getBoundingClientRect(), d = Math.abs((q.top + q.bottom) / 2 - mid); if (d < bd) { bd = d; best = b; } });
+  if (!best) return; PV.pending.delete(best); PV.busy = true; pvPage(best);
 }
 function pvBuild() {
   if (!PV.el || !PV.sizes) return;
   const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll');
-  const w = Math.max(280, (sc.clientWidth - 16) * PV.zoom), dpr = Math.min(window.devicePixelRatio || 1, 2, 2600 / w); // a page is never drawn wider than ~2600 pixels (memory)
+  const w = Math.max(280, (sc.clientWidth - 16) * PV.zoom);
   if (PV.io) PV.io.disconnect();
-  PV.io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !e.target._done) { e.target._done = 1; pvPage(e.target, dpr); } }), { root: sc, rootMargin: PV.zoom > 1.5 ? '40% 0px' : '120% 0px' });
+  if (PV.pending) PV.pending.clear(); PV.pending = new Set();
+  PV.io = new IntersectionObserver((es) => { es.forEach((e) => {
+    const b = e.target;
+    if (e.isIntersecting) { if (!b._done) { b._done = 1; PV.pending.add(b); } } else if (b._done || b.querySelector('canvas')) pvFree(b);
+  }); pvPump(); }, { root: sc, rootMargin: PV.zoom > 1.5 ? '25% 0px' : '150% 0px' });
   // 6 Nov 2026 (user: "when I zoom in the PDF it reloads every time"): the pages used to be thrown away and drawn again from
   // white on every zoom. Now the same pages stay: they get the new size at once (the picture already there is stretched to
   // it, a little soft for a moment), and the sharp picture is laid on top when it is ready. Nothing goes white.
   const boxes = [...wrap.children];
   if (boxes.length === PV.sizes.a.length && boxes.every((b, i) => b._pg === PV.sizes.a[i].pg)) {
-    boxes.forEach((box, i) => { box.style.width = w + 'px'; box.style.height = Math.round(w * PV.sizes.a[i].r) + 'px'; box._w = w; box._done = 0;
+    boxes.forEach((box, i) => { if (box._task) { try { box._task.cancel(); } catch (e) { /* done */ } box._task = null; } box.style.width = w + 'px'; box.style.height = Math.round(w * PV.sizes.a[i].r) + 'px'; box._w = w; box._done = 0;
       box.querySelectorAll('canvas').forEach((c) => { c.classList.add('on', 'pv-under'); c.classList.remove('pv-top'); c.style.width = ''; c.style.height = ''; }); PV.io.observe(box); });
     return;
   }
   const under = wrap.querySelector('.pv-under'); wrap.innerHTML = '';
   PV.sizes.a.forEach(({ pg, r }, i) => { const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px'; box._pg = pg; box._w = w; if (!i && under && PV.zoom === 1) box.appendChild(under); box._i = i; wrap.appendChild(box); PV.io.observe(box); });
 }
-function pvPage(box, dpr) {
-  const vp0 = box._pg.getViewport({ scale: 1 }), s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
+function pvPage(box) {
+  const vp0 = box._pg.getViewport({ scale: 1 }), cssH = parseFloat(box.style.height) || box._w * 1.4142;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PV_MAXPX / (box._w * cssH))); // never more than PV_MAXPX pixels a page
+  const s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
-  const w0 = box._w;
-  box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise.then(() => { if (!box.isConnected || box._w !== w0) return; // zoomed again meanwhile: a newer drawing is on its way
+  const w0 = box._w, drop = () => { c.width = c.height = 0; };
+  const task = box._pg.render({ canvasContext: c.getContext('2d'), viewport: vp }); box._task = task;
+  task.promise.then(() => { box._task = null; PV.busy = false;
+    if (!box.isConnected || box._w !== w0 || !box._done) { drop(); return pvPump(); } // zoomed again or scrolled far away meanwhile: not needed
     const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
-    if (u.length) { c.classList.add('on', 'pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => { if (c.isConnected) { u.forEach((x) => x.remove()); c.classList.remove('pv-top'); } })); } else requestAnimationFrame(() => c.classList.add('on'));
-    if (!box._i && PV.zoom === 1 && PV.name) PV.thumbs[PV.name] = { c, r: c.height / c.width }; }).catch(() => {});
+    if (u.length) { c.classList.add('on', 'pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => { if (c.isConnected) { u.forEach((x) => { x.width = x.height = 0; x.remove(); }); c.classList.remove('pv-top'); } })); } else requestAnimationFrame(() => c.classList.add('on'));
+    if (!box._i && PV.zoom === 1 && PV.name) { const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); PV.thumbs[PV.name] = { c: t, r: c.height / c.width }; } // a small copy: the page itself may be let go later
+    pvPump(); }).catch(() => { box._task = null; PV.busy = false; drop(); pvPump(); });
 }
 // Zoom with the fingers: the page follows the pinch smoothly (any size from fit-to-width up to 4x), and is drawn sharp when the fingers lift.
-// One finger scrolls (with a little glide), a double tap zooms in or back out, Ctrl + wheel zooms on a computer.
+// ONE FINGER SCROLLS NATIVELY (the phone's own smooth scrolling, also while a page is being drawn); only the pinch and the double tap are ours.
+// A pinch needs two fingers that really move apart / together (a resting thumb or a palm on the edge does nothing); a double tap needs two quick
+// taps in the same place, and a tap that only stopped a gliding page does not count. Ctrl + wheel zooms on a computer.
 const PV_MIN = 1, PV_MAX = 4;
 function pvGestures(sc, wrap) {
-  const P = new Map(); let g = null, pan = null, tapAt = 0, tapX = 0, tapY = 0, glide = 0;
+  let g = null, t0 = null, tapAt = 0, tapX = 0, tapY = 0, tapTop = 0, lastScroll = 0;
   const clampZ = (z) => Math.max(PV_MIN, Math.min(PV_MAX, z));
-  const mid = () => { const a = [...P.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1 }; };
+  const mid = (ts) => ({ x: (ts[0].clientX + ts[1].clientX) / 2, y: (ts[0].clientY + ts[1].clientY) / 2, d: Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) || 1 });
+  const edge = (t) => t.clientX < 14 || t.clientX > innerWidth - 14; // a palm on the screen edge is not a finger
   const commit = (r, fx, fy, ox, oy) => { // r = the zoom change, (fx, fy) = where the fingers are on screen, (ox, oy) = the same point inside the pages
+    sc.style.overflow = '';
     let z = clampZ(PV.zoom * r); if (Math.abs(z - 1) < 0.07) z = 1; const R = z / PV.zoom; PV.zoom = z;
     wrap.style.transition = 'none'; wrap.style.transform = ''; wrap.style.willChange = '';
     pvBuild(); const sr = sc.getBoundingClientRect();
@@ -214,35 +246,36 @@ function pvGestures(sc, wrap) {
     wrap.style.transformOrigin = ox + 'px ' + oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'transform ' + ms + 'ms cubic-bezier(.32,.72,0,1)'; wrap.style.transform = 'scale(' + rr + ')';
     clearTimeout(wrap._t); wrap._t = setTimeout(() => commit(r, x, y, ox, oy), ms + 20);
   };
-  sc.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
-    cancelAnimationFrame(glide); P.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    try { sc.setPointerCapture(e.pointerId); } catch (x) { /* ok */ }
-    if (P.size === 2) { const m = mid(), wr = wrap.getBoundingClientRect(); pan = null; g = { d0: m.d, ox: m.x - wr.left, oy: m.y - wr.top, r: 1, fx: m.x, fy: m.y }; wrap.style.transformOrigin = g.ox + 'px ' + g.oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'none'; }
-    else if (P.size === 1) pan = { x: e.clientX, y: e.clientY, t: e.timeStamp, moved: 0, vx: 0, vy: 0, lt: e.timeStamp };
-  });
-  sc.addEventListener('pointermove', (e) => {
-    const p = P.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
-    if (g && P.size >= 2) { // pinch: the zoom follows the distance between the fingers, and the point between them stays under them
-      const m = mid(); g.r = clampZ(PV.zoom * m.d / g.d0) / PV.zoom; g.fx = m.x; g.fy = m.y;
-      const wr0 = wrap._wr || (wrap._wr = wrap.getBoundingClientRect());
-      wrap.style.transform = 'translate3d(' + (m.x - (wr0.left + g.ox)).toFixed(1) + 'px,' + (m.y - (wr0.top + g.oy)).toFixed(1) + 'px,0) scale(' + g.r.toFixed(4) + ')'; return;
+  sc.addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
+  sc.addEventListener('touchstart', (e) => {
+    const n = e.touches.length;
+    if (n === 1) { const t = e.touches[0]; t0 = { x: t.clientX, y: t.clientY, at: e.timeStamp, moved: 0, gliding: performance.now() - lastScroll < 150 }; g = null; return; }
+    t0 = null;
+    if (n === 2 && !g && !edge(e.touches[0]) && !edge(e.touches[1])) { const m = mid(e.touches); g = { d0: m.d, on: false, r: 1, fx: m.x, fy: m.y, ox: 0, oy: 0 }; }
+  }, { passive: true });
+  sc.addEventListener('touchmove', (e) => {
+    if (t0 && e.touches.length === 1) { const t = e.touches[0]; t0.moved = Math.max(t0.moved, Math.hypot(t.clientX - t0.x, t.clientY - t0.y)); return; }
+    if (!g || e.touches.length < 2) return;
+    const m = mid(e.touches);
+    if (!g.on) { // wait for a clear pinch (8% change) before taking over; then freeze the native scroll and start from here (no jump)
+      if (Math.abs(m.d / g.d0 - 1) < 0.08) return;
+      const wr = wrap.getBoundingClientRect(); g.on = true; g.d0 = m.d; g.ox = m.x - wr.left; g.oy = m.y - wr.top; g.wr = wr;
+      sc.style.overflow = 'hidden'; wrap.style.transformOrigin = g.ox + 'px ' + g.oy + 'px'; wrap.style.willChange = 'transform'; wrap.style.transition = 'none';
     }
-    if (pan) { pan.moved += Math.abs(dx) + Math.abs(dy); sc.scrollLeft -= dx; sc.scrollTop -= dy; const dt = Math.max(1, e.timeStamp - pan.lt); pan.vx = 0.8 * pan.vx + 0.2 * (-dx / dt); pan.vy = 0.8 * pan.vy + 0.2 * (-dy / dt); pan.lt = e.timeStamp; }
-  });
-  const up = (e) => {
-    if (!P.has(e.pointerId)) return; P.delete(e.pointerId);
-    if (g) { if (P.size < 2) { const gg = g; g = null; wrap._wr = null; commit(gg.r, gg.fx, gg.fy, gg.ox, gg.oy); const left = [...P.values()][0]; pan = left ? { x: left.x, y: left.y, t: e.timeStamp, moved: 99, vx: 0, vy: 0, lt: e.timeStamp } : null; } return; }
-    if (!pan) return; const q = pan; pan = null;
-    if (q.moved < 10 && e.timeStamp - q.t < 300) { // a tap: two taps close together zoom in (or back to fit)
-      if (e.timeStamp - tapAt < 320 && Math.hypot(e.clientX - tapX, e.clientY - tapY) < 40) { tapAt = 0; zoomAt(e.clientX, e.clientY, PV.zoom > 1.2 ? 1 / PV.zoom : 2.2 / PV.zoom, 320); } else { tapAt = e.timeStamp; tapX = e.clientX; tapY = e.clientY; }
-      return;
-    }
-    let vx = q.vx, vy = q.vy, last = performance.now(); // a little glide after the finger lifts
-    const step = (t) => { const dt = Math.min(t - last, 40); last = t; sc.scrollLeft += vx * dt; sc.scrollTop += vy * dt; const f = Math.pow(0.0025, dt / 1000); vx *= f; vy *= f; if (Math.abs(vx) + Math.abs(vy) > 0.02) glide = requestAnimationFrame(step); };
-    if (Math.abs(vx) + Math.abs(vy) > 0.1) glide = requestAnimationFrame(step);
+    g.r = clampZ(PV.zoom * m.d / g.d0) / PV.zoom; g.fx = m.x; g.fy = m.y;
+    wrap.style.transform = 'translate3d(' + (m.x - (g.wr.left + g.ox)).toFixed(1) + 'px,' + (m.y - (g.wr.top + g.oy)).toFixed(1) + 'px,0) scale(' + g.r.toFixed(4) + ')';
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  const end = (e) => {
+    if (g) { if (e.touches.length < 2) { const gg = g; g = null; if (gg.on) commit(gg.r, gg.fx, gg.fy, gg.ox, gg.oy); } return; }
+    const q = t0; if (e.touches.length) return; t0 = null;
+    if (!q || e.type !== 'touchend' || !e.changedTouches.length) return;
+    const t = e.changedTouches[0];
+    if (q.moved > 10 || e.timeStamp - q.at > 250 || q.gliding) { tapAt = 0; return; } // a drag, a long press, or the tap that stopped a gliding page
+    if (tapAt && e.timeStamp - tapAt < 320 && Math.hypot(t.clientX - tapX, t.clientY - tapY) < 40 && Math.abs(sc.scrollTop - tapTop) < 4) { tapAt = 0; zoomAt(t.clientX, t.clientY, PV.zoom > 1.2 ? 1 / PV.zoom : 2.2 / PV.zoom, 320); }
+    else { tapAt = e.timeStamp; tapX = t.clientX; tapY = t.clientY; tapTop = sc.scrollTop; }
   };
-  sc.addEventListener('pointerup', up); sc.addEventListener('pointercancel', up);
+  sc.addEventListener('touchend', end, { passive: true }); sc.addEventListener('touchcancel', (e) => { if (g && g.on) end(e); else { g = null; t0 = null; sc.style.overflow = ''; } }, { passive: true });
   sc.addEventListener('wheel', (e) => { if (!e.ctrlKey) return; e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01), 90); }, { passive: false });
 }
 // 6 Nov 2026 (user: "I want to open it horizontally and vertically"): the app stays upright, but while a file is open the phone
@@ -252,7 +285,9 @@ let pvTurnT = 0, pvLastW = 0;
 window.addEventListener('resize', () => { clearTimeout(pvTurnT); pvTurnT = setTimeout(() => { if (!PV.el || !PV.sizes || !PV.doc) return; const sc = PV.el.querySelector('.pv-scroll'); if (sc.clientWidth === pvLastW) return; pvLastW = sc.clientWidth; const top = sc.scrollTop / Math.max(1, sc.scrollHeight); pvBuild(); sc.scrollTop = top * sc.scrollHeight; }, 160); });
 function pvClose() {
   const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false);
-  el.classList.remove('show'); el.classList.add('out'); setTimeout(() => el.remove(), 480);
+  if (PV.pending) PV.pending.clear(); PV.busy = false; PV.sizes = null;
+  el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } } }); // stop drawing; the pictures go when the file slides away
+  el.classList.remove('show'); el.classList.add('out'); setTimeout(() => { el.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; }); el.remove(); }, 480);
 }
 document.addEventListener('click', (e) => {
   const a = e.target.closest && e.target.closest('a[data-pvopen]'); if (a) { e.preventDefault(); return pvOpen(a.dataset.pvopen, a.dataset.pt, a.dataset.pvg); }
