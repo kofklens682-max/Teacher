@@ -1098,6 +1098,7 @@ html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 .pv-pg canvas{display:block;opacity:0;transition:opacity .3s}.pv-pg canvas.on{opacity:1}
 .pv-pg canvas.pv-under{width:100% !important;height:100% !important;transition:none}.pv-pg canvas.pv-top{position:absolute;left:0;top:0;transition:opacity .22s ease-out} /* 6 Nov: page 1 is there while the file grows (js/lights.js pvPlaceholder) */
 html.pvopen body .tp-tabs,html.pvopen body .tabs,html.pvopen body .h2-quick button{-webkit-backdrop-filter:none !important;backdrop-filter:none !important} /* 7 Nov: while a file covers the app, the blurred bars hidden under it stop blurring (less graphics memory) */
+html.pvcover #tp>.tp-viewport,html.pvcover #tp>.tp-screens,html.pvcover #tp>.tp-tabs{visibility:hidden !important} /* 7 Nov: once a file covers the whole screen, the 8 screen layers under it are not drawn at all (they kept graphics memory); scroll places are kept */
 .pv-msg{position:absolute;left:0;right:0;top:50%;text-align:center;color:#3C3C43;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s}.pv.msg .pv-msg{opacity:1}
 .pv-row.cur{background:rgba(0,122,255,.08)}.pv-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(0,122,255,.12);color:#007AFF;flex:none}.pv-ic svg{width:18px;height:18px}
 .tp-pushbar{gap:8px}.tp-pushbar>.tp-back{margin-right:auto}.tp-pushbar .tp-lights{margin:0}

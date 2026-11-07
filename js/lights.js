@@ -136,6 +136,17 @@ function pvLib() {
    - ONE reader thread (PV.worker), shared by all files; it is stopped 20 s after the last file closes (pvWorkerStop), so memory goes fully back.
    - every opened file keeps its loading task (PV.task) and pvRelease() destroys it when the file closes, when another file replaces it, or when an opening is abandoned.
    - the small first-page copies (PV.thumbs) are tiny (about 0.7 MB) and at most 10 are kept. */
+/* 7 Nov 2026, second round (user: still a black screen, even Chrome's own pages went black until a phone restart; pictures in PDFs lag).
+   ROOT CAUSE 2: the PDF reader (pdf.js 3.11) drew every picture and every see-through layer of a page on its OWN temporary drawing surfaces,
+   and those were graphics-card surfaces (26 of 29 while one file was open), made and thrown away on every page draw; its reader thread also
+   turned pictures into graphics-card bitmaps. That churn is what corrupts the phone's graphics memory (neon-green blocks, then black everywhere).
+   Now: EVERY surface the reader makes comes from PvCanvasFactory = ordinary memory (willReadFrequently), the reader thread never makes
+   graphics-card bitmaps (isOffscreenCanvasSupported: false), and a picture can never be huge (maxImageSize). Tests\pdf-viewer-repeat.js counts them. */
+class PvCanvasFactory {
+  create(w, h) { if (w <= 0 || h <= 0) throw new Error('Invalid canvas size'); const c = document.createElement('canvas'); c.width = w; c.height = h; return { canvas: c, context: c.getContext('2d', { willReadFrequently: true }) }; }
+  reset(cc, w, h) { if (!cc.canvas) throw new Error('Canvas is not specified'); if (w <= 0 || h <= 0) throw new Error('Invalid canvas size'); cc.canvas.width = w; cc.canvas.height = h; }
+  destroy(cc) { if (!cc.canvas) throw new Error('Canvas is not specified'); cc.canvas.width = 0; cc.canvas.height = 0; cc.canvas = null; cc.context = null; }
+}
 function pvWorker(lib) {
   clearTimeout(PV.wT); if (!PV.worker || PV.worker.destroyed) PV.worker = new lib.PDFWorker({ name: 'viewer' }); return PV.worker;
 }
@@ -162,6 +173,7 @@ function pvEnsure(reuseStep) {
   const el = document.createElement('div'); el.className = 'pv'; document.documentElement.classList.add('pvopen'); pvMark(true);
   el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
   root.appendChild(el); PV.el = el; pvTurn(true); if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
+  clearTimeout(PV.coverT); PV.coverT = setTimeout(() => { if (PV.el === el) document.documentElement.classList.add('pvcover'); }, 560); // once the file covers the screen, the screens under it stop being drawn (style.css html.pvcover)
   pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages'));
 }
 function pvMsg(t) { if (PV.el) { PV.el.querySelector('.pv-msg').textContent = t || ''; PV.el.classList.toggle('msg', !!t); } }
@@ -176,7 +188,7 @@ async function pvOpen(ref, title, gid) {
   const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
     const lib = await pvLib(), blob = await packGet(name); if (seq !== PV.seq || !PV.el) { clearTimeout(slow); return; }
-    const task = lib.getDocument({ data: await blob.arrayBuffer(), worker: pvWorker(lib), isEvalSupported: false }); PV.task = task;
+    const task = lib.getDocument({ data: await blob.arrayBuffer(), worker: pvWorker(lib), isEvalSupported: false, isOffscreenCanvasSupported: false, canvasFactory: new PvCanvasFactory(), maxImageSize: 16777216 }); PV.task = task;
     const doc = await task.promise;
     clearTimeout(slow); if (seq !== PV.seq || !PV.el) { try { task.destroy(); } catch (e) { /* done */ } if (PV.task === task) PV.task = null; return; } PV.doc = doc; pvMsg(''); await pvLayout();
   } catch (e) { clearTimeout(slow); if (seq === PV.seq) { pvRelease(); pvMsg('Connect to the internet once to get this file'); } }
@@ -188,7 +200,7 @@ function pvPlaceholder(name) {
   const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll'); PV.doc = null;
   const t = PV.thumbs[name], w = Math.max(280, (sc.clientWidth || innerWidth) - 16), r = t ? t.r : 1.4142;
   wrap.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; }); wrap.innerHTML = ''; const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px';
-  if (t) { const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d').drawImage(t.c, 0, 0); c.className = 'on pv-under'; box.appendChild(c); }
+  if (t) { const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d', { willReadFrequently: true }).drawImage(t.c, 0, 0); c.className = 'on pv-under'; box.appendChild(c); }
   wrap.appendChild(box);
 }
 function lightCtxBase() { const keep = PV.ctx; PV.ctx = null; const c = lightCtx(); PV.ctx = keep; return c; }
@@ -269,7 +281,7 @@ function pvPage(box) {
     const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
     if (u.length) { c.classList.add('pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add('on'))); // the sharp picture fades in over the stretched one: no flash, it just sharpens
       setTimeout(() => { if (c.isConnected) { u.forEach((x) => { x.width = x.height = 0; x.remove(); }); c.classList.remove('pv-top'); } }, 300); } else requestAnimationFrame(() => c.classList.add('on'));
-    if (!box._i && PV.zoom === 1 && PV.name) { const k = Math.min(1, 360 / c.width), t = document.createElement('canvas'); t.width = Math.max(1, Math.round(c.width * k)); t.height = Math.max(1, Math.round(c.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+    if (!box._i && PV.zoom === 1 && PV.name) { const k = Math.min(1, 360 / c.width), t = document.createElement('canvas'); t.width = Math.max(1, Math.round(c.width * k)); t.height = Math.max(1, Math.round(c.height * k)); t.getContext('2d', { willReadFrequently: true }).drawImage(c, 0, 0, t.width, t.height);
       const old = PV.thumbs[PV.name]; if (old) old.c.width = old.c.height = 0; PV.thumbs[PV.name] = { c: t, r: c.height / c.width };
       const ks = Object.keys(PV.thumbs); while (ks.length > 10) { const k0 = ks.shift(), o = PV.thumbs[k0]; if (o) o.c.width = o.c.height = 0; delete PV.thumbs[k0]; } } // a SMALL copy (the page itself is let go later); at most 10 are kept
     pvPump(); }).catch(() => { box._task = null; PV.busy = false; drop(); pvPump(); });
@@ -334,7 +346,7 @@ function pvTurn(free) { try { const o = screen.orientation; if (o && o.lock) o.l
 let pvTurnT = 0, pvLastW = 0;
 window.addEventListener('resize', () => { clearTimeout(pvTurnT); pvTurnT = setTimeout(() => { if (!PV.el || !PV.sizes || !PV.doc) return; const sc = PV.el.querySelector('.pv-scroll'); if (sc.clientWidth === pvLastW) return; pvLastW = sc.clientWidth; const top = sc.scrollTop / Math.max(1, sc.scrollHeight); pvBuild(); sc.scrollTop = top * sc.scrollHeight; }, 160); });
 function pvClose() {
-  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false); document.documentElement.classList.remove('pvopen'); pvMark(false);
+  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false); clearTimeout(PV.coverT); document.documentElement.classList.remove('pvopen', 'pvcover'); pvMark(false);
   if (PV.pending) PV.pending.clear(); PV.busy = false; PV.pinching = false;
   el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } b._task = null; } b._pg = null; }); // stop drawing; the pictures go when the file slides away
   pvRelease(); PV.sizes = null; pvWorkerStop(); // the file, its fonts and its memory are given back NOW, not kept
