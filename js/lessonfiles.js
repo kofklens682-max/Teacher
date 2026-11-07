@@ -5,19 +5,25 @@
    without saving it on the phone. Files are fetched when the lesson opens (the service worker keeps them for offline), so a
    tap on Share can start the share sheet at once. */
 const PK_KINDS = [['dd', "Today's lesson", 'Everything for this day in one file: board, words, practice, answers'], ['iw', 'Writing lesson', 'Question, plan, model answer, vocabulary · A4'], ['is', 'Speaking lesson', 'Questions, model answers, speaking vocabulary · A4'], ['l', 'Lesson', 'For the big screen: the grammar explained'], ['q', 'Vocabulary and speaking', 'Words with meaning, Russian, examples · speaking questions · game cards · A4'], ['e', 'Grammar explained', 'The topic step by step · A4'], ['m', 'Murphy explained', 'Murphy rules in easy words · A4'], ['y', 'Vocabulary', 'Reading first, then the words and the book pages · A4'], ['s', 'Story', 'The class story to read · A4'], ['z', 'Big screen slides', 'HTML for the laptop and the TV · works offline'],['f', 'Flashcards', 'Print on both sides · A4'], ['c', 'Translation check', '12 sentences · answers on page 2'], ['t', 'Written test', 'To print · A4 · written part'], ['k', "Teacher's key and speaking test", 'For you · A4'], ['x', 'Exercises', 'To print · A4'], ['r', 'Reading', 'To print · A4 · a text to read'], ['w', 'Weekly review', 'To print · A4 · this week and the weeks before'], ['h', 'Homework', 'To print · A4'], ['ic', 'Weekly word check', "This week's words · A4"]];
-const packBlobs = {};
+/* 7 Nov 2026 (black-screen hunt): this list used to keep EVERY lesson file the app ever fetched in the phone's memory (up to 211 MB).
+   Now only the last PACK_KEEP files are kept (enough for the lesson on screen, so Share still starts at once); the phone's own saved copy
+   (the service worker) gives any other file back in a moment. packSeen remembers which names were already warmed, so nothing is fetched twice. */
+const packBlobs = {}, packSeen = new Set(), PACK_KEEP = 12;
 const packHas = (L, u, l) => (typeof PACKS !== 'undefined' && PACKS[`${L.id.toLowerCase()}-w${u.n}-l${l.n}`]) || null;
 const packSize = (kb) => (kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
 function packGet(name) {
-  if (!packBlobs[name]) packBlobs[name] = fetch('media/packs/' + name).then((r) => { if (!r.ok) throw new Error('missing'); return r.blob(); }).catch((e) => { delete packBlobs[name]; throw e; });
+  packSeen.add(name); const had = packBlobs[name]; delete packBlobs[name]; // (re)insert last = most recently used
+  packBlobs[name] = had || fetch('media/packs/' + name).then((r) => { if (!r.ok) throw new Error('missing'); return r.blob(); }).catch((e) => { delete packBlobs[name]; packSeen.delete(name); throw e; });
+  const ks = Object.keys(packBlobs); while (ks.length > PACK_KEEP) delete packBlobs[ks.shift()];
   return packBlobs[name];
 }
 const packQueue = [];
 function packLater(name) {
-  if (packBlobs[name] || packQueue.includes(name)) return;
+  if (packSeen.has(name) || packQueue.includes(name)) return;
   packQueue.push(name);
   if (packQueue.length > 1) return;
-  const next = () => { const n = packQueue[0]; if (!n) return; packGet(n).catch(() => {}).then(() => { packQueue.shift(); if (packQueue.length) idle(next); }); };
+  // quiet downloads wait while a file is open or the app is in the background (no memory spikes next to the viewer)
+  const next = () => { const n = packQueue[0]; if (!n) return; if (document.hidden || (typeof PV !== 'undefined' && PV.el)) return void setTimeout(() => idle(next), 4000); packGet(n).catch(() => {}).then(() => { packQueue.shift(); if (packQueue.length) idle(next); }); };
   idle(next);
 }
 const idle = (f) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 4000 }) : setTimeout(f, 1500));

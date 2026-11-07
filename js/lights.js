@@ -131,9 +131,35 @@ function pvLib() {
     s.onerror = () => { PV.lib = null; no(new Error('lib')); }; document.head.appendChild(s);
   }));
 }
+/* 7 Nov 2026 (user: black screen after opening files a few times, only a phone restart fixes it). ROOT CAUSE: every opened file made a new PDF reader
+   thread (Worker) + parsed file + fonts and NEVER let them go, so after a few files the phone ran out of memory. Rules now (Tests\pdf-viewer-repeat.js checks them):
+   - ONE reader thread (PV.worker), shared by all files; it is stopped 20 s after the last file closes (pvWorkerStop), so memory goes fully back.
+   - every opened file keeps its loading task (PV.task) and pvRelease() destroys it when the file closes, when another file replaces it, or when an opening is abandoned.
+   - the small first-page copies (PV.thumbs) are tiny (about 0.7 MB) and at most 10 are kept. */
+function pvWorker(lib) {
+  clearTimeout(PV.wT); if (!PV.worker || PV.worker.destroyed) PV.worker = new lib.PDFWorker({ name: 'viewer' }); return PV.worker;
+}
+function pvWorkerStop() { clearTimeout(PV.wT); PV.wT = setTimeout(() => { if (PV.el || PV.task) return; try { if (PV.worker) PV.worker.destroy(); } catch (e) { /* gone */ } PV.worker = null; }, 20000); }
+function pvRelease() { // let go of the open file: its pages, fonts and parsed data in the reader thread
+  const task = PV.task, sz = PV.sizes; PV.task = null; PV.doc = null;
+  if (sz) sz.a.forEach(({ pg }) => { try { pg.cleanup(); } catch (e) { /* in use */ } });
+  if (task) { try { task.destroy(); } catch (e) { /* done */ } }
+}
+/* Safe mode (7 Nov 2026): while a file is open the app writes a mark (tp-pv); a clean close removes it. If the mark is still there when the app
+   starts, the app died while a file was open (the phone ran out of memory, or the app was swiped away), so the next 5 files open in LITE mode:
+   smaller page pictures and zoom up to 2x. Lite mode counts itself down and switches off. Nothing else changes, nothing to tap. */
+const pvLite = (() => { try { if (localStorage.getItem('tp-pv')) { localStorage.removeItem('tp-pv'); localStorage.setItem('tp-pvlite', '5'); } return +localStorage.getItem('tp-pvlite') > 0; } catch (e) { return false; } })();
+function pvMark(on) { try { if (on) localStorage.setItem('tp-pv', String(Date.now())); else { localStorage.removeItem('tp-pv'); const n = +localStorage.getItem('tp-pvlite') || 0; if (n > 0) localStorage.setItem('tp-pvlite', String(n - 1)); } } catch (e) { /* no storage */ } }
+const pvLimitPx = () => (pvLite && +localStorage.getItem('tp-pvlite') > 0 ? Math.min(PV_MAXPX, 2e6) : PV_MAXPX), pvLimitZoom = () => (pvLite && +localStorage.getItem('tp-pvlite') > 0 ? 2 : PV_MAX);
+// leaving the app: let go of every page picture (graphics memory) at once; they are drawn again when you come back
+document.addEventListener('visibilitychange', () => {
+  if (!PV.el) return;
+  if (document.hidden) { pvStopDrawing(); if (PV.pending) PV.pending.clear(); PV.busy = false; PV.el.querySelectorAll('.pv-pg').forEach(pvFree); }
+  else { PV.hold = 0; setTimeout(pvSweep, 120); }
+});
 function pvEnsure(reuseStep) {
   if (PV.el) return;
-  const el = document.createElement('div'); el.className = 'pv';
+  const el = document.createElement('div'); el.className = 'pv'; document.documentElement.classList.add('pvopen'); pvMark(true);
   el.innerHTML = `<div class="pv-bar"><button class="pv-x" data-pvclose aria-label="Close file">${ic('X')}</button><b class="pv-t"></b>${lightsHtml('file')}</div><div class="pv-scroll"><div class="pv-pages"></div></div><div class="pv-msg"></div>`;
   root.appendChild(el); PV.el = el; pvTurn(true); if (!reuseStep) stepIn(); void el.offsetHeight; requestAnimationFrame(() => { el.classList.add('show'); lightsPlay(el); });
   pvGestures(el.querySelector('.pv-scroll'), el.querySelector('.pv-pages'));
@@ -144,13 +170,16 @@ async function pvOpen(ref, title, gid) {
   const seq = ++PV.seq, name = PACKS[key][kind][0];
   const hadSheet = !!T.sheet, hadViewer = !!PV.el; if (hadSheet) { T.sheet = null; draw(); } // the list closes; its history step is reused (or given back)
   if (hadSheet && hadViewer) { R.skipPop = (R.skipPop || 0) + 1; try { history.back(); } catch (e) { R.skipPop--; } }
+  pvRelease(); PV.sizes = null; if (PV.pending) PV.pending.clear(); PV.busy = false; // the file that was open before is let go first
   pvEnsure(hadSheet && !hadViewer); PV.ctx = { key, kind, gid: gid || (lightCtxBase() || {}).gid || null };
   PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-scroll').scrollTop = 0; PV.name = name; pvPlaceholder(name);
   const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
-    const lib = await pvLib(), blob = await packGet(name), doc = await lib.getDocument({ data: await blob.arrayBuffer() }).promise;
-    clearTimeout(slow); if (seq !== PV.seq || !PV.el) return; PV.doc = doc; pvMsg(''); await pvLayout();
-  } catch (e) { if (seq === PV.seq) pvMsg('Connect to the internet once to get this file'); }
+    const lib = await pvLib(), blob = await packGet(name); if (seq !== PV.seq || !PV.el) { clearTimeout(slow); return; }
+    const task = lib.getDocument({ data: await blob.arrayBuffer(), worker: pvWorker(lib), isEvalSupported: false }); PV.task = task;
+    const doc = await task.promise;
+    clearTimeout(slow); if (seq !== PV.seq || !PV.el) { try { task.destroy(); } catch (e) { /* done */ } if (PV.task === task) PV.task = null; return; } PV.doc = doc; pvMsg(''); await pvLayout();
+  } catch (e) { clearTimeout(slow); if (seq === PV.seq) { pvRelease(); pvMsg('Connect to the internet once to get this file'); } }
 }
 // 6 Nov 2026 (user: "the last frames are reconstructing"): the file used to grow as an empty grey screen and the pages
 // appeared only after the zoom. Now the first page is already there while it grows: a white page of the right shape, and
@@ -158,7 +187,7 @@ async function pvOpen(ref, title, gid) {
 function pvPlaceholder(name) {
   const wrap = PV.el.querySelector('.pv-pages'), sc = PV.el.querySelector('.pv-scroll'); PV.doc = null;
   const t = PV.thumbs[name], w = Math.max(280, (sc.clientWidth || innerWidth) - 16), r = t ? t.r : 1.4142;
-  wrap.innerHTML = ''; const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px';
+  wrap.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; }); wrap.innerHTML = ''; const box = document.createElement('div'); box.className = 'pv-pg'; box.style.width = w + 'px'; box.style.height = Math.round(w * r) + 'px';
   if (t) { const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d').drawImage(t.c, 0, 0); c.className = 'on pv-under'; box.appendChild(c); }
   wrap.appendChild(box);
 }
@@ -230,7 +259,7 @@ function pvBuild() {
 }
 function pvPage(box) {
   const vp0 = box._pg.getViewport({ scale: 1 }), cssH = parseFloat(box.style.height) || box._w * 1.4142;
-  const dpr = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(PV_MAXPX / (box._w * cssH))); // never more than PV_MAXPX pixels a page
+  const dpr = Math.min(window.devicePixelRatio || 1, 3, Math.sqrt(pvLimitPx() / (box._w * cssH))); // never more than PV_MAXPX pixels a page
   const s = (box._w / vp0.width) * dpr, vp = box._pg.getViewport({ scale: s }), c = document.createElement('canvas');
   c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); c.style.width = box._w + 'px'; c.style.height = box.style.height;
   const w0 = box._w, drop = () => { c.width = c.height = 0; };
@@ -240,7 +269,9 @@ function pvPage(box) {
     const u = [...box.querySelectorAll('.pv-under')]; box.appendChild(c);
     if (u.length) { c.classList.add('pv-top'); requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add('on'))); // the sharp picture fades in over the stretched one: no flash, it just sharpens
       setTimeout(() => { if (c.isConnected) { u.forEach((x) => { x.width = x.height = 0; x.remove(); }); c.classList.remove('pv-top'); } }, 300); } else requestAnimationFrame(() => c.classList.add('on'));
-    if (!box._i && PV.zoom === 1 && PV.name) { const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); PV.thumbs[PV.name] = { c: t, r: c.height / c.width }; } // a small copy: the page itself may be let go later
+    if (!box._i && PV.zoom === 1 && PV.name) { const k = Math.min(1, 360 / c.width), t = document.createElement('canvas'); t.width = Math.max(1, Math.round(c.width * k)); t.height = Math.max(1, Math.round(c.height * k)); t.getContext('2d').drawImage(c, 0, 0, t.width, t.height);
+      const old = PV.thumbs[PV.name]; if (old) old.c.width = old.c.height = 0; PV.thumbs[PV.name] = { c: t, r: c.height / c.width };
+      const ks = Object.keys(PV.thumbs); while (ks.length > 10) { const k0 = ks.shift(), o = PV.thumbs[k0]; if (o) o.c.width = o.c.height = 0; delete PV.thumbs[k0]; } } // a SMALL copy (the page itself is let go later); at most 10 are kept
     pvPump(); }).catch(() => { box._task = null; PV.busy = false; drop(); pvPump(); });
 }
 // Zoom with the fingers: the page follows the pinch smoothly (any size from fit-to-width up to 4x), and is drawn sharp when the fingers lift.
@@ -250,7 +281,7 @@ function pvPage(box) {
 const PV_MIN = 1, PV_MAX = 3;
 function pvGestures(sc, wrap) {
   let g = null, t0 = null, tapAt = 0, tapX = 0, tapY = 0, tapTop = 0, lastScroll = 0;
-  const clampZ = (z) => Math.max(PV_MIN, Math.min(PV_MAX, z));
+  const clampZ = (z) => Math.max(PV_MIN, Math.min(PV_MAX, pvLimitZoom(), z));
   const mid = (ts) => ({ x: (ts[0].clientX + ts[1].clientX) / 2, y: (ts[0].clientY + ts[1].clientY) / 2, d: Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY) || 1 });
   const edge = (t) => t.clientX < 14 || t.clientX > innerWidth - 14; // a palm on the screen edge is not a finger
   const commit = (r, fx, fy, ox, oy) => { // r = the zoom change, (fx, fy) = where the fingers are on screen, (ox, oy) = the same point inside the pages
@@ -303,9 +334,10 @@ function pvTurn(free) { try { const o = screen.orientation; if (o && o.lock) o.l
 let pvTurnT = 0, pvLastW = 0;
 window.addEventListener('resize', () => { clearTimeout(pvTurnT); pvTurnT = setTimeout(() => { if (!PV.el || !PV.sizes || !PV.doc) return; const sc = PV.el.querySelector('.pv-scroll'); if (sc.clientWidth === pvLastW) return; pvLastW = sc.clientWidth; const top = sc.scrollTop / Math.max(1, sc.scrollHeight); pvBuild(); sc.scrollTop = top * sc.scrollHeight; }, 160); });
 function pvClose() {
-  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.doc = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false);
-  if (PV.pending) PV.pending.clear(); PV.busy = false; PV.pinching = false; PV.sizes = null;
-  el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } } }); // stop drawing; the pictures go when the file slides away
+  const el = PV.el; if (!el) return; PV.el = null; PV.ctx = null; PV.seq++; if (PV.io) PV.io.disconnect(); pvTurn(false); document.documentElement.classList.remove('pvopen'); pvMark(false);
+  if (PV.pending) PV.pending.clear(); PV.busy = false; PV.pinching = false;
+  el.querySelectorAll('.pv-pg').forEach((b) => { if (b._task) { try { b._task.cancel(); } catch (e) { /* done */ } b._task = null; } b._pg = null; }); // stop drawing; the pictures go when the file slides away
+  pvRelease(); PV.sizes = null; pvWorkerStop(); // the file, its fonts and its memory are given back NOW, not kept
   el.classList.remove('show'); el.classList.add('out'); setTimeout(() => { el.querySelectorAll('canvas').forEach((c) => { c.width = c.height = 0; }); el.remove(); }, 480);
 }
 document.addEventListener('click', (e) => {
