@@ -124,7 +124,7 @@ function todayBlocks() {
 }
 // 2 Nov (user): on Home a group opens its NEXT LESSON; the register (attendance table) lives in the Attendance tab
 const homeOpen = (g) => (g.lvl === 'own' || planned(g.lvl) ? openLessonAttr(g) : `data-push="group" data-g="${g.id}"`);
-const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
+const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${curLes(g).w} · ${dayWord(g.lvl)} ${curLes(g).l}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
 const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
 // iPhone system colors, one per group (in the order of your groups), used everywhere on Home
 const IOS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#FFCC00', '#5856D6', '#30B0C7', '#A2845E'];
@@ -187,8 +187,10 @@ function doneCard(list, D) {
 function secTodayHero() { // the same big card Attendance used to show: the next register to take, then today's other lessons
   const D = TODAY, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D));
   // 3 Nov (user): a lesson that is still going is "Now", never "taught"; one that is over and not marked says so
-  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, left = list.filter((g) => !doneOn(g, D)), next = left.find((g) => !lessonEnded(g, D)) || left[0], now = nowMin(); // the one going or coming; else the first one over and not marked yet
-  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">${inProgress(next, D) ? 'Now' : lessonEnded(next, D) ? 'Not marked yet' : 'Next lesson'}</span><span class="hn-when">${inProgress(next, D) ? 'ends in ' + inMin(endMin(next, D) - now) : esc(timeOn(next, D))}</span></div>
+  const stu = (n) => `${n} student${n === 1 ? '' : 's'}`, left = list.filter((g) => !doneOn(g, D)), now = nowMin(),
+    going = list.find((g) => iso(D) === iso(TODAY) && startMin(g, D) <= now && !lessonEnded(g, D) && hasLesson(g, D)), // 7 Nov (user): the lesson that is going stays the big card until it ENDS, even after its attendance was saved
+    next = going || left.find((g) => !lessonEnded(g, D)) || left[0]; // the one going or coming; else the first one over and not marked yet
+  const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">${next === going ? 'Now' : lessonEnded(next, D) ? 'Not marked yet' : 'Next lesson'}</span><span class="hn-when">${next === going ? 'ends in ' + inMin(endMin(next, D) - now) : esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${lessonLine(next)} · ${stu(next.students.length)}</span>
       <div class="hn-btns"><button ${homeOpen(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
     : list.length ? doneCard(list, D)
@@ -345,7 +347,7 @@ function autoTaught(g, k) {
   if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
   if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
   if (g.solo) return soloTaught(g, k);
-  (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l;
+  const n = 1 + dblOn(g, fromIso(k)); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l;
 }
 function undoTaught(g, k) {
   if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }

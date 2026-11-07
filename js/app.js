@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 6.7';
+const VERSION_LABEL = 'Teacher 6.8';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -54,6 +54,7 @@ const taughtOn = (g, d) => (S.taught[g.id] || {})[iso(d)];
 // (until then it is "in progress"); "Stay on this lesson" (S.rep) counts as held but never moves the plan.
 const lessonEnded = (g, d) => iso(d) < iso(TODAY) || (iso(d) === iso(TODAY) && nowMin() >= endMin(g, d));
 const repOn = (g, d) => !!(S.rep[g.id] || {})[iso(d)];
+const dblOn = (g, d) => (S.dbl && S.dbl[g.id] && S.dbl[g.id][iso(d)]) || 0; // 7 Nov (user): "we covered two lessons today": the plan moves on by 2 (S.dbl[group][date] = 1 extra)
 const doneOn = (g, d) => { const k = iso(d); return !!(taughtOn(g, d) || repOn(g, d) || (S.ownDone[g.id] || {})[k] || ((S.saved[g.id] || {})[k] && lessonEnded(g, d)) || ((S.cal && S.cal[g.id] && S.cal[g.id].st) || {})[k] === 'done'); };
 const inProgress = (g, d) => !doneOn(g, d) && iso(d) === iso(TODAY) && startMin(g, d) <= nowMin() && !lessonEnded(g, d);
 function advance(g, n) {
@@ -79,7 +80,9 @@ const groupLabel = (g) => `${esc(LVNAME(g.lvl))} · ${esc(g.name)}`;
 const unitTile = (u, i, big) => `<span class="tp-tile${big ? ' big' : ''}" style="--t1:${TOPIC[(i * 2) % TOPIC.length]};--t2:${TOPIC[(i * 2 + 1) % TOPIC.length]}">${ic(u.icon || 'BookOpen')}</span>`;
 const groupTile = (g) => (COLORS[g.color] ? `<span class="tp-tile" style="--t1:${COLORS[g.color][0]};--t2:${COLORS[g.color][1]}">${ic(g.lvl === 'own' ? 'Shapes' : planned(g.lvl) ? weekOf(g.lvl, g.week).icon || 'BookOpen' : 'GraduationCap')}</span>` : g.lvl === 'own' ? `<span class="tp-tile" style="${gv('own')};--t1:var(--g1);--t2:var(--g2)">${ic('Shapes')}</span>`
   : planned(g.lvl) ? unitTile(weekOf(g.lvl, g.week), g.week - 1) : `<span class="tp-tile" style="--t1:${GRAD[g.lvl][0]};--t2:${GRAD[g.lvl][1]}">${ic('GraduationCap')}</span>`);
-const openLessonAttr = (g) => (g.lvl === 'own' ? `data-push="own" data-g="${g.id}"` : planned(g.lvl) ? `data-push="lesson" data-lvl="${g.lvl}" data-w="${g.week}" data-l="${g.les}" data-g="${g.id}"` : `data-push="register" data-g="${g.id}"`);
+// 7 Nov (user): while a lesson is still going, its group stays on it, even after the attendance was saved (a taught lesson has already moved the plan on)
+const curLes = (g) => { const t = taughtOn(g, TODAY); return t && !lessonEnded(g, TODAY) && hasLesson(g, TODAY) ? { w: t.w, l: t.l } : { w: g.week, l: g.les }; };
+const openLessonAttr = (g) => (g.lvl === 'own' ? `data-push="own" data-g="${g.id}"` : planned(g.lvl) ? `data-push="lesson" data-lvl="${g.lvl}" data-w="${curLes(g).w}" data-l="${curLes(g).l}" data-g="${g.id}"` : `data-push="register" data-g="${g.id}"`);
 function ring(p, size, w, c1, c2, label) {
   const r = (size - w) / 2, L = 2 * Math.PI * r, id = 'rg' + (c1 + c2).replace(/[^a-z0-9]/gi, ''); // the same for the same colours, so redrawing changes nothing
   return `<div class="tp-ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
@@ -212,7 +215,8 @@ function scLesson(f) {
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       ${l.skill ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic(/^Reading/.test(l.skill) ? 'BookOpenCheck' : /^Listening/.test(l.skill) ? 'Headphones' : 'PenLine')}Skill</div><p class="big">${esc(l.skill)}</p><p class="ex">${esc(l.how)}</p><p class="sub">Source: ${esc(l.source)}</p></div>` : ''}
       ${packBlock(L, u, l)}
-      ${l.routine ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('Clock')}Lesson plan · ${l.routine.reduce((a, r) => a + r[0], 0)} min</div>${l.routine.map((r) => `<p class="rt-row"><b>${r[0]}′</b><span>${esc(r[1])}<small>${esc(r[2])}</small></span></p>`).join('')}<p class="sub">The minutes are a guide: every group moves at its own pace.</p></div>` : ''}
+      ${l.routine ? (() => { const mins = l.routine.reduce((a, r) => a + r[0], 0); /* 7 Nov (user): no steps with minutes in the new Pre-Int days: a minute value of 0 = a plain list of what we do */
+        return `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic(mins ? 'Clock' : 'ListChecks')}${mins ? `Lesson plan · ${mins} min` : 'What we do today'}</div>${l.routine.map((r, i) => `<p class="rt-row"><b>${r[0] ? r[0] + '′' : i + 1}</b><span>${esc(r[1])}<small>${esc(r[2])}</small></span></p>`).join('')}${mins ? '<p class="sub">The minutes are a guide: every group moves at its own pace.</p>' : ''}</div>`; })() : ''}
       ${l.real ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('Globe')}Real English</div><p class="big">${esc(l.real)}</p><p class="sub">Main idea first, then 3 questions, then talk about it. The exam practice comes after.</p></div>` : ''}
       ${l.activity ? `<div class="tp-card2"><div class="h" style="color:#F5A000">${ic('PartyPopper')}Activity</div><p>${esc(l.activity)}</p></div>` : ''}
       ${l.exit ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('ListChecks')}Exit check · 3 min</div><p>${esc(l.exit)}</p></div>` : ''}
@@ -221,6 +225,7 @@ function scLesson(f) {
       ${l.words.length || l.revise ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookA')}Vocabulary topic</div><p class="big">${l.pool ? esc(l.vocabTopic || '') + ' · word pool of ' + l.words.length + ' (pick 25-30)' : l.words.length ? esc(l.vocabTopic || '') + ' · ' + l.words.length + (l.revise ? ' new' : '') + ' words' : 'Words to revise'}</p>${chips(l.words)}
         ${l.revise ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('RotateCcw')}Revision words</div>${chips(l.revise)}` : ''}
         ${l.collocations ? `<div class="h" style="color:#0FA37F;margin-top:8px">${ic('Link')}Collocations</div>${chips(l.collocations, 'col')}` : ''}
+        ${l.reserve && l.reserve.length ? `<div class="h" style="color:#5C6378;margin-top:8px">${ic('Plus')}Reserve words (if they know the 20, or you prefer another word)</div>${chips(l.reserve)}` : ''}
         ${l.phrasal && l.phrasal.length ? `<div class="h" style="color:#E8770E;margin-top:8px">${ic('ArrowUpRight')}Phrasal verbs</div>${chips(l.phrasal, 'phv')}` : ''}${books}</div>` : ''}
       ${l.watch ? `<div class="tp-card2"><div class="h" style="color:#FF5A5F">${ic('CirclePlay')}Watch & talk</div><p class="big">${esc(l.watch)}</p>${l.watchAlt ? `<p class="sub">${esc(l.watchAlt)}</p>` : ''}${l.retell ? '' : '<p class="sub">Watch once for the main idea, then again with 3 questions; translate 5 lines; retell in pairs.</p>'}</div>` : ''}
       ${l.review ? `<div class="tp-card2"><div class="h" style="color:#0FA37F">${ic('RotateCcw')}Review · 15 min</div><p>${esc(l.review)}</p></div>` : ''}
@@ -234,8 +239,16 @@ function scLesson(f) {
       ${l.check ? `<div class="tp-card2 warn">${ic('ClipboardList')}<p><b>Check today:</b> ${esc(l.check)}</p></div>` : ''}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
         <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next lesson.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next one.`}</p>${repeatBlock(g)}`
-        : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Lesson ${g.les}.</p>` : ''}
+        : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Lesson ${g.les}.</p>${attAlt(g)}` : ''}
     </div>`;
+}
+// 7 Nov (user): "Take attendance" at the bottom of EVERY group's lesson page (IELTS Turbo had none). When the lesson shown is not the group's current one, a quieter button still opens the register.
+const attAlt = (g) => `<button class="tp-cta ghost" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance for ${esc(g.name)}</button>`;
+function attMain(g, f, word) { // the main block: Take attendance / Taught ✓, the note under it and "stay on this lesson"; used by the IELTS Turbo lesson page
+  const t = taughtOn(g, TODAY), isTaught = t && t.w === f.w && t.l === f.l, isNext = g.week === f.w && g.les === f.l && !t;
+  return isTaught || isNext ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
+    <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next ${word}.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next ${word}.`}</p>${repeatBlock(g)}`
+    : `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · ${word} ${g.les}.</p>${attAlt(g)}`;
 }
 /* ===================== Kids: one day of the kids course (Family and Friends) ===================== */
 function scKids(f) {
@@ -261,7 +274,7 @@ function scKids(f) {
       ${matsBlock(key)}
       ${g && (isTaught || isNext) ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
         <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next day.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next day.`}</p>${repeatBlock(g)}`
-        : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>` : ''}
+        : g ? `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · Day ${g.les}.</p>${attAlt(g)}` : ''}
     </div>`;
 }
 /* ===================== Big screen: grammar games for the TV (one slide at a time) ===================== */
@@ -1056,7 +1069,7 @@ function onClick(e) {
   if (d.lessonday) { top.date = d.lessonday; if (R.screen) R.screen._swap = true; return draw(); }
   if (d.rmreg) {
     const g = gById(d.g); if (!g) return;
-    [S.rec, S.hw, S.saved, S.pend, S.rep].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; }); undoTaught(g, d.rmreg);
+    undoTaught(g, d.rmreg); [S.rec, S.hw, S.saved, S.pend, S.rep, S.dbl || {}].forEach((m) => { if (m[g.id]) delete m[g.id][d.rmreg]; });
     save(); const p = lastLesson(g); top.date = p ? iso(p) : null; if (R.screen) R.screen._swap = true; toast('Register removed'); return draw();
   }
   if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
@@ -1064,7 +1077,7 @@ function onClick(e) {
   if (d.taught) {
     const g = gById(d.taught), k = iso(TODAY), t = taughtOn(g, TODAY);
     if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(); return toast('Undone'); }
-    (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l; save(); draw();
+    const n = 1 + dblOn(g, TODAY); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l; save(); draw();
     return toast(`Taught. ${g.name} moves to the next lesson.`);
   }
   if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }

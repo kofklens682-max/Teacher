@@ -11,7 +11,7 @@ const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS =
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Fees: see js/fees.js. start = the first month the app counts fees (months before it are never shown as unpaid).
 const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, sfee: {}, dex: {}, pays: [], extras: [], xpaid: {} });
-const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, rep: {}, pend: {}, pauses: [], pay: blankPay(), created: Date.now() });
+const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, rep: {}, dbl: {}, pend: {}, pauses: [], pay: blankPay(), created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
 function normalize(d) {

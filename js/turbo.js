@@ -52,5 +52,6 @@ function turboLesson(f) {
       ${l.tips && l.tips.length ? `<div class="tp-card2"><div class="h" style="color:#FF9500">${ic('Sparkles')}Tips</div>${tList(l.tips)}</div>` : ''}
       ${files ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Files</div>${files}</div>` : ''}
       ${hw ? `<div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework after this lesson · ${hw.tasks.reduce((a, t) => a + t.min, 0) / 60} h</div>${hw.tasks.map((t) => `<p class="hw">${ic('Square')}<span><b>${esc(t.skill)} · ${t.min} min.</b> ${esc(t.task)}</span></p>`).join('')}</div>` : ''}
+      ${f.g && gById(f.g) ? attMain(gById(f.g), f, 'lesson') : ''}
     </div>`;
 }

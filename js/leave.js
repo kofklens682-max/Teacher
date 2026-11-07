@@ -36,9 +36,20 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ---------- 2. stay on this lesson ---------- */
 function repeatBlock(g) {
   if (!g || g.lvl === 'own' || !planned(g.lvl) || !(hasLesson(g, TODAY) || taughtOn(g, TODAY) || repOn(g, TODAY))) return '';
-  const on = repOn(g, TODAY);
-  return `<button class="tp-cta ghost" data-repeat="${g.id}">${ic('RotateCcw')}${on ? 'Staying on this lesson ✓ · undo' : 'Not finished: stay on this lesson'}</button>
+  const on = repOn(g, TODAY), two = dblOn(g, TODAY);
+  const stay = two ? '' : `<button class="tp-cta ghost" data-repeat="${g.id}">${ic('RotateCcw')}${on ? 'Staying on this lesson ✓ · undo' : 'Not finished: stay on this lesson'}</button>
     <p class="tp-small">${on ? `${esc(g.name)} gets this same lesson again at the next class.` : 'For a lesson that was too hard or too long. It counts as held, but the plan does not move on.'}</p>`;
+  // 7 Nov (user): a postponed lesson, a strong group: two lesson topics in one class, the plan moves on by two
+  const dbl = on ? '' : `<button class="tp-cta ghost" data-two="${g.id}">${ic('Plus')}${two ? 'Two lessons covered today ✓ · undo' : 'We covered two lessons today'}</button>
+    <p class="tp-small">${two ? `${esc(g.name)} skips the next lesson: the plan moves on by two.` : 'For when a lesson was postponed and the group can take two topics in one class. The plan moves on by two.'}</p>`;
+  return stay + dbl;
+}
+function toggleTwo(g) {
+  const k = iso(TODAY); S.dbl = S.dbl || {}; const m = (S.dbl[g.id] = S.dbl[g.id] || {}), t = taughtOn(g, TODAY);
+  if (repOn(g, TODAY)) return toast('Undo "stay on this lesson" first');
+  if (m[k]) { delete m[k]; if (t) { const p = advance(g, -1); g.week = p.w; g.les = p.l; t.n = 1; } save(); draw(); return toast('Back to one lesson'); }
+  m[k] = 1; if (t) { const p = advance(g, 1); g.week = p.w; g.les = p.l; t.n = 2; }
+  save(); draw(); toast(`${g.name} covers two lessons today`);
 }
 function toggleRepeat(g) {
   const k = iso(TODAY), m = (S.rep[g.id] = S.rep[g.id] || {});
@@ -160,6 +171,7 @@ SHEETS.breaks = (s) => sheetBreaks(s);
   const _h = home2Click;
   home2Click = function (b, d) {
     if (d.repeat) { const g = gById(d.repeat); if (g) toggleRepeat(g); return true; }
+    if (d.two) { const g = gById(d.two); if (g) toggleTwo(g); return true; }
     if (d.leavem) { T.sheet.from = d.leavem; draw(); return true; }
     if (d.leavego) { const [sid, gid, from] = d.leavego.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (st) leaveStudent(g, st, from); return true; }
     if (d.leaveno) { const [sid, gid] = d.leaveno.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (st) cancelLeaving(g, st); return true; }

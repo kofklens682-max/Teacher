@@ -30,11 +30,12 @@ const calSt = (g, k) => calOf(g).st[k] || ((S.saved[g.id] || {})[k] || (S.taught
 function soloTaught(g, k) {
   if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
   if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
-  (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les }; const p = advance(g, 1); g.week = p.w; g.les = p.l;
+  const n = 1 + dblOn(g, fromIso(k)); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l;
 }
 function soloUntaught(g, k) {
   if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }
-  if ((S.taught[g.id] || {})[k]) { delete S.taught[g.id][k]; const p = advance(g, -1); g.week = p.w; g.les = p.l; }
+  const t = (S.taught[g.id] || {})[k];
+  if (t) { delete S.taught[g.id][k]; const p = advance(g, -(t.n || 1)); g.week = p.w; g.les = p.l; }
 }
 const CST = { done: ['Done', '#34C759', 'Check'], cancel: ['Canceled', '#FF3B30', 'X'], moved: ['Postponed', '#FF9500', 'Clock'] };
 function soloCal(g, ym) { // the month of lesson days, with arrows, "Add a lesson" and the totals (the calendar screen and the group page)
