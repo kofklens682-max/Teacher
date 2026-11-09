@@ -346,3 +346,8 @@
 .ds-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: .5px solid #E5E5EA; } .ds-row:first-child { border: 0; }
 .ds-row .tx { flex: 1; display: flex; flex-direction: column; } .ds-row .tx span { font-size: 13px; color: #8E8E93; }
 .ds-badge { background: rgba(52,199,89,.14); color: #248A3D; font-weight: 700; font-size: 13px; border-radius: 99px; padding: 4px 10px; white-space: nowrap; }
+/* 9 Nov: the month panel in a student's page = two plain steps (1 the price, 2 what was paid), one Save */
+.pm-step { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--text, #0E1325); }
+.pm-step i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; background: #007AFF; color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.pm-fee2b .tp-pill { margin-top: 0; }
+.pm-edit .pm-btns { margin-top: 6px; }

@@ -36,7 +36,7 @@ html .tp-ind { background: radial-gradient(120% 90% at 30% 0%, rgba(255,255,255,
 html .tp-sheet .panel { background: #F4F5F9 !important; box-shadow: inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 0 0 .6px rgba(255,255,255,.7) !important; } /* 6 Nov: no outer shadow (the zoom cuts it off, so it popped on in the very last frame; the dimmed page behind already lifts the pop-up) */
 html .tp-sheet .panel > .tp-sh-h:first-child { background: rgba(244,245,249,.94) !important; }
 /* while the page scrolls, the bars drop the live blur for a moment (smooth scrolling on phones), as before */
-html.moving .tp-tabs, html.moving .tp-lights, html.moving .h2-quick button { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html.moving .tp-lights, html.moving .h2-quick button { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 @media (prefers-reduced-transparency: reduce) { html .tp-tabs, .tp-lights, .tp-avatar, .tp-pushbar .tp-back, .h2-quick button, html .tp-sheet .panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--card, #fff) !important; } }
 /* 6 Nov 2026 (user: "there are lags" on the phone): every small glass button had its own live blur (about 8 per screen, and
    the other tabs' pages keep theirs too); on an Android phone each one is redrawn on every frame of a swipe or a slide.

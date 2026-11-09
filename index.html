@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="ffliquid.css">
   <link rel="stylesheet" href="ffunits3.css">
   <link rel="stylesheet" href="ffv71.css">
+  <link rel="stylesheet" href="ffv72.css">
   <link rel="stylesheet" href="liquid.css">
   <link rel="stylesheet" href="bridge.css">
   <link rel="stylesheet" href="glass.css">
@@ -59,13 +60,19 @@
   <script src="js/ffunits3.js"></script>
   <script src="js/ffwk.js"></script>
   <script src="js/ffv71.js"></script>
+  <script src="js/ffv72.js"></script>
   <script src="liquid.js"></script>
   <script>
     // Works offline: the service worker keeps the app on the phone (not on this computer's test server).
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
       navigator.serviceWorker.register('sw.js').catch(function () {});
-      var hadController = !!navigator.serviceWorker.controller;
-      navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadController) location.reload(); });
+      // 9 Nov: an update installs quietly while you use the app; the app switches to it only when you leave it (never a reload in front of you).
+      // A sheet that is open is never cut: it waits for the next time you leave.
+      var hadController = !!navigator.serviceWorker.controller, updateReady = false, reloading = false;
+      var reloadSoon = function () { if (reloading) return; try { if (typeof T !== 'undefined' && T.sheet) return; } catch (e) { /* none */ } reloading = true; location.reload(); };
+      navigator.serviceWorker.addEventListener('controllerchange', function () { if (!hadController) return; updateReady = true; if (document.hidden) reloadSoon(); });
+      document.addEventListener('visibilitychange', function () { if (document.hidden && updateReady) reloadSoon(); });
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) { try { navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }); } catch (e) { /* none */ } } });
     }
   </script>
   <script>

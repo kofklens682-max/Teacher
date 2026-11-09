@@ -1,0 +1,6 @@
+/* 9 Nov (Teacher 7.2): small activity rings inside the Paid widget (Apple Watch style) */
+.ffm .ffrg{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;background:rgba(18,22,40,.62);box-shadow:inset 0 0 0 .6px rgba(255,255,255,.28),0 4px 10px -4px rgba(0,0,0,.4)}
+.ffm .ffrg svg{width:100%;height:100%;display:block}
+.ffr-p{animation:ffrin 1.15s cubic-bezier(.32,.72,0,1) both;animation-delay:var(--d,0ms)}
+@keyframes ffrin{from{stroke-dasharray:0.01 var(--C)}}
+@media (prefers-reduced-motion:reduce){.ffr-p{animation:none}}

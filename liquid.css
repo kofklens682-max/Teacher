@@ -45,7 +45,6 @@ html.glass .tp-sheet .panel { background: rgba(247,248,252,.98) !important; -web
 .tp-sheet .panel { transition: transform .5s cubic-bezier(.32,.72,0,1); contain: layout paint; }
 .tp-sheet.closing .panel { transition: transform .3s cubic-bezier(.4,0,.8,.3); }
 .tp-push { transition: transform .45s cubic-bezier(.32,.72,0,1); box-shadow: -8px 0 24px rgba(14,19,37,.08); }
-html.moving .tp-tabs, html.moving .tabs { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: color-mix(in srgb, var(--bar, #fff) 92%, transparent) !important; }
 /* Instant taps: no 300 ms wait, no grey flash */
 html, button, a, [data-act], [data-tab], [data-sheet], [data-push] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { html .tp-ind, html .tab-ind { transition-duration: .01s !important; } }
