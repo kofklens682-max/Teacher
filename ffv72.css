@@ -27,3 +27,22 @@
 .ffsw.drag .th{transition:none}
 /* the hidden title bar no longer blurs the page behind it all the time (only while it shows) */
 .ffnav:not(.on){-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+
+/* ===== REAL GLASS widgets (9 Nov, iOS 27 reference): translucent, a bright rim that catches the light, the "wallpaper" showing through.
+   Colour only as the iOS system accents on the ring and icon, never a solid coloured tile. ===== */
+.ffm-row{position:relative;isolation:isolate}
+.ffm-row::before{content:"";position:absolute;inset:-16px -8px;z-index:-1;border-radius:36px;pointer-events:none;
+  background:radial-gradient(60% 95% at 10% 35%,rgba(255,159,10,.55),transparent 70%),radial-gradient(55% 95% at 36% 78%,rgba(255,69,58,.38),transparent 70%),radial-gradient(55% 95% at 64% 22%,rgba(52,199,89,.5),transparent 70%),radial-gradient(60% 95% at 92% 72%,rgba(10,132,255,.55),transparent 70%)}
+.ffm-row .ffm{--ac:#0A84FF;overflow:hidden;color:var(--text);
+  background:linear-gradient(155deg,rgba(255,255,255,.56),rgba(255,255,255,.14) 50%,rgba(255,255,255,.3)) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(1.8) !important;backdrop-filter:blur(14px) saturate(1.8) !important;border:.5px solid rgba(255,255,255,.7);
+  box-shadow:inset 1.4px 1.8px 0 rgba(255,255,255,.95),inset -1px -1.3px 0 rgba(255,255,255,.4),inset 0 0 20px rgba(255,255,255,.2),0 16px 26px -16px rgba(20,40,90,.45)}
+.ffm-row .ffm::before{background:linear-gradient(125deg,rgba(255,255,255,.5),rgba(255,255,255,0) 42%)}
+.ffm-row .ffm.wo{--ac:#FF9F0A}.ffm-row .ffm.od{--ac:#FF453A}.ffm-row .ffm.wg{--ac:#30D158}.ffm-row .ffm.wp{--ac:#0A84FF}
+.ffm-row .ffm .ffring{background:conic-gradient(var(--ac) calc(var(--p)*1%),rgba(120,120,128,.2) 0)}
+.ffm-row .ffm .ffring i{background:rgba(255,255,255,.82);color:var(--ac);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 2px 6px -2px rgba(20,40,90,.25)}
+.ffm-row .ffm b{color:var(--text)}
+.ffm-row .ffm>span:last-child{color:var(--text2);opacity:1}
+.ffm .ffrg{background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.9),0 3px 8px -3px rgba(20,40,90,.3)}
+html.moving .ffm-row .ffm{-webkit-backdrop-filter:blur(14px) saturate(1.8) !important;backdrop-filter:blur(14px) saturate(1.8) !important}
+.ffm-row::before{filter:blur(16px);inset:-8px -2px;opacity:.9}
