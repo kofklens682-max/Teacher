@@ -5,9 +5,6 @@
 .tp-segs{background:linear-gradient(155deg,rgba(255,255,255,.86),rgba(255,255,255,.7)) !important}
 .tp-segs button{background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.74)) !important}
 .tp-segs button.on{background:linear-gradient(150deg,var(--g1),var(--g2)) !important}
-.un-row2{contain:layout style}
-.tp-page{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.ffh,.ffm,.ffc,.ffnx{contain:layout style}
 /* --- month strip --- */
 .ffmon{margin:2px 0 10px;border-radius:22px;padding:8px 0 10px;background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.7));border:.5px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 12px 26px -18px rgba(15,40,90,.32)}
 .ffmon-row{display:flex;gap:6px;overflow-x:auto;padding:0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
@@ -29,3 +26,8 @@
 .ffnx-r .tx{display:grid;min-width:0;flex:1}.ffnx-r .tx b{font-size:16px;font-weight:700;letter-spacing:-.01em}
 .ffnx-r .tx span{font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ffnx-time{font-size:15px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+/* smooth transitions: the moving layers get their own GPU layer */
+.tp-push,.tp-sheet .panel,.tp-sheet .scrim{will-change:transform,opacity;backface-visibility:hidden;transform-style:flat}
+.tp-push:not(.prep):not(.gone):not(.under){will-change:auto}
+.ffm,.ffh,.ffnx,.ffmon{transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .35s cubic-bezier(.32,.72,0,1)}
+.ffm:active,.ffnx-r:active,.ffh-go:active{transform:scale(.97);transition-duration:.12s}
