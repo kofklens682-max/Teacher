@@ -19,10 +19,8 @@
   const _d = draw;
   draw = function () {
     const r = _d.apply(this, arguments), tp = document.querySelector('.tp');
-    if (tp) {
-      if (T.tab === 1) { const L = lv(T.aud === 'kids' && KIDLV.length ? T.kidLvl : T.unitLvl), c = GRAD[L.id] || GRAD.own; tp.style.setProperty('--b1', c[0]); tp.style.setProperty('--b2', c[1]); tp.style.setProperty('--b3', '#8FA0B5'); tp.style.setProperty('--b4', c[0]); }
-      else ['--b1', '--b2', '--b3', '--b4'].forEach((k) => tp.style.removeProperty(k));
-    }
+    // 9 Nov speed audit: the page color no longer changes per level (setting colors on the app's root made the phone restyle every element)
+    if (tp && tp.style.getPropertyValue('--b1')) ['--b1', '--b2', '--b3', '--b4'].forEach((k) => tp.style.removeProperty(k));
     return r;
   };
 }

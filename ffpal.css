@@ -147,3 +147,12 @@ html .tp-ind{box-shadow:var(--glass-rim) !important}
 .ffh-name{font-size:30px !important}
 .ffh .ffring{width:48px !important;height:48px !important}.ffh .ffring i{width:37px !important;height:37px !important}.ffh .ffring i b{font-size:12px !important}
 .ffh-go{min-height:40px !important}
+
+/* ===== 7.9 speed audit: nothing animates or changes on the app's root (that made the phone restyle every element) ===== */
+.tp,.tp[data-tab]{transition:none !important;--b1:#4DB88A;--b2:#4A9BC9;--b3:#34C759;--b4:#52DA80}
+.tp-push{background:linear-gradient(180deg,var(--pbg),var(--pbg2)) !important}
+/* small visual fixes */
+.ffm .ffrg{width:42px !important;height:42px !important;top:9px !important}
+.tp-sheet .pm-chg button.on{background:var(--pa) !important;color:#fff !important}
+.tp-sheet .pm-chg button{color:var(--pa) !important}
+.tp-sheet input[type=checkbox]:checked{background:var(--pa) !important}

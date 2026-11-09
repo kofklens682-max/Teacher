@@ -113,3 +113,36 @@ setTimeout(() => {
   };
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 }); else run();
 }, 2200);
+
+/* ---------- 7.9: level switch on Units / Books - the card above the weeks changes AT ONCE with the chips ----------
+   (it sat outside the sliding part, so it kept the old level's color and name until the page was redrawn ~1 s later) */
+{
+  const _g = lvGo;
+  lvGo = function (tab) {
+    const r = _g.apply(this, arguments);
+    try {
+      const page = R.pages[tab], t = document.createElement('template'); t.innerHTML = safe(PAGES[tab]);
+      const fresh = [...t.content.querySelectorAll('.hn-next, .tp-hdr')].filter((x) => !x.closest('[data-lvpane]'));
+      const old = [...page.querySelectorAll('.hn-next, .tp-hdr')].filter((x) => !x.closest('[data-lvpane]') && !x.closest('.lv-float'));
+      fresh.forEach((n, k) => { const o = old[k]; if (o && o.outerHTML !== n.outerHTML) { n.classList.add('nin'); o.replaceWith(n); } });
+    } catch (e) { /* the redraw after the slide still fixes it */ }
+    return r;
+  };
+}
+
+/* ---------- 7.9: the Attendance | Paid | Course card keeps ONE size (the tallest of the three), like an iPhone widget ---------- */
+function ffEqualizeIns() {
+  const card = document.querySelector('.ffc2'), body = card && card.querySelector('.ffc-body'); if (!body || !card.offsetWidth) return;
+  const key = card.offsetWidth + '|' + S.rev + '|' + (T.ffg || '') + '|' + payState().ym; if (card._eqk === key) return; card._eqk = key;
+  const probe = document.createElement('div'); probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;width:${card.offsetWidth}px`;
+  card.parentNode.appendChild(probe);
+  const keep = T.ffi; let mx = 0;
+  try { for (const k of ['att', 'pay', 'crs']) { T.ffi = k; probe.innerHTML = ffInsights2(); const b = probe.querySelector('.ffc-body'); if (b) mx = Math.max(mx, b.offsetHeight); } } finally { T.ffi = keep; probe.remove(); }
+  if (mx) body.style.minHeight = mx + 'px';
+}
+{
+  const _d = draw;
+  draw = function () { const r = _d.apply(this, arguments); try { ffEqualizeIns(); } catch (e) { /* none */ } return r; };
+  const _c = home2Click;
+  home2Click = function (b, d) { const r = _c(b, d); if (d.ffgrp) setTimeout(() => { const c = document.querySelector('.ffc2'); if (c) c._eqk = ''; ffEqualizeIns(); }, 260); return r; };
+}

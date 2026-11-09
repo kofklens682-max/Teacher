@@ -21,7 +21,7 @@
 .pm-edit { background: var(--card, #fff); border-radius: 18px; padding: 14px; box-shadow: var(--shadow); display: grid; gap: 8px; }
 .pm-edit > b { font-size: 16px; } .pm-edit > p { margin: 0; font-size: 13.5px; color: var(--text2, #6B7088); }
 .pm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .pm-btns .tp-cta { width: 100%; margin: 0; }
-.pm-fee { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; } .pm-fee .tp-pill { margin-bottom: 2px; }
+ 
 .pm-from select { width: 100%; font: inherit; font-size: 15px; padding: 12px 14px; border-radius: 14px; border: 0; background: var(--card, #fff); box-shadow: var(--shadow); color: inherit; }
 /* numbered lists: who has not paid, who paid */
 .pl-h { display: flex; align-items: center; gap: 8px; margin: 6px 4px -6px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--text2, #6B7088); }
@@ -90,9 +90,9 @@
 .hn-when { font-size: 13px; font-weight: 700; background: rgba(255,255,255,.18); border-radius: 99px; padding: 4px 10px; }
 .hn-name { font-size: 28px; font-weight: 800; letter-spacing: -.02em; margin-top: 8px; }
 .hn-sub { font-size: 14px; opacity: .85; }
-.hn-tl { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
-.hn-tl span { flex: 1 0 auto; min-width: 84px; border-radius: 10px; padding: 6px 9px; font-size: 12.5px; font-weight: 700; display: grid; gap: 1px; background: rgba(255,255,255,.15); }
-.hn-tl span small { font-weight: 600; font-size: 11px; opacity: .85; } .hn-tl span.on { background: #fff; color: #0062E0; } .hn-tl span.done { opacity: .5; }
+
+
+  
 .hn-btns { display: flex; gap: 8px; margin-top: 12px; position: relative; z-index: 1; }
 .hn-btns button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 14px; padding: 11px 8px; font: inherit; font-size: 14.5px; font-weight: 700; color: #fff; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 .6px rgba(255,255,255,.35); transition: transform .15s; }
 .hn-btns button:first-child { background: #fff; color: #0062E0; box-shadow: none; }
@@ -122,20 +122,20 @@
 .ht-ok { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, #34C759 15%, #fff); color: #34C759; } .ht-ok svg { width: 15px; height: 15px; }
 .ht-reg { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 13%, #fff); color: var(--c); transition: transform .15s; } .ht-reg:active { transform: scale(.9); } .ht-reg svg { width: 18px; height: 18px; }
 /* Who still owes */
-.ho-list { display: grid; gap: 10px; }
-.ho-row { display: grid; gap: 9px; width: 100%; text-align: left; background: var(--card); border: 0; border-radius: 20px; box-shadow: var(--shadow); padding: 13px 14px; font: inherit; color: inherit; transition: transform .15s; }
-.ho-row:active { transform: scale(.98); }
-.ho-h { display: flex; align-items: center; gap: 8px; } .ho-h b { font-size: 16px; } .ho-h svg { width: 16px; height: 16px; color: #C7C7CC; }
-.ho-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
-.ho-n { margin-left: auto; font-size: 13px; font-weight: 700; color: #8E8E93; font-variant-numeric: tabular-nums; }
+
+
+
+  
+
+
 .ho-bar { display: block; height: 6px; border-radius: 99px; background: #E5E5EA; overflow: hidden; justify-self: stretch; }
 .ho-bar i { display: block; height: 100%; width: var(--w); border-radius: 99px; background: #34C759; transform-origin: left; animation: h-bar .9s .15s cubic-bezier(.32,.72,0,1) both; }
-.ho-names { display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; }
-.ho-names u { text-decoration: none; display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: .5px solid rgba(60,60,67,.12); font-size: 14.5px; font-weight: 500; min-width: 0; }
-.ho-names u i { width: 8px; height: 8px; border-radius: 50%; background: #FF3B30; flex: none; } .ho-names u.late i { background: #FF9500; }
-.ho-names u small { margin-left: auto; color: #C93400; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.ho-names u.more { grid-column: 1 / -1; justify-content: center; color: #007AFF; font-weight: 600; }
-.ho-all { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 700; color: #248A3D; } .ho-all svg { width: 16px; height: 16px; }
+
+
+ 
+
+
+ 
 @media (prefers-reduced-motion: reduce) { .h-in, .ho-bar i { animation: none; } }
 
 /* ===== Units, Attendance, Books (31 Oct): the same iPhone look as Home option 6 ===== */
@@ -154,20 +154,20 @@
 .un-row2 + .un-row2 { border-top: .5px solid rgba(60,60,67,.12); } .un-row2:active { background: rgba(0,0,0,.04); } .un-row2.now { background: rgba(0,122,255,.06); }
 .un-row2 > svg { width: 16px; height: 16px; color: #C7C7CC; flex: none; }
 .un-row2 .tx { flex: 1; min-width: 0; display: grid; gap: 2px; } .un-row2 .tx b { font-size: 15.5px; font-weight: 600; } .un-row2 .tx > span { font-size: 13px; color: #8E8E93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.un-num { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 800; flex: none; background: #F2F2F7; color: #636366; } .un-num svg { width: 16px; height: 16px; }
-.un-num.done { background: rgba(52,199,89,.14); color: #248A3D; } .un-num.now { background: #007AFF; color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,.3); }
+ 
+ 
 .un-here { font-style: normal; font-size: 11.5px; font-weight: 800; color: #007AFF; background: rgba(0,122,255,.1); border-radius: 99px; padding: 2px 8px; margin-left: 4px; vertical-align: 1px; }
 .un-dots { display: flex; gap: 4px; margin-top: 4px; } .un-dots i { width: 18px; height: 5px; border-radius: 3px; background: #E5E5EA; } .un-dots i.d { background: #34C759; } .un-dots i.n { background: #007AFF; }
 /* Attendance: the week strip (glass circle slides between days) */
-.tp-seg2.at-week { background: var(--card); border-radius: 22px; padding: 8px 6px; box-shadow: var(--shadow); gap: 0; margin-bottom: 14px; }
-.tp-seg2.at-week .seg-thumb { top: 8px; bottom: 8px; left: 6px; width: calc((100% - 12px) / 7); border-radius: 16px; --seg-on: #007AFF; }
-.tp-seg2.at-week button { display: grid; justify-items: center; gap: 3px; padding: 6px 0 5px; border-radius: 16px; color: #1C1C1E; }
-.tp-seg2.at-week button small { font-size: 11px; font-weight: 700; color: #8E8E93; transition: color .2s; } .tp-seg2.at-week button b { font-size: 16px; font-weight: 700; }
-.tp-seg2.at-week button i { width: 5px; height: 5px; border-radius: 50%; background: transparent; } .tp-seg2.at-week button.has i { background: #007AFF; }
+
+
+
+ 
+ 
 .tp-seg2.at-week button.today:not(.on) b { color: #007AFF; }
-.tp-seg2.at-week button.on, .tp-seg2.at-week button.on small { color: #fff; } .tp-seg2.at-week button.on i { background: rgba(255,255,255,.85); }
+ 
 .at-hero { margin-bottom: 14px; animation: h-in .55s cubic-bezier(.32,.72,0,1) both; }
-.at-all { display: flex; align-items: center; gap: 8px; background: rgba(52,199,89,.12); color: #248A3D; border-radius: 18px; padding: 12px 14px; margin-bottom: 14px; font-size: 14px; } .at-all svg { width: 18px; height: 18px; } .at-all span { margin-left: auto; font-weight: 600; opacity: .8; }
+  
 .at-list { display: grid; gap: 10px; margin-bottom: 14px; }
 .at-list .tl-sec { margin: 0; border-radius: 20px; padding: 12px 14px; animation: h-in .55s .05s cubic-bezier(.32,.72,0,1) both; }
 .at-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c, #007AFF); flex: none; }
@@ -194,7 +194,7 @@
 @media (prefers-reduced-motion: reduce) { .un-hero, .un-list, .at-hero, .at-list .tl-sec, .at-mini, .bk-hero, .bk-body .tp-shelf, .bk-body .tp-media, .un-ring .fg { animation: none; } }
 
 /* ===== 31 Oct, round 2: Up next = one lesson big, the others smaller inside the card; capsule buttons like iPhone widgets ===== */
-.hn-tl { display: none; }
+
 .hn-btns button { border-radius: 99px; padding: 10px 14px; font-size: 14.5px; }
 .hn-more { position: relative; z-index: 1; margin: 14px -4px -4px; padding: 4px 0; border-radius: 16px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.2); }
 .hn-mr { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: none; border: 0; font: inherit; color: #fff; text-align: left; }
@@ -205,16 +205,16 @@
 .hn-x { flex: 1; min-width: 0; display: grid; } .hn-x b { font-size: 14px; font-weight: 700; } .hn-x small { font-size: 11.5px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hn-mr em { font-style: normal; font-size: 12px; font-weight: 700; opacity: .85; white-space: nowrap; } .hn-mr.done { opacity: .75; } .hn-mr.done .hn-x b { text-decoration: line-through; text-decoration-color: rgba(255,255,255,.5); }
 /* Who still owes = an iPhone inset list (like Settings / Contacts) */
-.ho-list, .ho-row { display: none; }
+
 .io-list { display: grid; gap: 6px; }
-.io-h { display: flex; align-items: center; gap: 7px; margin: 6px 6px 0; padding: 0; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #6D6D72; text-align: left; }
-.io-h span:last-child { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 600; color: #8E8E93; }
+
+
 .io-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 .io-card { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04); margin-bottom: 8px; }
 .io-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 14px; background: none; border: 0; font: inherit; color: #1C1C1E; text-align: left; position: relative; transition: background .15s; }
 .io-row + .io-row::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; border-top: .5px solid rgba(60,60,67,.18); }
 .io-row:active { background: #E5E5EA; }
-.io-av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c)); }
+
 .io-nm { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .io-m { font-size: 15px; color: #8E8E93; white-space: nowrap; } .io-m.late { color: #FF9500; font-weight: 600; }
 .io-row > svg { width: 14px; height: 14px; color: #C7C7CC; flex: none; }
@@ -254,7 +254,7 @@
 .sc-cal { background: var(--card); border-radius: 22px; box-shadow: var(--shadow); padding: 10px 10px 12px; animation: h-in .55s cubic-bezier(.32,.72,0,1) both; }
 .sc-nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; } .sc-nav b { font-size: 17px; }
 .sc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.sc-h { text-align: center; font-size: 11.5px; font-weight: 700; color: #8E8E93; padding-bottom: 2px; }
+
 .sc-d { aspect-ratio: 1; border-radius: 12px; border: 0; display: grid; place-items: center; align-content: center; gap: 1px; font: inherit; background: #F2F2F7; color: #C7C7CC; position: relative; transition: transform .15s, background .2s; }
 .sc-d b { font-size: 14.5px; font-weight: 700; } .sc-d i { height: 13px; display: grid; place-items: center; } .sc-d i svg { width: 13px; height: 13px; } .sc-d i.dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; justify-self: center; }
 .sc-d:active { transform: scale(.92); }
@@ -285,8 +285,8 @@
 
 /* 31 Oct: single-column lists must never grow wider than the screen. A grid column is "auto" by default, so one long
    no-wrap line (an IELTS group with four lesson times) stretched every row past the edge: minmax(0,1fr) lets the text cut with "…" instead. */
-.at-list, .ho-list, .io-list, .tp-list, .tp-units, .dr-list, .tl-sec, .tp-ownprog, .h2-rows, .hs-day, .dr-gsec { grid-template-columns: minmax(0, 1fr); }
-.at-list > *, .ho-list > *, .io-list > *, .tp-list > *, .tp-units > * { min-width: 0; max-width: 100%; }
+.at-list,.io-list,.tp-list,.dr-list,.tl-sec,.dr-gsec{ grid-template-columns: minmax(0, 1fr); }
+.at-list > *,.io-list > *,.tp-list > *{ min-width: 0; max-width: 100%; }
 /* the schedule line of a group with many lesson days wraps to two lines instead of hiding "next lesson ..." */
 .tp-lrow.at-other .tx > span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
 
@@ -347,7 +347,7 @@
 .ds-row .tx { flex: 1; display: flex; flex-direction: column; } .ds-row .tx span { font-size: 13px; color: #8E8E93; }
 .ds-badge { background: rgba(52,199,89,.14); color: #248A3D; font-weight: 700; font-size: 13px; border-radius: 99px; padding: 4px 10px; white-space: nowrap; }
 /* 9 Nov: the month panel in a student's page = two plain steps (1 the price, 2 what was paid), one Save */
-.pm-step { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--text, #0E1325); }
-.pm-step i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; background: #007AFF; color: #fff; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+
+
 .pm-fee2b .tp-pill { margin-top: 0; }
 .pm-edit .pm-btns { margin-top: 6px; }

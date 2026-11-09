@@ -1,7 +1,7 @@
 /* PREVIEW: iPhone Settings-style list for the new lesson card and the cleaned Home */
-.ff-grp{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin:12px 0}
+
 .ff-row{display:flex;align-items:center;gap:0;min-height:58px;position:relative;width:100%;text-align:left}
-.ff-grp>.ff-row+.ff-row::before,.ff-grp>.ff-row+.ff-moreb::before{content:"";position:absolute;left:62px;right:0;top:0;border-top:.5px solid rgba(60,60,67,.18)}
+
 .ff-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:9px 12px;text-decoration:none;color:inherit;background:none;text-align:left}
 .ff-main:active{background:rgba(120,120,128,.12)}
 .ff-ic{flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:#fff}
@@ -12,16 +12,16 @@
 .ff-ch{color:#C7C7CC;display:grid;place-items:center;transition:none}
 .ff-ch svg{width:18px;height:18px}
 .ff-ch.on svg{transform:rotate(90deg)}
-.ff-sh{flex:none;width:54px;align-self:stretch;display:grid;place-items:center;color:var(--accent);background:none;border-left:.5px solid rgba(60,60,67,.18)}
-.ff-sh svg{width:20px;height:20px}
-.ff-sh:active{background:rgba(120,120,128,.12)}
+
+
+
 .ff-book{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin:2px 4px 0}
 .ff-book svg{width:16px;height:16px;flex:none}
 .ff-two{display:flex;gap:10px;margin:12px 0}
 .ff-two button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;font-weight:700;font-size:15px;color:var(--accent);background:var(--card);border-radius:16px;padding:14px 8px;box-shadow:var(--shadow)}
 .ff-two button svg{width:19px;height:19px}
 .ff-two button:active{opacity:.7}
-.ff-more{margin-top:14px}
+
 .ff-moreb{display:grid;gap:10px;margin-top:2px}
 .ff-moreb .tp-pill{justify-self:start}
 .ff-dots{padding:8px 14px}
@@ -32,8 +32,8 @@
 .tp-lt{font-size:36px;letter-spacing:-.04em}
 .tp-sec h4{font-size:22px;letter-spacing:-.03em}
 .tp-card2{border-radius:24px;padding:16px 17px}
-.tp-lrow,.tp-wrow,.tp-grp2,.tp-lesrow2{border-radius:22px;padding:13px 14px}
-.tp-lrow .tx b,.tp-wrow .tx b,.tp-lesrow2 .tx b{font-size:16.5px}
+.tp-lrow,.tp-lesrow2{border-radius:22px;padding:13px 14px}
+.tp-lrow .tx b,.tp-lesrow2 .tx b{font-size:16.5px}
 .tp-lrow .tx span,.tp-lesrow2 .tx span{font-size:13.5px}
 .tp-pill{min-height:40px;padding:9px 16px;font-size:15px}
 .tp-cta{min-height:58px;border-radius:20px;font-size:17px}

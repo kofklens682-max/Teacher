@@ -7,15 +7,15 @@ html .tp-tabs, html .tabs {
   box-shadow: inset 0 0 0 .6px rgba(255,255,255,.75), inset 0 1.5px 1px -.5px rgba(255,255,255,.95), inset 0 -1.5px 2px -1px rgba(255,255,255,.35),
     0 12px 30px rgba(20,25,60,.15), 0 1.5px 3px rgba(20,25,60,.08) !important;
 }
-html .tp-ind, html .tab-ind {
+html .tp-ind{
   z-index: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.45) 60%, rgba(255,255,255,.65)) !important;
   -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.9), inset 2px 2.5px 3px -1px #fff, inset -2px -2.5px 4px -1px rgba(255,255,255,.7), 0 4px 12px rgba(20,25,60,.14), 0 1px 2px rgba(20,25,60,.1) !important;
   transition: transform .5s cubic-bezier(.3,1.25,.45,1), box-shadow .3s !important;
 }
-html .tp-tabs.sliding .tp-ind, html .tabs.sliding .tab-ind { transition: box-shadow .3s !important; }
-html .tp-tabs.press .tp-ind, html .tabs.press .tab-ind {
+html .tp-tabs.sliding .tp-ind{ transition: box-shadow .3s !important; }
+html .tp-tabs.press .tp-ind{
   box-shadow: inset 0 0 0 1px #fff, inset 2px 2.5px 4px -1px #fff, inset -2px -2.5px 5px -1px rgba(255,255,255,.8), 0 10px 24px rgba(20,25,60,.24), 0 2px 5px rgba(20,25,60,.14) !important;
 }
 /* the real icon and label grow where they are */
@@ -47,7 +47,7 @@ html.glass .tp-sheet .panel { background: rgba(247,248,252,.98) !important; -web
 .tp-push { transition: transform .45s cubic-bezier(.32,.72,0,1); box-shadow: -8px 0 24px rgba(14,19,37,.08); }
 /* Instant taps: no 300 ms wait, no grey flash */
 html, button, a, [data-act], [data-tab], [data-sheet], [data-push] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-@media (prefers-reduced-motion: reduce) { html .tp-ind, html .tab-ind { transition-duration: .01s !important; } }
+@media (prefers-reduced-motion: reduce) { html .tp-ind{ transition-duration: .01s !important; } }
 
 /* ===== The same glass for every sliding highlight: segmented controls and the week strip ===== */
 html .seg-thumb, html .tp-seg2.slide .seg-thumb { background: none !important; box-shadow: none !important; }
@@ -66,17 +66,10 @@ html .seg.press .seg-thumb::before, html .seg.sliding .seg-thumb::before, html .
 .seg.press button.on, .seg.sliding button.over, .tp-seg2.slide.press button.on, .tp-seg2.slide.sliding button.on { transform: scale(1.12); }
 .seg.sliding button.on:not(.over) { transform: none; }
 /* the week strip's circle */
-html .ws-ind::before {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 68%, #fff) 0%, var(--accent) 72%);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), inset 1.5px 2px 3px -1px rgba(255,255,255,.9), inset -1px -2px 3px -1px rgba(255,255,255,.3), 0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
-  transition: transform .3s cubic-bezier(.3,1.5,.5,1), box-shadow .25s;
-}
-html .wstrip.press .ws-ind::before, html .wstrip.moving .ws-ind::before {
-  transform: scale(1.22);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), inset 1.5px 2px 4px -1px #fff, inset -1px -2px 4px -1px rgba(255,255,255,.4), 0 10px 20px color-mix(in srgb, var(--accent) 38%, transparent);
-}
+
+
 .wstrip b { transition: color .2s, transform .3s cubic-bezier(.3,1.5,.5,1); }
-.wstrip.press button.sel b, .wstrip.moving button.lit b { transform: scale(1.2) !important; }
+.wstrip.press button.sel b{ transform: scale(1.2) !important; }
 .wstrip.moving button.sel:not(.lit) b { transform: none !important; }
 /* Every part of a sheet keeps its full height and the sheet scrolls (30 Oct: long lists were squeezed into the screen,
    cut off, and could not be scrolled). */

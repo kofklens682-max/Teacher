@@ -22,7 +22,6 @@
   const off = () => { n = 0; document.documentElement.classList.remove('moving'); };
   const on = (e) => { if (e.propertyName !== 'transform' || !big(e.target)) return; n++; document.documentElement.classList.add('moving'); clearTimeout(t); t = setTimeout(off, 900); };
   const end = (e) => { if (e.propertyName !== 'transform' || !big(e.target)) return; if (--n <= 0) { clearTimeout(t); t = setTimeout(off, 60); } };
-  document.addEventListener('transitionrun', on, true);
-  document.addEventListener('transitionend', end, true);
-  document.addEventListener('transitioncancel', end, true);
+  // 9 Nov speed audit: switched OFF in Teacher (each flip restyled the whole app; nothing blurs under moving screens any more)
+  if (false) { document.addEventListener('transitionrun', on, true); document.addEventListener('transitionend', end, true); document.addEventListener('transitioncancel', end, true); } // eslint-disable-line no-constant-condition
 })();

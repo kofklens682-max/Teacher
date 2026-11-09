@@ -388,6 +388,6 @@ function tabFxTo(from, to, ms) { // the same effect while the page settles after
 document.addEventListener('input', (e) => { const s = e.target.closest && e.target.closest('input[data-dotamt]'); if (!s) return; const c = dotsGet(); c.blurAmt = +s.value; dotsSet(c); const v = document.querySelector('[data-dotamtv]'); if (v) v.textContent = c.blurAmt ? c.blurAmt + '%' : 'Off'; });
 
 /* speed: while a page swipes or scrolls, the glass tab bar stops blurring what moves under it (the blur is recomputed every frame) */
-let movingT = 0;
-function movingFor(ms) { const h = document.documentElement; h.classList.add('moving'); clearTimeout(movingT); movingT = setTimeout(() => h.classList.remove('moving'), ms); }
-document.addEventListener('scroll', () => movingFor(160), { capture: true, passive: true });
+// 9 Nov speed audit: switched OFF. Flipping a class on the whole page at every scroll made the phone restyle the entire app
+// several times a second; the cards no longer blur, so there is nothing to turn off while moving.
+function movingFor() { /* nothing */ }
