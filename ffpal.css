@@ -156,3 +156,7 @@ html .tp-ind{box-shadow:var(--glass-rim) !important}
 .tp-sheet .pm-chg button.on{background:var(--pa) !important;color:#fff !important}
 .tp-sheet .pm-chg button{color:var(--pa) !important}
 .tp-sheet input[type=checkbox]:checked{background:var(--pa) !important}
+/* 9 Nov: Open / Share and the other small pill buttons are blue (like "Share all"), not green */
+.tp .tp-pill{color:#0A7CFF !important;background:rgba(10,124,255,.1) !important}
+.tp .tp-pill svg{color:#0A7CFF !important;stroke:currentColor}
+.tp .tp-pill.strong{background:#0A7CFF !important;color:#fff !important}
