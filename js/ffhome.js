@@ -54,10 +54,11 @@ pgHomeNew = function () {
 /* ---- the iPhone title bar: big title -> small glass bar when you scroll ---- */
 (function () {
   const bar = document.createElement('div'); bar.className = 'ffnav'; bar.innerHTML = '<b></b>'; document.body.appendChild(bar);
+  let busy = false, pg = null, on = false;
   document.addEventListener('scroll', (e) => {
-    const p = e.target; if (!(p instanceof Element) || !p.classList.contains('tp-page')) return;
-    const t = p.querySelector('.tp-lt'); if (!t) { bar.classList.remove('on'); return; }
-    bar.firstChild.textContent = t.textContent; bar.classList.toggle('on', p.scrollTop > 52);
-  }, true);
+    const p = e.target; if (!(p instanceof Element) || !p.classList.contains('tp-page') || busy) return;
+    busy = true; pg = p;
+    requestAnimationFrame(() => { busy = false; const t = pg.querySelector('.tp-lt'), want = !!t && pg.scrollTop > 52; if (t && bar.firstChild.textContent !== t.textContent) bar.firstChild.textContent = t.textContent; if (want !== on) { on = want; bar.classList.toggle('on', want); } });
+  }, { capture: true, passive: true });
   document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('.tp-tabs,[data-push],[data-sheet]')) bar.classList.remove('on'); }, true);
 })();

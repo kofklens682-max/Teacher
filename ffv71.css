@@ -1,0 +1,31 @@
+/* 9 Nov (Teacher 7.1): month strip, "Then" widget, and lighter drawing (blur only on the tab bar and title bar). */
+/* --- speed: no live blur on cards and rows (it was redrawn every frame while scrolling), solid-ish glass instead --- */
+.ffm,.ffc,.tp-page .tp-lrow,.tp-page .tp-card2,.un-row2,.tp-segs,.tp-segs button,.lvcage,.at-mini,.ffmon,.ffnx{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+.tp-page:nth-child(1) .ffc,.tp-page:nth-child(1) .tp-lrow,.tp-page:nth-child(1) .tp-card2{background:linear-gradient(155deg,rgba(255,255,255,.86),rgba(255,255,255,.7)) !important}
+.tp-segs{background:linear-gradient(155deg,rgba(255,255,255,.86),rgba(255,255,255,.7)) !important}
+.tp-segs button{background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.74)) !important}
+.tp-segs button.on{background:linear-gradient(150deg,var(--g1),var(--g2)) !important}
+.un-row2{contain:layout style}
+.tp-page{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.ffh,.ffm,.ffc,.ffnx{contain:layout style}
+/* --- month strip --- */
+.ffmon{margin:2px 0 10px;border-radius:22px;padding:8px 0 10px;background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.7));border:.5px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 12px 26px -18px rgba(15,40,90,.32)}
+.ffmon-row{display:flex;gap:6px;overflow-x:auto;padding:0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+.ffmon-row::-webkit-scrollbar{display:none}
+.ffmon-row button{flex:none;scroll-snap-align:center;padding:8px 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--text2);background:rgba(120,120,128,.12);white-space:nowrap;transition:background .25s var(--ease),color .25s var(--ease)}
+.ffmon-row button.on{background:linear-gradient(150deg,#FFB02E,#FF8A00);color:#fff;box-shadow:0 6px 14px -6px #FF8A00,inset 0 1px 0 rgba(255,255,255,.45)}
+.ffmon-row button:active{opacity:.7}
+.ffmon-sum{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 16px 0}
+.ffmon-sum b{font-size:15px;letter-spacing:-.01em}
+.ffmon-sum span{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px}
+.ffmon-sum i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px}.ffmon-sum i.ok{background:#34C759}.ffmon-sum i.no{background:#FF453A}
+/* --- "Then" widget --- */
+.ffnx{margin-top:10px;border-radius:22px;padding:10px 6px 6px;background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.7));border:.5px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 12px 26px -18px rgba(15,40,90,.32)}
+.ffnx-h{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text2);padding:0 12px 4px}
+.ffnx-r{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 12px;border-radius:16px}
+.ffnx-r+.ffnx-r{border-top:.5px solid rgba(60,60,67,.12);border-radius:0}
+.ffnx-r:active{background:rgba(120,120,128,.1)}
+.ffnx-dot{width:10px;height:34px;border-radius:5px;flex:none}
+.ffnx-r .tx{display:grid;min-width:0;flex:1}.ffnx-r .tx b{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.ffnx-r .tx span{font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ffnx-time{font-size:15px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
