@@ -26,11 +26,11 @@ function ffNextLessonGroup() { // the group whose next lesson comes first (when 
 const ffFileCount = (g) => { const cl = curLes(g), P = PACKS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`]; return P ? PK_KINDS.filter(([k]) => P[k]).length : 0; };
 /* Four glanceable widgets, like the iPhone's: each shows ONE number about a different part of your work, and none repeats a button
    that is already on the screen (user, 9 Nov).
-   PAID = this month, rings (one per group)    OVERDUE = students who still owe for EARLIER months
+   PAID = this month, rings (one per group)    OWE 2+ = students who owe for two months or more
    CAME = this month's attendance %             WEEK = lessons taught this week out of all planned this week */
-function ffOverdue() {
-  const prev = ymAdd(ymOf(TODAY), -1); let n = 0, all = 0;
-  feeGroups().forEach((g) => feeStu(g, prev, true).forEach((st) => { all++; if (ledger(g, st, prev).debt > 0) n++; }));
+function ffOverdue() { // students who owe for 2 months or more (up to this month)
+  const cur = ymOf(TODAY); let n = 0, all = 0;
+  feeGroups().forEach((g) => feeStu(g, cur, true).forEach((st) => { all++; if (ledger(g, st, cur).rows.filter((r) => r.charge - r.covered > 0).length >= 2) n++; }));
   return { n, all };
 }
 function ffMonthCame() {
@@ -47,7 +47,7 @@ ffMini = function () {
   const ym = payState().ym, sc = statusCounts(ym);
   let w1 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '', 'Wallet', sc.n ? sc.ok + '/' + sc.n : '–', 'Paid · ' + MONTHS[+ym.slice(5) - 1].slice(0, 3), 'data-sheet="paypick"');
   const rg = sc.n ? ffMiniRings(sc) : ''; if (rg) w1 = w1.replace(/<span class="ffring"[^>]*><i>.*?<\/i><\/span>/, rg);
-  const od = ffOverdue(), w2 = ffMiniW('od', od.all ? (od.n / od.all) * 100 : 0, '', 'CalendarX2', String(od.n), od.n ? 'Owe before' : 'Nobody owes', 'data-sheet="paypick"');
+  const od = ffOverdue(), w2 = ffMiniW('od', od.all ? (od.n / od.all) * 100 : 0, '', 'CalendarX2', String(od.n), 'Owe 2+ mo', 'data-sheet="paypick"');
   const mc = ffMonthCame(), w3 = ffMiniW('wg', mc || 0, '', 'ClipboardCheck', mc === null ? '–' : mc + '%', 'Came · ' + MONTHS[TODAY.getMonth()].slice(0, 3), 'data-tab="2"');
   const wl = ffWeekLessons(), w4 = ffMiniW('wp', wl.tot ? (wl.done / wl.tot) * 100 : 0, '', 'CalendarDays', wl.tot ? wl.done + '/' + wl.tot : '–', 'This week', 'data-tab="2"');
   return '<div class="ffm-row">' + w1 + w2 + w3 + w4 + '</div>';

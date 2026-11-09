@@ -1,0 +1,113 @@
+/* 9 Nov night: the Teacher app gets its OWN bright identity, built the way Apple does it: one hero hue with its neighbours on the color wheel,
+   the iOS system colors (green = good, red = late, orange, blue = info) as small accents, white solid cards, glass only on the tab bar.
+   All colors live in the variables below; html[data-pal="a|b|c"] switches between three suggestions. Loaded last. */
+html[data-pal="a"]{ /* A: Teacher's orange (the pencil, the school bus; Apple's own Books and Schoolwork are orange) */
+  --pa:#FF9500;--pa2:#FFB340;--pasoft:rgba(255,149,0,.15);
+  --pbg:#FFF8EC;--pbg2:#FFF3E0;--pglow:rgba(255,159,10,.22);--pglow2:rgba(255,204,0,.16);
+  --ph1:#FFB340;--ph2:#FF9500;--ph3:#F26B00;--phsh:rgba(255,130,0,.55);--pgo:#E86A00;
+  --pw-paid:#FFCC00;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#FF9500;
+  --pbar:rgba(255,252,246,.93);--ptabon:#F07A00;
+}
+:root,html[data-pal="b"]{ /* B (the default): fresh green into teal and sky (Apple Fitness / Health: bright system green, teal and cyan) */
+  --pa:#34C759;--pa2:#30D158;--pasoft:rgba(52,199,89,.15);
+  --pbg:#F0FBF4;--pbg2:#E8F8EF;--pglow:rgba(48,209,88,.22);--pglow2:rgba(100,210,255,.2);
+  --ph1:#4ADE80;--ph2:#2FC96B;--ph3:#12B5A6;--phsh:rgba(30,190,120,.5);--pgo:#12A055;
+  --pw-paid:#FF9F0A;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#32ADE6;
+  --pbar:rgba(247,254,250,.93);--ptabon:#1FAE55;
+}
+html[data-pal="c"]{ /* C: chalkboard green with a sunny yellow (Apple Notes yellow + Reminders green) */
+  --pa:#30D158;--pa2:#5BE37D;--pasoft:rgba(48,209,88,.15);
+  --pbg:#FBFCEB;--pbg2:#F6F9DF;--pglow:rgba(255,214,10,.28);--pglow2:rgba(48,209,88,.16);
+  --ph1:#5BE37D;--ph2:#2FCB5A;--ph3:#12A84A;--phsh:rgba(40,190,80,.5);--pgo:#12A84A;
+  --pw-paid:#FFD60A;--pw-owe:#FF6B3D;--pw-came:#30D158;--pw-week:#FF9F0A;
+  --pbar:rgba(253,254,244,.93);--ptabon:#12A84A;
+}
+html[data-pal="d"]{ /* D: teal into mint (Apple's system teal and mint: calm, fresh, still close to green) */
+  --pa:#14B8C4;--pa2:#40D6D8;--pasoft:rgba(20,184,196,.15);
+  --pbg:#F0FAFB;--pbg2:#E6F6F8;--pglow:rgba(48,200,214,.24);--pglow2:rgba(52,199,89,.16);
+  --ph1:#5DE0DC;--ph2:#1FBDCB;--ph3:#0E93AE;--phsh:rgba(20,160,190,.5);--pgo:#0E8FA8;
+  --pw-paid:#FF9F0A;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#14B8C4;
+  --pbar:rgba(246,253,254,.93);--ptabon:#0FA3B8;
+}
+html[data-pal="e"]{ /* E: sunrise, apple red into orange and gold (the teacher's apple) */
+  --pa:#FF5A4D;--pa2:#FF8A5B;--pasoft:rgba(255,90,77,.14);
+  --pbg:#FFF6F1;--pbg2:#FFEFE7;--pglow:rgba(255,120,80,.22);--pglow2:rgba(255,204,0,.18);
+  --ph1:#FFA84D;--ph2:#FF6A3D;--ph3:#EB3B4B;--phsh:rgba(255,90,70,.5);--pgo:#E8452F;
+  --pw-paid:#FFCC00;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#FF9F0A;
+  --pbar:rgba(255,251,248,.93);--ptabon:#F0502F;
+}
+html[data-pal="f"]{ /* F: mint with a coral pop (opposites on the wheel, like Apple Watch Activity) */
+  --pa:#1FCFA0;--pa2:#5BE3BE;--pasoft:rgba(31,207,160,.15);
+  --pbg:#F0FCF8;--pbg2:#E6F9F2;--pglow:rgba(70,225,185,.26);--pglow2:rgba(255,107,107,.13);
+  --ph1:#6FE8C8;--ph2:#27D3A6;--ph3:#0DAF8A;--phsh:rgba(20,190,150,.5);--pgo:#0B9A77;
+  --pw-paid:#FF6B6B;--pw-owe:#FF8A5B;--pw-came:#1FCFA0;--pw-week:#FFB020;
+  --pbar:rgba(246,254,251,.93);--ptabon:#0DAF8A;
+}
+/* accents */
+.tp{--accent:var(--pa);--accent2:var(--pa2);--g1:var(--pa2);--g2:var(--pa);--good:#34C759}
+.tp-avatar{background:linear-gradient(160deg,var(--pa2),var(--pa)) !important;box-shadow:inset 1px 1.2px 0 rgba(255,255,255,.5),0 6px 14px -6px var(--phsh) !important}
+/* the page: warm cream with a faint green glow at the top, like Budget (same on every tab; Units keeps its level color in the cards) */
+.tp::before,.tp[data-tab="1"]::before,.tp[data-tab="2"]::before,.tp[data-tab="3"]::before{background:radial-gradient(90% 34% at 0% 0%,var(--pglow),transparent 72%),radial-gradient(70% 30% at 100% 8%,var(--pglow2),transparent 72%),linear-gradient(180deg,var(--pbg),var(--pbg2)) !important}
+/* the lesson card: one deep green card */
+.ffh{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.2),transparent 55%),linear-gradient(150deg,var(--ph1),var(--ph2) 55%,var(--ph3)) !important;box-shadow:0 18px 34px -18px var(--phsh),inset 0 1px 0 rgba(255,255,255,.3) !important}
+.ffh .ffring i{background:var(--ph3) !important;color:#fff}
+.ffh-go{color:var(--pgo) !important}
+/* the four widgets: solid white cards, ONE accent each (no glass, no color blobs) */
+.ffm-row::before{display:none !important}
+.ffm-row .ffm{background:#fff !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;border:0 !important;color:var(--text);box-shadow:var(--shadow) !important}
+.ffm-row .ffm::before{display:none}
+.ffm-row .ffm.wo{--ac:var(--pw-paid)}.ffm-row .ffm.od{--ac:var(--pw-owe)}.ffm-row .ffm.wg{--ac:var(--pw-came)}.ffm-row .ffm.wp{--ac:var(--pw-week)}
+.ffm-row .ffm .ffring{background:conic-gradient(var(--ac) calc(var(--p)*1%),rgba(90,70,30,.1) 0) !important}
+.ffm-row .ffm .ffring i{background:#fff !important;color:var(--ac);box-shadow:none}
+.ffm .ffrg{background:rgba(90,70,30,.06) !important;box-shadow:none !important}
+html.moving .ffm-row .ffm{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+/* cards and rows on Home: solid white */
+.tp-page:nth-child(1) .ffc,.tp-page:nth-child(1) .tp-lrow,.tp-page:nth-child(1) .tp-card2,.ffnx,.ffmp-btn{background:#fff !important;border:0 !important;box-shadow:var(--shadow) !important}
+.ffsw{background:rgba(90,70,30,.07) !important;box-shadow:none !important}
+.ffsw .th{background:#fff !important}
+.ffseg i.d{background:linear-gradient(var(--pa2),var(--pa)) !important}.ffseg i.n{background:linear-gradient(#FFD45E,#FFB800) !important}
+.ffmp-btn svg:first-child{color:var(--pa)}.ffmp-menu button.on{color:var(--pa)}
+/* the tab bar: Budget's calm bar, green when selected */
+html .tp-tabs{background:var(--pbar) !important;-webkit-backdrop-filter:blur(16px) saturate(1.6) !important;backdrop-filter:blur(16px) saturate(1.6) !important;border:0 !important;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 10px 28px -12px rgba(60,45,10,.28),0 0 0 .5px rgba(90,70,30,.08) !important}
+html .tp-ind{background:#fff !important;box-shadow:0 2px 8px rgba(60,45,10,.16) !important}
+.tp-tabs button.on{color:var(--ptabon) !important}
+/* more places that were blue */
+.tp-roundbtn{background:linear-gradient(150deg,var(--pa2),var(--pa)) !important;box-shadow:0 8px 18px -8px var(--phsh) !important}
+.at-dot{background:var(--pa) !important}
+/* Attendance: two white number cards (no loud gradients) and the green hero */
+.tp-page:nth-child(3) .at-mini:nth-child(n){background:#fff !important;box-shadow:var(--shadow) !important;color:var(--text)}
+.at-mini .h,.at-mini .s,.at-mini small{color:var(--text2) !important}.at-mini b{color:var(--text) !important}
+.tp-page:nth-child(3) .at-mini:nth-child(1) b{color:var(--pa) !important}.tp-page:nth-child(3) .at-mini:nth-child(2) b{color:var(--pw-owe) !important}
+.at-mini .ho-bar{background:rgba(90,70,30,.1) !important}.at-mini .ho-bar i{background:var(--pa) !important}
+.hn-next.at-hero{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.2),transparent 55%),linear-gradient(150deg,var(--ph1),var(--ph2) 55%,var(--ph3)) !important}
+
+/* ===== CRISP CARDS + SOFT-GLASS BUTTONS (user, 9 Nov): every card is solid white with a hairline and a tight shadow (no blur, no gradient,
+   same radius everywhere); glass is only for the controls you press: switches, month button, chips, the bars. ===== */
+html .tp-page:nth-child(n) :is(.ffc,.ffm,.tp-lrow,.tp-card2,.un-row2,.tl-sec,.at-mini,.bk-card,.tp-empty2,.ffnx,.lvcage,.tp-segs,.tp-shelf,.tp-media){
+  background:#fff !important;border:1px solid rgba(15,70,50,.09) !important;border-radius:20px !important;
+  box-shadow:0 1px 2px rgba(15,70,50,.06) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+html .tp-page:nth-child(n) .tp-lrow{border-radius:18px !important}
+html .tp-page:nth-child(n) .ffm{border-radius:18px !important}
+/* soft glass buttons: translucent, a light sky tint, a bright hairline on top */
+.ffsw{background:rgba(10,132,255,.09) !important;border:.5px solid rgba(10,132,255,.14) !important;box-shadow:inset 0 1px 2px rgba(20,70,130,.08) !important}
+.ffsw .th{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.8)) !important;box-shadow:inset 0 1px 0 #fff,0 2px 6px rgba(20,70,130,.2) !important}
+.ffmp-btn{background:linear-gradient(160deg,rgba(255,255,255,.78),rgba(255,255,255,.42)) !important;-webkit-backdrop-filter:blur(12px) saturate(1.6) !important;backdrop-filter:blur(12px) saturate(1.6) !important;
+  border:.5px solid rgba(255,255,255,.95) !important;box-shadow:inset 1px 1.4px 0 rgba(255,255,255,.95),0 6px 16px -10px rgba(20,90,110,.45) !important}
+.ffmp-menu{background:rgba(255,255,255,.96) !important;border:.5px solid rgba(15,70,50,.1);box-shadow:0 18px 40px -12px rgba(20,60,50,.35) !important}
+html .tp-page:nth-child(n) .tp-segs button{background:rgba(10,132,255,.08) !important;border:.5px solid rgba(10,132,255,.14) !important;box-shadow:none !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+html .tp-page:nth-child(n) .tp-segs button.on{background:linear-gradient(150deg,var(--g1),var(--g2)) !important;border-color:transparent !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 4px 10px -4px var(--g2) !important}
+html .tp-page:nth-child(n) .tp-segs{padding:8px !important}
+.ffc-chips button{background:rgba(10,132,255,.08) !important;box-shadow:none !important}
+.ffc-chips button.on{background:linear-gradient(160deg,#4DB2FF,#0A84FF) !important;color:#fff !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(10,132,255,.6) !important}
+.tp-seg2.slide{background:rgba(10,132,255,.09) !important;box-shadow:inset 0 1px 2px rgba(20,70,130,.08) !important}
+.tp-seg2.slide .seg-thumb::before{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.8)) !important;box-shadow:inset 0 1px 0 #fff,0 2px 6px rgba(20,70,130,.2) !important}
+/* the lesson card: a clean two-tone green, no sheen */
+.ffh{background:linear-gradient(150deg,var(--ph1),var(--ph2) 60%,var(--ph3)) !important;box-shadow:0 1px 2px rgba(15,70,50,.1),0 12px 22px -14px var(--phsh) !important}
+.ffh::after{display:none !important}
+.hn-next.at-hero{background:linear-gradient(150deg,var(--ph1),var(--ph2) 60%,var(--ph3)) !important}
+/* hero cards on Units, Books and Attendance: flat two-tone color, no sheen, no glow */
+html .tp-page:nth-child(n) .hn-next{background:linear-gradient(150deg,var(--lc1,var(--g1,var(--ph1))),var(--lc2,var(--g2,var(--ph2)))) !important;box-shadow:0 1px 2px rgba(15,70,50,.12),0 10px 20px -14px rgba(15,70,50,.5) !important}
+html .tp-page:nth-child(n) .hn-next::before,html .tp-page:nth-child(n) .hn-next::after{display:none !important}
+html .tp-page:nth-child(3) .hn-next{background:linear-gradient(150deg,var(--ph1),var(--ph2) 60%,var(--ph3)) !important}
+/* no box inside a box: the shelf area inside a card is just a layout area */
+html .tp-page:nth-child(n) .tp-card2 .tp-shelf,html .tp-page:nth-child(n) .tp-shelf{background:transparent !important;border:0 !important;box-shadow:none !important}
