@@ -1,7 +1,7 @@
 'use strict';
 /* B+ infographics (charts) for Home. Counts only: money stays in the Budget app. Loaded after ffsys.js. */
 const ffShort = (k) => { const d = fromIso(k); return d.getDate() + '/' + (d.getMonth() + 1); };
-const ffCol = (p) => (p >= 85 ? '#1FD65F' : p >= 65 ? '#FFAB00' : '#FF3B5C');
+const ffCol = (p) => (p >= 85 ? '#2FA56F' : p >= 65 ? '#E8A23A' : '#E5604F');
 function ffBars(pts, o) { // pts: [{p, top, label, col, cur}]  p = 0..100; a quiet bar chart in SVG
   const W = 320, H = o.h || 150, top = 20, bot = 24, hh = H - top - bot, n = pts.length, slot = (W - 8) / n, bw = Math.min(30, slot * 0.62);
   const grid = [0, 50, 100].map((v) => { const y = top + hh - (v / 100) * hh; return `<line x1="4" x2="${W - 4}" y1="${y}" y2="${y}" class="gl${v ? '' : ' base'}"/>${v && !o.h ? `<text x="${W - 4}" y="${y - 3}" text-anchor="end" class="gt">${v}%</text>` : ''}`; }).join('');
@@ -17,12 +17,12 @@ function ffInsights() {
   const pts = savedDates(g).slice(-8).map((k) => { const r = rec(g, fromIso(k)), n = g.students.length, here = g.students.filter((s) => r.get(s.id) !== 'absent').length, p = n ? Math.round((here / n) * 100) : 0; return { p, top: String(here), label: ffShort(k), col: ffCol(p) }; });
   const avg = pts.length ? Math.round(pts.reduce((a, b) => a + b.p, 0) / pts.length) : null;
   const att = `<div class="ffc h-in"><div class="ffc-h"><div><b>Attendance</b><span>${pts.length ? `last ${pts.length} lessons · ${esc(g.name)}` : esc(g.name)}</span></div>${avg !== null ? `<div class="ffc-big" style="color:${ffCol(avg)}">${avg}<em>%</em><small>on average</small></div>` : ''}</div>
-    ${pts.length ? ffBars(pts, { color: '#1FD65F', aria: 'Attendance of the last lessons' }) : '<p class="ffc-empty">The chart appears after your first saved register.</p>'}${pts.length ? '<div class="ffc-k"><span><i style="background:#1FD65F"></i>85% and more</span><span><i style="background:#FFAB00"></i>65–84%</span><span><i style="background:#FF3B5C"></i>below 65%</span><em>The number on a bar is how many students came.</em></div>' : ''}</div>`;
+    ${pts.length ? ffBars(pts, { color: '#2FA56F', aria: 'Attendance of the last lessons' }) : '<p class="ffc-empty">The chart appears after your first saved register.</p>'}${pts.length ? '<div class="ffc-k"><span><i style="background:#2FA56F"></i>85% and more</span><span><i style="background:#E8A23A"></i>65–84%</span><span><i style="background:#E5604F"></i>below 65%</span><em>The number on a bar is how many students came.</em></div>' : ''}</div>`;
   // 2. who paid, month by month (all groups, counts only)
   const ym0 = ymOf(TODAY), ms = [-5, -4, -3, -2, -1, 0].map((k) => ymAdd(ym0, k)), cs = ms.map((ym) => ({ ym, c: statusCounts(ym) }));
-  const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#FF8A00' : '#FFCF66', cur: ym === ym0 }; }); // months before the first month of payments stay empty
+  const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#E8A23A' : '#FFCF66', cur: ym === ym0 }; }); // months before the first month of payments stay empty
   const now = cs[cs.length - 1].c;
-  const pay = `<div class="ffc h-in"><div class="ffc-h"><div><b>Who paid</b><span>last 6 months · all groups</span></div><div class="ffc-big" style="color:#FF8A00">${now.ok}<em>/${now.n}</em><small>${MONTHS[+ym0.slice(5) - 1]}</small></div></div>${ffBars(pp, { color: '#FF9500', aria: 'Students who paid, by month' })}<div class="ffc-k"><em>The number on a bar is students paid of all students. The money itself is in Budget.</em></div></div>`;
+  const pay = `<div class="ffc h-in"><div class="ffc-h"><div><b>Who paid</b><span>last 6 months · all groups</span></div><div class="ffc-big" style="color:#E8A23A">${now.ok}<em>/${now.n}</em><small>${MONTHS[+ym0.slice(5) - 1]}</small></div></div>${ffBars(pp, { color: '#FF9500', aria: 'Students who paid, by month' })}<div class="ffc-k"><em>The number on a bar is students paid of all students. The money itself is in Budget.</em></div></div>`;
   // 3. the course: one segment per week
   const L = lv(g.lvl), wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
   const seg = L.units.map((u, i) => `<i class="${i + 1 < cl.w ? 'd' : i + 1 === cl.w ? 'n' : ''}"><b>${i + 1}</b></i>`).join('');

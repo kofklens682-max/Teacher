@@ -24,12 +24,12 @@ function ffInsights2() {
     const pts = savedDates(g).slice(-8).map((k) => { const r = rec(g, fromIso(k)), n = g.students.length, here = g.students.filter((s) => r.get(s.id) !== 'absent').length, p = n ? Math.round((here / n) * 100) : 0; return { p, top: String(here), label: ffShort(k), col: ffCol(p) }; });
     const avg = pts.length ? Math.round(pts.reduce((a, b) => a + b.p, 0) / pts.length) : null;
     head = `<div><b>${esc(g.name)} · last ${pts.length || 0} lessons</b><span>students who came</span></div>${avg !== null ? `<div class="ffc-big" style="color:${ffCol(avg)}">${avg}<em>%</em></div>` : ''}`;
-    body = pts.length ? ffBars(pts, { color: '#1FD65F', aria: 'Attendance of the last lessons', h: 112 }) : '<p class="ffc-empty">The chart appears after your first saved register.</p>';
+    body = pts.length ? ffBars(pts, { color: '#2FA56F', aria: 'Attendance of the last lessons', h: 112 }) : '<p class="ffc-empty">The chart appears after your first saved register.</p>';
   } else if (tab === 'pay') {
     const ym0 = ymOf(TODAY), cs = [-5, -4, -3, -2, -1, 0].map((k) => ymAdd(ym0, k)).map((ym) => ({ ym, c: statusCounts(ym) })), now = cs[cs.length - 1].c;
-    const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#FF8A00' : '#FFCF66', cur: ym === ym0 }; });
-    head = `<div><b>Who paid · all groups</b><span>students, not money</span></div><div class="ffc-big" style="color:#FF8A00">${now.ok}<em>/${now.n}</em></div>`;
-    body = ffBars(pp, { color: '#FF8A00', aria: 'Students who paid, by month', h: 112 });
+    const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#E8A23A' : '#FFCF66', cur: ym === ym0 }; });
+    head = `<div><b>Who paid · all groups</b><span>students, not money</span></div><div class="ffc-big" style="color:#E8A23A">${now.ok}<em>/${now.n}</em></div>`;
+    body = ffBars(pp, { color: '#E8A23A', aria: 'Students who paid, by month', h: 112 });
   } else {
     const L = lv(g.lvl), wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
     head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w} weeks left</span></div><div class="ffc-big" style="color:#3B5BDB">${Math.round((done / total) * 100)}<em>%</em></div>`;

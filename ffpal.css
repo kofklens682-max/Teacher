@@ -8,12 +8,12 @@ html[data-pal="a"]{ /* A: Teacher's orange (the pencil, the school bus; Apple's 
   --pw-paid:#FFCC00;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#FF9500;
   --pbar:rgba(255,252,246,.93);--ptabon:#F07A00;
 }
-:root,html[data-pal="b"]{ /* B (the default): fresh green into teal and sky (Apple Fitness / Health: bright system green, teal and cyan) */
-  --pa:#34C759;--pa2:#30D158;--pasoft:rgba(52,199,89,.15);
-  --pbg:#F0FBF4;--pbg2:#E8F8EF;--pglow:rgba(48,209,88,.22);--pglow2:rgba(100,210,255,.2);
-  --ph1:#4ADE80;--ph2:#2FC96B;--ph3:#12B5A6;--phsh:rgba(30,190,120,.5);--pgo:#12A055;
-  --pw-paid:#FF9F0A;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#32ADE6;
-  --pbar:rgba(247,254,250,.93);--ptabon:#1FAE55;
+:root,html[data-pal="b"]{ /* B (the default), BALANCED: calm green into teal, a soft sky, mild page */
+  --pa:#2FA56F;--pa2:#4DB88A;--pasoft:rgba(47,165,111,.14);
+  --pbg:#EEF4F1;--pbg2:#E7EFEB;--pglow:rgba(70,170,130,.15);--pglow2:rgba(90,170,210,.13);
+  --ph1:#4DB38C;--ph2:#2F9A73;--ph3:#23807A;--phsh:rgba(35,128,110,.45);--pgo:#23805E;
+  --pw-paid:#E8A23A;--pw-owe:#E5604F;--pw-came:#2FA56F;--pw-week:#4A9BC9;
+  --pbar:rgba(250,254,252,.5);--ptabon:#238A5E;
 }
 html[data-pal="c"]{ /* C: chalkboard green with a sunny yellow (Apple Notes yellow + Reminders green) */
   --pa:#30D158;--pa2:#5BE37D;--pasoft:rgba(48,209,88,.15);
@@ -111,3 +111,39 @@ html .tp-page:nth-child(n) .hn-next::before,html .tp-page:nth-child(n) .hn-next:
 html .tp-page:nth-child(3) .hn-next{background:linear-gradient(150deg,var(--ph1),var(--ph2) 60%,var(--ph3)) !important}
 /* no box inside a box: the shelf area inside a card is just a layout area */
 html .tp-page:nth-child(n) .tp-card2 .tp-shelf,html .tp-page:nth-child(n) .tp-shelf{background:transparent !important;border:0 !important;box-shadow:none !important}
+
+/* ===== 7.7: balanced colors, a SMALLER lesson card, and glass copied from the iOS 27 reference =====
+   The reference glass is CLEAR: almost no white, the picture behind shows through (a little saturated), a thin bright rim on the
+   top-left and a softer one on the bottom-right, a faint glow inside, a soft shadow. Mine was frosted white. */
+.tp{--good:#2FA56F;--late:#E8A23A;--bad:#E5604F}
+:root{--glass-bg:linear-gradient(135deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 55%,rgba(255,255,255,.2));
+  --glass-rim:inset 0 0 0 .6px rgba(255,255,255,.6),inset 1.4px 1.8px 0 rgba(255,255,255,.8),inset -1.2px -1.6px 0 rgba(255,255,255,.34),inset 0 0 16px rgba(255,255,255,.16);
+  --glass-blur:blur(9px) saturate(1.7)}
+html .tp-tabs{background:var(--glass-bg) !important;-webkit-backdrop-filter:var(--glass-blur) !important;backdrop-filter:var(--glass-blur) !important;
+  box-shadow:var(--glass-rim),0 0 0 .5px rgba(20,60,40,.1),0 16px 30px -14px rgba(25,50,35,.45) !important}
+html .tp-ind{background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,255,255,.28)) !important;box-shadow:var(--glass-rim),0 4px 12px -4px rgba(25,50,35,.32) !important}
+.ffmp-btn{background:var(--glass-bg) !important;-webkit-backdrop-filter:var(--glass-blur) !important;backdrop-filter:var(--glass-blur) !important;border:0 !important;
+  box-shadow:var(--glass-rim),0 0 0 .5px rgba(20,60,40,.14),0 8px 18px -10px rgba(25,50,35,.4) !important}
+.ffsw{background:rgba(74,155,201,.1) !important;border:.5px solid rgba(74,155,201,.16) !important}
+.ffsw .th{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.84)) !important;box-shadow:inset 0 1px 0 #fff,0 0 0 .5px rgba(20,60,40,.1),0 2px 6px rgba(25,60,50,.2) !important}
+.ffc-chips button,.tp-segs button,html .tp-page:nth-child(n) .tp-segs button,.tp-seg2.slide{background:rgba(74,155,201,.1) !important;border-color:rgba(74,155,201,.16) !important}
+.ffc-chips button.on{background:linear-gradient(160deg,#6BB6DC,#4A9BC9) !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4) !important}
+.ffh-chips span,.ffh-when{background:linear-gradient(135deg,rgba(255,255,255,.3),rgba(255,255,255,.08)) !important;box-shadow:var(--glass-rim) !important;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
+/* the lesson card, about 30% smaller */
+.ffh{padding:12px 14px 12px !important;border-radius:22px !important;margin-top:2px !important}
+.ffh-top{font-size:11.5px !important}
+.ffh-main{margin:4px 0 0 !important}
+.ffh-name{font-size:34px !important;line-height:1.05}
+.ffh-sub{font-size:13px !important;margin-top:2px !important}
+.ffh .ffring{width:54px !important;height:54px !important}.ffh .ffring i{width:42px !important;height:42px !important}.ffh .ffring i b{font-size:13px !important}
+.ffh-unit{font-size:15px !important;margin-top:6px !important}
+.ffh-chips{margin:6px 0 10px !important;gap:6px !important}.ffh-chips span{padding:4px 9px !important;font-size:12px !important}.ffh-chips svg{width:13px !important;height:13px !important}
+.ffh-go{min-height:42px !important;border-radius:14px !important;font-size:15.5px !important}.ffh-go svg{width:18px !important;height:18px !important}
+.ffm-row{margin-top:8px}
+.ffm{min-height:96px !important}
+.ffm{min-height:106px !important}
+html .tp-ind{box-shadow:var(--glass-rim) !important}
+.ffh{padding:10px 13px 11px !important}
+.ffh-name{font-size:30px !important}
+.ffh .ffring{width:48px !important;height:48px !important}.ffh .ffring i{width:37px !important;height:37px !important}.ffh .ffring i b{font-size:12px !important}
+.ffh-go{min-height:40px !important}
