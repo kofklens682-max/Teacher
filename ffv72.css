@@ -4,3 +4,26 @@
 .ffr-p{animation:ffrin 1.15s cubic-bezier(.32,.72,0,1) both;animation-delay:var(--d,0ms)}
 @keyframes ffrin{from{stroke-dasharray:0.01 var(--C)}}
 @media (prefers-reduced-motion:reduce){.ffr-p{animation:none}}
+/* two widgets */
+.ffm-row.two{grid-template-columns:1fr 1fr}
+.ffm-row.two .ffm b{font-size:26px}
+/* the month: one small button + a menu */
+.ffmp{position:relative;margin:2px 0 8px;z-index:6}
+.ffmp-bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ffmp-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 11px;border-radius:999px;background:linear-gradient(155deg,rgba(255,255,255,.92),rgba(255,255,255,.72));border:.5px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff,0 6px 16px -10px rgba(15,40,90,.4);font-size:15px;font-weight:700;color:var(--text)}
+.ffmp-btn svg{width:16px;height:16px;color:#FF8A00}.ffmp-btn svg:last-child{width:14px;height:14px;color:var(--text2);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.ffmp.open .ffmp-btn svg:last-child{transform:rotate(180deg)}
+.ffmp-btn:active{transform:scale(.97)}
+.ffmp-sum{display:flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--text2);white-space:nowrap}
+.ffmp-sum i{width:7px;height:7px;border-radius:50%;display:inline-block;margin-left:6px}.ffmp-sum i.ok{background:#34C759}.ffmp-sum i.no{background:#FF453A}
+.ffmp-menu{position:absolute;left:0;top:42px;min-width:210px;max-height:300px;overflow:auto;border-radius:18px;padding:5px;background:rgba(255,255,255,.97);box-shadow:0 18px 40px -10px rgba(15,25,60,.4),0 0 0 .5px rgba(60,60,67,.12);opacity:0;visibility:hidden;transform:translateY(-8px) scale(.97);transform-origin:20px 0;transition:opacity .22s ease,transform .3s cubic-bezier(.32,.72,0,1),visibility 0s .3s}
+.ffmp.open .ffmp-menu{opacity:1;visibility:visible;transform:none;transition:opacity .22s ease,transform .3s cubic-bezier(.32,.72,0,1),visibility 0s}
+.ffmp-menu button{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:11px 12px;border-radius:12px;font-size:15.5px;font-weight:600;text-align:left}
+.ffmp-menu button.on{color:#FF8A00;font-weight:800}.ffmp-menu button svg{width:17px;height:17px}
+.ffmp-menu button:active{background:rgba(120,120,128,.14)}
+/* the switch slides with the finger */
+.ffc2{touch-action:pan-y}
+.ffsw{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.ffsw.drag .th{transition:none}
+/* the hidden title bar no longer blurs the page behind it all the time (only while it shows) */
+.ffnav:not(.on){-webkit-backdrop-filter:none !important;backdrop-filter:none !important}

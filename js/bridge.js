@@ -186,7 +186,7 @@ function monthGrid(g, st, open) {
     const left = r.charge - r.covered, fut = r.m > cur;
     const cls = r.charge === 0 && !r.covered ? 'free' : left <= 0 ? 'ok' : r.covered > 0 ? 'part' : fut ? 'fut' : 'owe';
     const D = discOf(g, st, r.m), dsc = D.grp + D.own, fr = isSingle(g) ? (S.pay.sfree || {})[st.id + '|' + r.m] : 0;
-    const sub = r.charge === 0 && !r.covered ? (dsc ? 'Free: discount' : 'No charge') : left <= 0 ? 'Paid' : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
+    const sub = r.charge === 0 && !r.covered ? (dsc ? 'Free: discount' : 'No charge') : left <= 0 ? (r.covered > 0 ? `Paid ${dMoney(r.covered)}` : 'Paid') : r.covered > 0 ? `${dMoney(left)} left` : fut ? dMoney(r.charge) : 'Not paid';
     return `<button class="pm ${cls}${open === r.m ? ' sel' : ''}" data-paym="${st.id}|${g.id}|${r.m}"><b>${ymLabel(r.m)}</b><span>${sub}</span>${dsc ? `<small>−${dMoney(dsc)} discount</small>` : ''}${fr ? `<small>${fr === 'all' ? 'free month' : fr + ' free'}</small>` : ''}${left <= 0 && r.charge ? `<i>${ic('Check')}</i>` : ''}</button>`;
   }).join('')}</div>`;
 }
@@ -201,19 +201,17 @@ function editPanel(g, st, m) { // one month: what it costs, its discount, what w
   const D = discOf(g, st, m), fee = single ? charge : baseFee(g, st);
   const ownM = !single && S.pay.sfee && S.pay.sfee[st.id + '|' + m] != null;
   const cost = single ? `${dMoney(charge)} so'm for the lessons` : ownM ? `Own price for ${ymName(m)}: <b>${dMoney(charge)} so'm</b> (the normal fee is ${dMoney(fee)})` : `Fee ${dMoney(fee)}${D.grp ? ` − ${dMoney(D.grp)} group discount` : ''}${D.own ? ` − ${dMoney(D.own)} discount` : ''} = <b>${dMoney(charge)} so'm</b>`;
-  // 9 Nov: ONE flow, one Save. Step 1 = what the student pays for the month (late starter: "By lessons"), step 2 = what was paid.
-  // (Before: two inputs and two Save buttons, and the "paid" box was pre-filled with the normal fee even when the month cost 0.)
   const first = esc(st.name.split(' ')[0]), sh = lessonShare(g, st, m);
-  const feeBlock = single ? '' : `<div class="pm-step"><i>1</i>What ${first} pays for ${ymName(m)}</div><div class="pm-fee2">
-      <label class="tp-f"><span>Price for ${ymName(m)} (so'm)</span><input id="f-pmfee" inputmode="numeric" value="${dMoney(charge)}" autocomplete="off"></label>
-      <div class="pm-fee2b" data-noswipe><button class="tp-pill" data-pmfeeset="${fee}">Full fee · ${dMoney(fee)}</button>${sh.total ? `<button class="tp-pill" data-pmfeeset="${sh.amount}">${ic('Percent')} By lessons ${sh.came} of ${sh.total} · ${dMoney(sh.amount)}</button>` : ''}<button class="tp-pill" data-pmfeeset="0">Free</button></div>
-      <div class="tp-chips2 pm-scope" data-noswipe><button class="on" data-pmscope="month">Only ${ymName(m)}</button><button data-pmscope="all">Every month from now</button></div>
-      ${D.grp ? `<p class="tp-small" style="text-align:left">The whole group has −${dMoney(D.grp)} in ${ymName(m)}. <button class="tp-pill" data-sheet="gdisc" data-g="${g.id}">Change the group discount</button></p>` : ''}</div>
-    <div class="pm-step"><i>2</i>What was paid</div>`;
+  if (!single) { // 9 Nov (user: "just one field"): how much this student pays in THIS month. "Paid" saves it and counts it as paid; "Save price" only saves it.
+    const k = st.id + '|' + m, note = ownM || D.grp || D.own ? `Normal fee ${dMoney(fee)}${D.grp ? ` · whole group −${dMoney(D.grp)}` : ''}` : '';
+    return `<div class="pm-edit"><b>${ymName(m)}</b><p>${paid ? `Paid ${dMoney(paid)} so'm${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : 'Not paid yet'}${note ? ' · ' + note : ''}</p>
+      <label class="tp-f"><span>${first} pays in ${ymName(m)} (so'm)</span><input id="f-pmfee" inputmode="numeric" value="${dMoney(charge)}" autocomplete="off"></label>
+      <div class="pm-fee2b" data-noswipe><button class="tp-pill" data-pmfeeset="${fee}">Full fee · ${dMoney(fee)}</button>${sh.total ? `<button class="tp-pill" data-pmfeeset="${sh.amount}">${ic('Percent')} By lessons ${sh.came} of ${sh.total} · ${dMoney(sh.amount)}</button>` : ''}</div>
+      <div class="pm-btns"><button class="tp-cta" data-pmmark="${st.id}|${g.id}|${m}">${ic('Check')}Paid</button><button class="tp-cta ghost blue" data-pmprice="${st.id}|${g.id}|${m}">Save price</button></div>
+      ${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div>`;
+  }
   return `<div class="pm-edit"><b>${ymName(m)}</b><p>${cost}</p><p>${paid ? `Paid: ${dMoney(paid)} so'm${ps.length ? ' · ' + ps.map((p) => dDate(p.date)).join(', ') : ''}` : 'Not paid yet'}</p>
-    ${feeBlock}
-    <label class="tp-f"><span>Paid so far for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || (single ? charge : '') || ''}" placeholder="0" autocomplete="off"></label>
-    ${single ? '' : `<div class="pm-fee2b" data-noswipe><button class="tp-pill" data-pmfull="1">${ic('Check')} Paid in full</button></div>`}
+    <label class="tp-f"><span>How much was paid for ${ymName(m)} (so'm)</span><input id="f-pmamt" inputmode="numeric" value="${paid || charge || ''}" placeholder="0" autocomplete="off"></label>
     <div class="pm-btns"><button class="tp-cta" data-pmsave="${st.id}|${g.id}|${m}">Save</button>${paid ? `<button class="tp-cta ghost" data-pmnone="${st.id}|${g.id}|${m}">Not paid</button>` : ''}</div></div>`;
 }
 // One student's price for one month ("only this month") or for every month from now on.
@@ -231,7 +229,7 @@ function sheetPayRec(s) {
     <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(fee) + " so'm a month"}</em></div>
     <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it: part payment, a discount, or not paid. Budget asks you to add the money.</p>
     ${monthGrid(g, st, s.open)}
-    ${single ? '' : `<div class="pm-chg"><span>Change the fee for</span>${L.rows.slice(-4).map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div>`}
+    ${single ? '' : `<div class="pm-chg"><span>Month</span>${L.rows.slice(-4).map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div>`}
     ${s.open ? editPanel(g, st, s.open) : ''}
     <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
@@ -317,6 +315,14 @@ function sheetPayPick(s) {
     }
     if (d.pmedit) { const [sid, gid, m] = d.pmedit.split('|'); if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } return true; }
     if (d.pmscope) { b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return true; }
+    if (d.pmprice || d.pmmark) { // the one-field panel: price of this month (and paid)
+      const [sid, gid, m] = (d.pmprice || d.pmmark).split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
+      const nv = numVal('f-pmfee'); if (nv !== chargeOf(g, st, m)) applyFee(g, st, m, nv, false);
+      const nm = st.name.split(' ')[0];
+      if (d.pmmark) { const v = chargeOf(g, st, m); if (v !== paidIn(sid, m)) { delPays(sid, m); if (v > 0) addPay(sid, m, v); } if (T.sheet) T.sheet.open = null; save(); draw(); toast(v > 0 ? `${nm} · ${ymName(m)} · ${dMoney(v)} so'm paid` : `${nm} · ${ymName(m)} · nothing to pay`); }
+      else { if (T.sheet) T.sheet.open = null; save(); draw(); toast(`${nm}: ${dMoney(nv)} so'm for ${ymName(m)}`); }
+      return true;
+    }
     if (d.pmfeeset !== undefined) { const el = document.getElementById('f-pmfee'); if (el) { el.value = dMoney(+d.pmfeeset || 0); el.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
     if (d.pmfull) { const f = document.getElementById('f-pmfee'), a = document.getElementById('f-pmamt'); if (a) { a.value = dMoney(f ? numVal('f-pmfee') : 0); a.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
     if (d.pmlessons) { const [sid, gid, m] = d.pmlessons.split('|'), g = gById(gid), st = g && stuOf(g, sid), el = document.getElementById('f-pmfee'); if (st && el) el.value = dMoney(lessonShare(g, st, m).amount); return true; }

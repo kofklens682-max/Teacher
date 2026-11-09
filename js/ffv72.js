@@ -1,8 +1,9 @@
 'use strict';
-/* 9 Nov (Teacher 7.2): Home.
-   1) The Paid widget (one of the four small ones) draws Apple-Watch-style activity rings: one thin ring for each group.
-   2) The four mini widgets are ALWAYS there. With no lesson today they show something useful instead of vanishing:
-      Attendance = this month's %, Week = lessons taught this week, Files = the files of the next lesson. Loaded last. */
+/* 9 Nov (Teacher 7.2 / 7.3): Home. Loaded last.
+   1) The Paid widget draws Apple-Watch-style activity rings: one thin ring for each group.
+   2) Two widgets only, each with a clear job: PAID (who paid) and LESSON (the files of the lesson now / the next lesson).
+   3) The month is ONE small button; tap it for the other months.
+   4) The Attendance | Paid | Course switch: tap, hold and slide, or swipe the card. */
 
 /* ---------- small activity rings for the Paid widget ---------- */
 function ffMiniRings(sc) {
@@ -16,17 +17,7 @@ function ffMiniRings(sc) {
   return `<span class="ffrg" aria-hidden="true"><svg viewBox="0 0 50 50">${s}</svg></span>`;
 }
 
-/* ---------- the four widgets, always ---------- */
-function ffWeekLessons() {
-  const mon = addDays(TODAY, -wd(TODAY)); let tot = 0, done = 0;
-  for (let i = 0; i < 7; i++) { const d = addDays(mon, i); S.groups.forEach((g) => { if (!g.students.length) return; if (hasLesson(g, d) || kept(g, d)) { tot++; if (doneOn(g, d)) done++; } }); }
-  return { tot, done };
-}
-function ffMonthCame() {
-  const ym = iso(TODAY).slice(0, 7); let here = 0, total = 0;
-  S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { const r = rec(g, fromIso(x)); g.students.forEach((s) => { total++; if (r.get(s.id) !== 'absent') here++; }); }));
-  return total ? Math.round((here / total) * 100) : null;
-}
+/* ---------- the two widgets ---------- */
 function ffNextLessonGroup() { // the group whose next lesson comes first (when nothing is left today)
   let best = null, when = null;
   S.groups.forEach((g) => { if (!g.students.length) return; const d = lessonDay(g, TODAY, 1); if (d && (!when || d < when)) { best = g; when = d; } });
@@ -34,21 +25,74 @@ function ffNextLessonGroup() { // the group whose next lesson comes first (when 
 }
 const ffFileCount = (g) => { const cl = curLes(g), P = PACKS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`]; return P ? PK_KINDS.filter(([k]) => P[k]).length : 0; };
 ffMini = function (g) {
-  const D = TODAY, ym = payState().ym, sc = statusCounts(ym), r = g ? rec(g, D) : null, all = g ? g.students.length : 0, saved = !!(g && r && r.saved);
-  const here = saved ? g.students.filter((s) => r.get(s.id) !== 'absent').length : 0, cl = g ? curLes(g) : null, wks = g ? lv(g.lvl).units.length : 0;
-  // 1. Attendance: today's register, or this month's % when there is no lesson now
-  const mc = ffMonthCame();
-  const w1 = g ? ffMiniW('wg', all ? (here / all) * 100 : 0, '#fff', 'ClipboardCheck', saved ? `${here}/${all}` : `${all}`, saved ? 'came' : 'Attendance', `data-push="register" data-g="${g.id}"`)
-    : ffMiniW('wg', mc || 0, '#fff', 'ClipboardCheck', mc === null ? '–' : mc + '%', 'Came · ' + MONTHS[D.getMonth()].slice(0, 3), 'data-tab="2"');
-  // 2. Paid: always
-  let w2 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '#fff', 'Wallet', sc.n ? `${sc.ok}/${sc.n}` : '–', 'Paid', 'data-sheet="paypick"');
-  const rg = sc.n ? ffMiniRings(sc) : ''; if (rg) w2 = w2.replace(/<span class="ffring"[^>]*><i>.*?<\/i><\/span>/, rg); // one ring per group instead of the single ring
-  // 3. Week: the course week of this group, or the lessons of this week
-  const wl = ffWeekLessons();
-  const w3 = g ? ffMiniW('wp', wks ? (cl.w / wks) * 100 : 0, '#fff', 'Target', `${cl.w}/${wks}`, 'Week', 'data-tab="1"')
-    : ffMiniW('wp', wl.tot ? (wl.done / wl.tot) * 100 : 0, '#fff', 'CalendarDays', wl.tot ? `${wl.done}/${wl.tot}` : '–', 'This week', 'data-tab="2"');
-  // 4. Files: of this lesson, or of the next lesson
+  const ym = payState().ym, sc = statusCounts(ym);
+  let w1 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '#fff', 'Wallet', sc.n ? `${sc.ok}/${sc.n}` : '–', 'Paid · ' + MONTHS[+ym.slice(5) - 1].slice(0, 3), 'data-sheet="paypick"');
+  const rg = sc.n ? ffMiniRings(sc) : ''; if (rg) w1 = w1.replace(/<span class="ffring"[^>]*><i>.*?<\/i><\/span>/, rg);
   const ng = g || ffNextLessonGroup(), nf = ng ? ffFileCount(ng) : 0;
-  const w4 = ng && nf ? ffMiniW('wb', 100, '#fff', 'FileText', `${nf}`, g ? 'Files' : 'Next files', homeOpen(ng)) : ffMiniW('wb', 0, '#fff', 'FileText', '–', 'Files', 'data-tab="1"');
-  return `<div class="ffm-row">${w1}${w2}${w3}${w4}</div>`;
+  let w2;
+  if (ng && g) w2 = ffMiniW('wb', 100, '#fff', 'FileText', nf ? `${nf} files` : 'Open', 'Lesson files · ' + esc(ng.name), homeOpen(ng));
+  else if (ng) { const d = lessonDay(ng, TODAY, 1); w2 = ffMiniW('wb', 100, '#fff', 'BookOpen', d ? `${DAYS[wd(d)]} ${timeOn(ng, d)}` : 'Open', 'Next · ' + esc(ng.name), homeOpen(ng)); }
+  else w2 = ffMiniW('wb', 0, '#fff', 'BookOpen', '–', 'No lessons planned', 'data-tab="1"');
+  return `<div class="ffm-row two">${w1}${w2}</div>`;
 };
+
+/* ---------- the month: ONE small button, tap = the other months ---------- */
+ffMonthStrip = function () {
+  if (!S.pay || !feeGroups().length) return '';
+  const cur = ymOf(TODAY), sel = payState().ym, from = S.pay.start && S.pay.start <= cur ? S.pay.start : cur, list = [];
+  for (let m = cur, i = 0; m >= from && i < 18; m = ymAdd(m, -1), i++) list.push(m);
+  const sc = statusCounts(sel);
+  return `<div class="ffmp h-in" data-noswipe><div class="ffmp-bar"><button class="ffmp-btn" data-ffmonopen aria-haspopup="true">${ic('CalendarDays')}<b>${esc(ymName(sel))}</b>${ic('ChevronDown')}</button>
+    <span class="ffmp-sum">${sc.n ? `<i class="ok"></i>${sc.ok} paid<i class="no"></i>${sc.n - sc.ok} not paid` : 'no fees yet'}</span></div>
+    <div class="ffmp-menu" role="menu"><div>${list.map((m) => `<button class="${m === sel ? 'on' : ''}" data-ffmon="${m}"><span>${esc(ymName(m))}</span>${m === sel ? ic('Check') : ''}</button>`).join('')}</div></div></div>`;
+};
+{
+  const _c = home2Click;
+  home2Click = function (b, d) {
+    if (d.ffmonopen !== undefined) { const m = b.closest('.ffmp'); if (m) m.classList.toggle('open'); return true; }
+    return _c(b, d);
+  };
+  document.addEventListener('click', (e) => { document.querySelectorAll('.ffmp.open').forEach((m) => { if (!m.contains(e.target)) m.classList.remove('open'); }); }, true);
+}
+
+/* ---------- the Attendance | Paid | Course switch: tap, or hold and slide, or swipe the card ---------- */
+{
+  const _i = ffInsights2;
+  ffInsights2 = function () { return _i.apply(this, arguments).replace('class="ffc ffc2 h-in"', 'class="ffc ffc2 h-in" data-noswipe'); };
+  const ORDER = ['att', 'pay', 'crs'];
+  let st = null, sup = 0;
+  const goTo = (k) => { const b = document.querySelector(`.ffsw [data-ffins="${k}"]`); if (b) b.click(); };
+  document.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest && e.target.closest('.ffc2'); if (!card || e.target.closest('.ffc-chips,.ffr-leg')) return;
+    st = { x0: e.clientX, y0: e.clientY, id: e.pointerId, sw: e.target.closest('.ffsw'), i0: Math.max(0, ORDER.indexOf(T.ffi)), on: false, f: 0 };
+  }, true);
+  document.addEventListener('pointermove', (e) => {
+    if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
+    if (!st.on) {
+      if (Math.abs(dx) < 8) return; if (Math.abs(dx) < Math.abs(dy) * 1.2) { st = null; return; }
+      st.on = true; if (st.sw) { st.sw.classList.add('drag'); try { st.sw.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    }
+    if (st.sw) { st.f = Math.max(0, Math.min(2, st.i0 + dx / (st.sw.clientWidth / 3))); st.sw.style.setProperty('--i', st.f); }
+  }, true);
+  const end = (e) => {
+    if (!st || e.pointerId !== st.id) return; const s0 = st; st = null; if (!s0.on) return;
+    const dx = e.clientX - s0.x0; let to = s0.i0;
+    if (s0.sw) { s0.sw.classList.remove('drag'); to = Math.round(s0.f); } else if (Math.abs(dx) > 44) to = Math.max(0, Math.min(2, s0.i0 + (dx < 0 ? 1 : -1)));
+    if (s0.sw) s0.sw.style.setProperty('--i', to);
+    if (to !== s0.i0) goTo(ORDER[to]);
+    sup = Date.now();
+  };
+  document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true);
+  document.addEventListener('click', (e) => { if (Date.now() - sup < 350 && e.target.closest && e.target.closest('.ffc2')) { e.stopPropagation(); e.preventDefault(); } }, true);
+}
+
+/* ---------- the first Register screen drawn ahead of time, out of sight (its first draw was the slowest tap) ---------- */
+setTimeout(() => {
+  const run = () => {
+    if (T.sheet || T.push.length || !S.groups.length || !PUSH.register) return;
+    const el = document.createElement('div'); el.className = 'tp-push still'; el.style.visibility = 'hidden'; el.setAttribute('aria-hidden', 'true');
+    try { el.innerHTML = PUSH.register({ g: S.groups[0].id }); } catch (e) { return; }
+    R.screens.appendChild(el); void el.offsetHeight; requestAnimationFrame(() => requestAnimationFrame(() => el.remove()));
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 3000 }); else run();
+}, 2200);
