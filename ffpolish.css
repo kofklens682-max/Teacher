@@ -1,0 +1,76 @@
+/* 8 Nov PREVIEW: background per tab, Units / Attendance / Books in the same glass style, iPhone motion. Loaded last. */
+@property --p{syntax:'<number>';inherits:false;initial-value:0}
+@property --b1{syntax:'<color>';inherits:true;initial-value:#0A84FF}
+@property --b2{syntax:'<color>';inherits:true;initial-value:#AF52DE}
+@property --b3{syntax:'<color>';inherits:true;initial-value:#34C759}
+@property --b4{syntax:'<color>';inherits:true;initial-value:#FF9500}
+/* ---------- 1. the background: a rich gradient "wallpaper" that changes color with the tab ---------- */
+.tp{--b1:#2F8CFF;--b2:#B05CFF;--b3:#35D6A0;--b4:#FFB347;transition:--b1 .8s ease,--b2 .8s ease,--b3 .8s ease,--b4 .8s ease}
+.tp[data-tab="1"]{--b1:#B05CFF;--b2:#FF5FA2;--b3:#4D8DFF;--b4:#FFC857}   /* Units: purple and pink */
+.tp[data-tab="2"]{--b1:#22D3A0;--b2:#2F8CFF;--b3:#7BE36B;--b4:#B05CFF}   /* Attendance: green and teal */
+.tp[data-tab="3"]{--b1:#FFA43A;--b2:#FF5F6D;--b3:#FFD84D;--b4:#B05CFF}   /* Books: orange and gold */
+.tp::before{background:
+  radial-gradient(75% 42% at 10% 4%,color-mix(in srgb,var(--b1) 34%,transparent),transparent 72%),
+  radial-gradient(65% 38% at 100% 20%,color-mix(in srgb,var(--b2) 30%,transparent),transparent 72%),
+  radial-gradient(75% 40% at 0% 64%,color-mix(in srgb,var(--b3) 26%,transparent),transparent 72%),
+  radial-gradient(80% 42% at 100% 98%,color-mix(in srgb,var(--b4) 30%,transparent),transparent 72%),
+  linear-gradient(180deg,#F4F6FF 0%,#F6F2FF 50%,#FFF4F2 100%) !important}
+.tp-page{background:transparent}.tp-push{background:radial-gradient(75% 30% at 8% 0%,color-mix(in srgb,var(--b1) 26%,transparent),transparent 72%),radial-gradient(70% 30% at 100% 55%,color-mix(in srgb,var(--b2) 20%,transparent),transparent 72%),linear-gradient(180deg,#F4F6FF 0%,#F6F2FF 55%,#FFF4F2 100%)}
+/* ---------- 2. Units, Attendance, Books: the same hero, glass rows and bright cards ---------- */
+.hn-next{border-radius:30px !important;color:#fff;background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#19C8FF,#0A74FF 52%,#6A3DF5) !important;
+  box-shadow:0 22px 44px -16px rgba(40,110,255,.7),inset 0 1px 0 rgba(255,255,255,.5) !important}
+.tp-page:nth-child(2) .hn-next{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#D58BFF,#8F35FF 55%,#FF4F9A) !important;box-shadow:0 22px 44px -16px rgba(150,50,255,.65),inset 0 1px 0 rgba(255,255,255,.5) !important}
+.tp-page:nth-child(3) .hn-next{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#4DEB8B,#13B8A8 55%,#0A84FF) !important;box-shadow:0 22px 44px -16px rgba(18,184,120,.65),inset 0 1px 0 rgba(255,255,255,.5) !important}
+.hn-next .hn-when{background:linear-gradient(150deg,rgba(255,255,255,.34),rgba(255,255,255,.14)) !important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.55),inset 0 0 0 .5px rgba(255,255,255,.3)}
+.hn-btns button{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.82)) !important;color:#0A55D0 !important;font-weight:800;min-height:50px;border-radius:17px !important;box-shadow:inset 0 1.5px 0 #fff,0 10px 22px -10px rgba(0,30,120,.55) !important}
+.hn-btns button+button{background:linear-gradient(150deg,rgba(255,255,255,.34),rgba(255,255,255,.14)) !important;color:#fff !important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.55),inset 0 0 0 .5px rgba(255,255,255,.3) !important}
+.hn-name{font-size:30px}
+.un-row2,.tl-sec,.at-mini,.bk-card,.tp-empty2{background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(255,255,255,.66)) !important;border-radius:24px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .6px rgba(255,255,255,.7),0 1px 2px rgba(20,25,60,.04),0 14px 30px -16px rgba(20,25,60,.22) !important}
+.un-list{display:grid;gap:10px}.un-row2{padding:13px 14px;min-height:72px}.un-row2.now{background:linear-gradient(160deg,rgba(236,244,255,.96),rgba(214,232,255,.8)) !important;box-shadow:inset 0 0 0 1.5px rgba(10,132,255,.55),0 14px 30px -14px rgba(10,132,255,.5) !important}
+.un-row2 .tx b{font-size:16.5px;letter-spacing:-.01em}.un-row2 .k{font-weight:800;letter-spacing:.04em}
+.un-dots i.d{background:#A23BFF}.un-dots i.n{background:#0A84FF}
+.tp-segs{gap:8px}.tp-segs button{background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.7));box-shadow:inset 0 1px 0 #fff,0 6px 14px -8px rgba(20,25,60,.25);border-radius:99px;padding:9px 16px;font-weight:700}
+.tp-segs button.on{background:linear-gradient(150deg,#41A0FF,#0A64EA);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 10px 20px -8px rgba(10,100,234,.7)}
+.tp-seg2{background:rgba(120,120,128,.16);-webkit-backdrop-filter:none}.tp-seg2 button.on{background:linear-gradient(180deg,#fff,rgba(255,255,255,.88));box-shadow:0 2px 6px rgba(20,25,60,.16),inset 0 1px 0 #fff}
+.at-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.at-mini{padding:14px;border-radius:24px !important;color:#fff}
+.at-mini:nth-child(1){background:radial-gradient(110% 80% at 100% 0%,rgba(255,255,255,.34),transparent 55%),linear-gradient(150deg,#4DEB8B,#17BC52) !important;box-shadow:0 16px 26px -14px rgba(18,184,79,.7),inset 0 1.5px 0 rgba(255,255,255,.55) !important}
+.at-mini:nth-child(2){background:radial-gradient(110% 80% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#FFCF4D,#FF8200) !important;box-shadow:0 16px 26px -14px rgba(255,138,0,.7),inset 0 1.5px 0 rgba(255,255,255,.55) !important}
+.at-mini .h,.at-mini .s,.at-mini small{color:rgba(255,255,255,.92) !important}.at-mini b{color:#fff;font-size:34px;letter-spacing:-.04em}
+.at-mini .ho-bar{background:rgba(255,255,255,.35)}.at-mini .ho-bar i{background:#fff}
+.tl-sec{padding:4px 6px}.tl-hb{min-height:62px}.at-pill{font-weight:800;border-radius:99px;padding:6px 11px}
+.at-pill.ok{background:#D6F8E3;color:#0E8A3E}.at-pill.wait{background:#FFE9C7;color:#B86A00}.at-pill.gray{background:rgba(120,120,128,.14);color:var(--text2)}
+.at-dot{width:12px;height:12px;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}
+.tp-roundbtn{background:linear-gradient(150deg,#41A0FF,#0A64EA) !important;color:#fff !important;box-shadow:inset 1px 1.2px 0 rgba(255,255,255,.6),0 10px 18px -8px rgba(10,100,234,.7) !important}
+/* Books */
+.bk{box-shadow:0 18px 28px -14px rgba(20,25,60,.5),inset 0 1px 0 rgba(255,255,255,.4)}
+/* ---------- 3. motion, copied from iOS: one curve, parallax, a dim under the screen, a sheet that rises ---------- */
+.tp{--ease:cubic-bezier(.32,.72,0,1)}
+html .tp-push{transition:transform .5s var(--ease);box-shadow:-1px 0 0 rgba(0,0,0,.05),-26px 0 50px -14px rgba(0,0,0,.22)}
+html .tp-push.under{transform:translate3d(-30%,0,0)}
+html .tp-push.gone{transition:transform .42s var(--ease)}
+html .tp-viewport{transition:transform .5s var(--ease)}
+html .tp-viewport.under{transform:translate3d(-30%,0,0)}
+.tp-viewport::after{content:"";position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9;transition:opacity .5s var(--ease)}
+.tp-viewport.under::after{opacity:.12}
+html .tp-sheet .panel{transition:transform .5s var(--ease);border-radius:34px 34px 0 0}
+html .tp-sheet.closing .panel{transition:transform .38s var(--ease)}
+html .tp-sheet .scrim{transition:opacity .5s var(--ease)}
+html .tp-track.settle{transition:transform .5s var(--ease)}
+/* content arrives one piece after another, like the iPhone's own apps */
+.tp-page>:nth-child(2){animation-delay:.03s}.tp-page>:nth-child(3){animation-delay:.06s}.tp-page>:nth-child(4){animation-delay:.09s}.tp-page>:nth-child(5){animation-delay:.12s}.tp-page>:nth-child(6){animation-delay:.15s}.tp-page>:nth-child(7){animation-delay:.18s}
+/* rings fill and bars rise when they appear (Apple Fitness / Charts) */
+.ffring{animation:ffr 1s var(--ease) both}@keyframes ffr{from{--p:0}}
+.ffsvg .bar{transform-box:fill-box;transform-origin:50% 100%;animation:ffbar .75s var(--ease) both}@keyframes ffbar{from{transform:scaleY(0)}}
+.ffseg i{animation:ffseg .6s var(--ease) both}@keyframes ffseg{from{opacity:0;transform:translateY(8px)}}
+/* press feedback like iOS: a quick dim, a tiny shrink on cards and buttons */
+.ffm,.ffh-go,.tp-cta,.tp-pill,.hn-btns button,.un-row2,.tp-lrow{transition:transform .28s var(--ease),opacity .2s,background-color .2s}
+.ffm:active,.ffh-go:active,.tp-cta:active,.hn-btns button:active{transform:scale(.97)}
+.un-row2:active,.tp-lrow:active,.tp-pill:active{opacity:.6}
+@media (prefers-reduced-motion:reduce){.ffring,.ffsvg .bar,.ffseg i{animation:none}html .tp-push,html .tp-viewport,html .tp-sheet .panel{transition-duration:.01s}}
+.hn-next .hn-tag{background:none !important;box-shadow:none !important;padding-left:0;letter-spacing:.06em}
+.tp-page:nth-child(3) .tp-lt{font-size:33px}.hdr-btns{gap:6px}
+.at-hero{margin-top:2px}.at-two{margin-top:10px}
+/* Books: the shelf sits on a glass card and the captions no longer run into the hint */
+.bk-body{background:linear-gradient(160deg,rgba(255,255,255,.88),rgba(255,255,255,.62));border-radius:26px;padding:16px 14px 14px;margin-top:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .6px rgba(255,255,255,.7),0 14px 30px -16px rgba(20,25,60,.22)}
+.bk-body .tp-shelf{padding-bottom:40px}.bk-body .tp-small{margin-top:4px}
