@@ -1,7 +1,7 @@
 'use strict';
 /* 9 Nov (Teacher 7.2 / 7.3): Home. Loaded last.
    1) The Paid widget draws Apple-Watch-style activity rings: one thin ring for each group.
-   2) Two widgets only, each with a clear job: PAID (who paid) and LESSON (the files of the lesson now / the next lesson).
+   2) Four widgets, each with a clear job (see ffMini).
    3) The month is ONE small button; tap it for the other months.
    4) The Attendance | Paid | Course switch: tap, hold and slide, or swipe the card. */
 
@@ -17,23 +17,45 @@ function ffMiniRings(sc) {
   return `<span class="ffrg" aria-hidden="true"><svg viewBox="0 0 50 50">${s}</svg></span>`;
 }
 
-/* ---------- the two widgets ---------- */
+/* ---------- the four widgets ---------- */
 function ffNextLessonGroup() { // the group whose next lesson comes first (when nothing is left today)
   let best = null, when = null;
   S.groups.forEach((g) => { if (!g.students.length) return; const d = lessonDay(g, TODAY, 1); if (d && (!when || d < when)) { best = g; when = d; } });
   return best;
 }
 const ffFileCount = (g) => { const cl = curLes(g), P = PACKS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`]; return P ? PK_KINDS.filter(([k]) => P[k]).length : 0; };
+/* Four widgets, each with a real job and a tap that opens something (user, 9 Nov):
+   PAID = rings, one per group; tap = Mark who paid.   FILES = the files of the lesson now / the next lesson; tap = open it.
+   MISSED = students who missed their last 2 lessons in a row (to call); tap = the list.   HOMEWORK = students marked "no homework" at their group's last lesson; tap = the list. */
+function ffMissed() {
+  const out = [];
+  S.groups.forEach((g) => { const ds = savedDates(g); if (ds.length < 2) return;
+    g.students.forEach((s) => { let n = 0; for (let i = ds.length - 1; i >= 0 && rec(g, fromIso(ds[i])).get(s.id) === 'absent'; i--) n++; if (n >= 2) out.push({ g, s, n }); }); });
+  return out;
+}
+function ffNoHw() {
+  const out = [];
+  S.groups.forEach((g) => { const ds = savedDates(g); if (!ds.length) return; const k = ds[ds.length - 1], r = rec(g, fromIso(k));
+    g.students.forEach((s) => { if (r.get(s.id) !== 'absent' && !r.hwOf(s.id)) out.push({ g, s, k }); }); });
+  return out;
+}
+function ffListSheet(title, list, sub, none) {
+  const by = []; list.forEach((x) => { let b = by.find((y) => y.g === x.g); if (!b) by.push(b = { g: x.g, rows: [] }); b.rows.push(x); });
+  const body = by.length ? by.map(({ g, rows }) => `<div class="pl-h"><span class="d" style="background:${hc(g)}"></span>${esc(g.name)}<em>${rows.length}</em></div><div class="pl-list">${rows.map((x, i) => `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="stu" data-g="${g.id}" data-sid="${x.s.id}"><b>${esc(x.s.name)}</b><span>${sub(x)}</span></button></div>`).join('')}</div>`).join('')
+    : `<p class="tp-small" style="text-align:left;margin-top:14px">${none}</p>`;
+  return `<div class="tp-sh-h"><span></span><b>${title}</b><button class="tp-back strong" data-closesheet>Done</button></div>${body}`;
+}
+SHEETS.ffabs = () => ffListSheet('Missed 2 lessons in a row', ffMissed(), (x) => `missed the last ${x.n} lessons`, 'Nobody has missed two lessons in a row. 👍');
+SHEETS.ffhw = () => ffListSheet('No homework last lesson', ffNoHw(), (x) => `last lesson · ${dDate(x.k)}`, 'Everybody did the homework at the last lesson. 👍');
 ffMini = function (g) {
-  const ym = payState().ym, sc = statusCounts(ym);
-  let w1 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '#fff', 'Wallet', sc.n ? `${sc.ok}/${sc.n}` : '–', 'Paid · ' + MONTHS[+ym.slice(5) - 1].slice(0, 3), 'data-sheet="paypick"');
+  const ym = payState().ym, sc = statusCounts(ym), total = S.groups.reduce((a, x) => a + x.students.length, 0) || 1;
+  let w1 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '#fff', 'Wallet', sc.n ? sc.ok + '/' + sc.n : '–', 'Paid', 'data-sheet="paypick"');
   const rg = sc.n ? ffMiniRings(sc) : ''; if (rg) w1 = w1.replace(/<span class="ffring"[^>]*><i>.*?<\/i><\/span>/, rg);
   const ng = g || ffNextLessonGroup(), nf = ng ? ffFileCount(ng) : 0;
-  let w2;
-  if (ng && g) w2 = ffMiniW('wb', 100, '#fff', 'FileText', nf ? `${nf} files` : 'Open', 'Lesson files · ' + esc(ng.name), homeOpen(ng));
-  else if (ng) { const d = lessonDay(ng, TODAY, 1); w2 = ffMiniW('wb', 100, '#fff', 'BookOpen', d ? `${DAYS[wd(d)]} ${timeOn(ng, d)}` : 'Open', 'Next · ' + esc(ng.name), homeOpen(ng)); }
-  else w2 = ffMiniW('wb', 0, '#fff', 'BookOpen', '–', 'No lessons planned', 'data-tab="1"');
-  return `<div class="ffm-row two">${w1}${w2}</div>`;
+  const w2 = ng ? ffMiniW('wb', nf ? 100 : 0, '#fff', 'FileText', nf ? String(nf) : '–', g ? 'Files' : 'Next files', homeOpen(ng)) : ffMiniW('wb', 0, '#fff', 'FileText', '–', 'Files', 'data-tab="1"');
+  const ms = ffMissed(), w3 = ffMiniW('wg', (ms.length / total) * 100, '#fff', 'UserRound', String(ms.length), 'Missed 2+', 'data-sheet="ffabs"');
+  const hw = ffNoHw(), w4 = ffMiniW('wp', (hw.length / total) * 100, '#fff', 'Pencil', String(hw.length), 'No homework', 'data-sheet="ffhw"');
+  return '<div class="ffm-row">' + w1 + w2 + w3 + w4 + '</div>';
 };
 
 /* ---------- the month: ONE small button, tap = the other months ---------- */
