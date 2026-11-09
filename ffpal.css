@@ -8,12 +8,12 @@ html[data-pal="a"]{ /* A: Teacher's orange (the pencil, the school bus; Apple's 
   --pw-paid:#FFCC00;--pw-owe:#FF3B30;--pw-came:#34C759;--pw-week:#FF9500;
   --pbar:rgba(255,252,246,.93);--ptabon:#F07A00;
 }
-:root,html[data-pal="b"]{ /* B (the default), BALANCED: calm green into teal, a soft sky, mild page */
-  --pa:#2FA56F;--pa2:#4DB88A;--pasoft:rgba(47,165,111,.14);
-  --pbg:#EEF4F1;--pbg2:#E7EFEB;--pglow:rgba(70,170,130,.15);--pglow2:rgba(90,170,210,.13);
-  --ph1:#4DB38C;--ph2:#2F9A73;--ph3:#23807A;--phsh:rgba(35,128,110,.45);--pgo:#23805E;
-  --pw-paid:#E8A23A;--pw-owe:#E5604F;--pw-came:#2FA56F;--pw-week:#4A9BC9;
-  --pbar:rgba(250,254,252,.5);--ptabon:#238A5E;
+:root,html[data-pal="b"]{ /* B (the default): Budget's own green (Apple green), light page, soft sky + amber accents */
+  --pa:#2DB852;--pa2:#52DA80;--pasoft:rgba(52,199,89,.14);
+  --pbg:#F3F8F5;--pbg2:#ECF4EF;--pglow:rgba(52,199,89,.12);--pglow2:rgba(90,170,220,.1);
+  --ph1:#52DA80;--ph2:#34C759;--ph3:#26AE4F;--phsh:rgba(38,174,79,.42);--pgo:#1E9F47;
+  --pw-paid:#F0A92E;--pw-owe:#F0614F;--pw-came:#34C759;--pw-week:#4A9BC9;
+  --pbar:rgba(250,254,252,.5);--ptabon:#1FA84A;
 }
 html[data-pal="c"]{ /* C: chalkboard green with a sunny yellow (Apple Notes yellow + Reminders green) */
   --pa:#30D158;--pa2:#5BE37D;--pasoft:rgba(48,209,88,.15);
@@ -115,7 +115,7 @@ html .tp-page:nth-child(n) .tp-card2 .tp-shelf,html .tp-page:nth-child(n) .tp-sh
 /* ===== 7.7: balanced colors, a SMALLER lesson card, and glass copied from the iOS 27 reference =====
    The reference glass is CLEAR: almost no white, the picture behind shows through (a little saturated), a thin bright rim on the
    top-left and a softer one on the bottom-right, a faint glow inside, a soft shadow. Mine was frosted white. */
-.tp{--good:#2FA56F;--late:#E8A23A;--bad:#E5604F}
+.tp{--good:#34C759;--late:#F0A92E;--bad:#F0614F}
 :root{--glass-bg:linear-gradient(135deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 55%,rgba(255,255,255,.2));
   --glass-rim:inset 0 0 0 .6px rgba(255,255,255,.6),inset 1.4px 1.8px 0 rgba(255,255,255,.8),inset -1.2px -1.6px 0 rgba(255,255,255,.34),inset 0 0 16px rgba(255,255,255,.16);
   --glass-blur:blur(9px) saturate(1.7)}
