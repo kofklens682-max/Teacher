@@ -47,3 +47,75 @@ html.moving .tp-lights, html.moving .h2-quick button { -webkit-backdrop-filter: 
 .tp-lights, .tp-pushbar .tp-back, .h2-quick button { background: linear-gradient(135deg, rgba(255,255,255,.97), rgba(255,255,255,.86)) !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tp-lights, :root:not([data-theme="light"]) .tp-pushbar .tp-back, :root:not([data-theme="light"]) .h2-quick button { background: rgba(58,58,60,.92) !important; } }
 .tp-hdr > div:first-child { min-width: 0; } .tp-hdr .tp-eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 6 Nov 2026: the date above the title stays on one line next to the buttons */
+
+/* ===== 10 Nov 2026: the iPhone-style Glass look (user approved the sample). Only when Look = Glass (html.glass); Normal is not touched.
+   Glass is only on what floats: tab bar, small controls, top edge, pop-ups. Cards stay solid. The lens and the scroll code are at the end of liquid.js.
+   The !important marks are needed until the old stacked style files are folded into one (job A4). ===== */
+html.glass {
+  --gl-bg: rgba(255, 255, 255, .16);
+  --gl-bg-strong: rgba(255, 255, 255, .30);
+  --gl-blur: blur(6px) saturate(1.7);
+  --gl-rim: inset 0 1.5px 0 rgba(255, 255, 255, .95), inset 1px 0 0 rgba(255, 255, 255, .5), inset -1px 0 0 rgba(255, 255, 255, .35), inset 0 0 0 .6px rgba(255, 255, 255, .6), inset 0 -1.5px 1px rgba(20, 30, 60, .10), inset 0 10px 14px -10px rgba(255, 255, 255, .7);
+  --gl-shadow: 0 10px 30px -8px rgba(20, 40, 80, .22), 0 2px 6px rgba(20, 40, 80, .06);
+  --spring: cubic-bezier(.3, 1.35, .5, 1);
+}
+/* wallpaper: soft color so the glass has something to bend and tint */
+html.glass .tp::before {
+  background:
+    radial-gradient(60% 30% at 8% 0%, rgba(52, 199, 89, .22), transparent 70%),
+    radial-gradient(55% 28% at 100% 6%, rgba(10, 132, 255, .18), transparent 70%),
+    radial-gradient(70% 34% at 90% 100%, rgba(255, 149, 0, .12), transparent 72%),
+    radial-gradient(60% 30% at 0% 92%, rgba(175, 82, 222, .10), transparent 72%),
+    linear-gradient(#F3F6FA, #EEF1F6) !important;
+}
+/* ---- tab bar: a floating glass capsule ---- */
+html.glass .tp-tabs {
+  background: var(--gl-bg) !important;
+  -webkit-backdrop-filter: var(--gl-blur) !important; backdrop-filter: var(--gl-blur) !important;
+  box-shadow: var(--gl-rim), var(--gl-shadow) !important;
+  border: 0 !important;
+  transform-origin: 50% 100%;
+  transition: transform .45s var(--spring) !important;
+}
+html.glass.g2-lens .tp-tabs { -webkit-backdrop-filter: url(#g2lens-tabs) blur(1.5px) saturate(1.6) !important; backdrop-filter: url(#g2lens-tabs) blur(1.5px) saturate(1.6) !important; }
+html.glass .tp-tabs button { color: #2E3340 !important; text-shadow: 0 0 6px rgba(255,255,255,.9); }
+html.glass .tp-tabs button.on { color: #1C8F45 !important; }
+html.glass .tp-tabs button span { font-size: 11px; font-weight: 600; transition: opacity .2s ease-out; }
+html.glass .tp-ind {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .70), rgba(255, 255, 255, .38)) !important;
+  box-shadow: inset 0 1px 0 #fff, inset 0 0 0 .6px rgba(255, 255, 255, .8), 0 4px 12px -4px rgba(20, 40, 80, .22) !important;
+}
+/* shrink a little when the page goes down, come back when it goes up (test) */
+html.glass.g2-down:not(.g2-noshrink) .tp-tabs { transform: translateY(6px) scale(.86) !important; }
+html.glass.g2-down:not(.g2-noshrink) .tp-tabs button span { opacity: .0; }
+/* ---- soft edges instead of bars: the page fades under the top and above the tab bar ---- */
+html.glass .g2-edge { position: absolute; left: 0; right: 0; pointer-events: none; z-index: 25; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+html.glass .g2-edge.b { bottom: 0; height: 64px; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); -webkit-mask-image: linear-gradient(to top, #000 25%, transparent); mask-image: linear-gradient(to top, #000 25%, transparent);
+  background: linear-gradient(to top, rgba(240, 243, 248, .35), rgba(240, 243, 248, 0)); }
+html.glass .g2-edge.t { top: 0; height: 84px; opacity: 0; transition: opacity .25s ease-out; -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent); mask-image: linear-gradient(to bottom, #000 45%, transparent);
+  background: linear-gradient(to bottom, rgba(243, 246, 250, .88), rgba(243, 246, 250, 0)); }
+html.glass.g2-scrolled .g2-edge.t { opacity: 1; }
+/* the "Home" box: no box. A small title sits in the soft top edge */
+html.glass .ffnav { background: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; box-shadow: none !important; border: 0 !important; height: 46px !important; }
+html.glass .ffnav b { font-size: 17px; font-weight: 600; color: #1C1C1E; }
+/* ---- small floating controls ---- */
+html.glass .tp-lights, html.glass .ffmp-btn, html.glass .tp-back, html.glass .tp-iconbtn {
+  background: var(--gl-bg-strong) !important;
+  -webkit-backdrop-filter: var(--gl-blur) !important; backdrop-filter: var(--gl-blur) !important;
+  box-shadow: var(--gl-rim), 0 4px 14px -6px rgba(20, 40, 80, .25) !important; border: 0 !important;
+}
+html.glass .tp-lights:active, html.glass .ffmp-btn:active, html.glass .tp-back:active { transform: scale(1.06); filter: brightness(1.06); transition: transform .3s var(--spring); }
+/* ---- pushed screens: solid page, glass bar on top ---- */
+html.glass .tp-pushbar { background: linear-gradient(to bottom, rgba(243, 246, 250, .9), rgba(243, 246, 250, 0)) !important; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent); mask-image: linear-gradient(to bottom, #000 60%, transparent); }
+/* ---- sheets: glass sheet with a brighter top rim ---- */
+html.glass .tp-sheet .panel {
+  background: rgba(248, 249, 252, .78) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.8) !important; backdrop-filter: blur(28px) saturate(1.8) !important;
+  box-shadow: inset 0 1px 0 #fff, 0 -10px 40px -10px rgba(20, 40, 80, .25) !important;
+}
+html.glass .tp-sheet .tp-sh-h { background: transparent !important; }
+html.glass .tp-toast { background: rgba(40, 44, 54, .72) !important; -webkit-backdrop-filter: blur(18px) saturate(1.8) !important; backdrop-filter: blur(18px) saturate(1.8) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), var(--gl-shadow) !important; }
+/* cards are content, not glass: clean solid white, one soft shadow */
+html.glass .ffm, html.glass .ffc2, html.glass .tp-segs, html.glass .tp-card2, html.glass .at-list > * { background: #fff !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.g2-edge { display: none; } html.glass .g2-edge { display: block; }
