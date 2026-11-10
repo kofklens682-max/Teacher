@@ -19,7 +19,7 @@ html .tp-tabs{background:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,2
   box-shadow:inset 0 1.5px 0 rgba(255,255,255,.55),inset 0 0 0 .6px rgba(255,255,255,.35),0 14px 22px -14px var(--sh)}
 .ffm .ffring{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:42px;height:42px;background:conic-gradient(#fff calc(var(--p)*1%),rgba(255,255,255,.34) 0)}
 .ffm .ffring i{width:32px;height:32px;background:var(--rc);color:#fff}.ffm .ffring i svg{width:16px;height:16px}
-.ffm b{font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1.1}.ffm>span:last-child{font-size:11.5px;font-weight:700;opacity:.95}
+.ffm b{font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1.1}.ffm>span:last-child{font-size:12px;font-weight:700;opacity:.95}
 .ffm:active{transform:scale(.97)}
 .ffm.wg{--sh:rgba(18,184,79,.7);--rc:#22C95E;background:radial-gradient(110% 80% at 100% 0%,rgba(255,255,255,.34),transparent 55%),linear-gradient(150deg,#4DEB8B,#17BC52)}
 .ffm.wo{--sh:rgba(255,138,0,.7);--rc:#FF9410;background:radial-gradient(110% 80% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#FFCF4D,#FF8200)}
@@ -28,7 +28,7 @@ html .tp-tabs{background:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,2
 /* 4. ONE insights card with a switch, and small charts */
 .ffc2{padding:10px 12px 10px}
 .ffsw{position:relative;display:grid;grid-template-columns:repeat(3,1fr);background:rgba(120,120,128,.14);border-radius:12px;padding:2px;margin:2px 0 8px}
-.ffsw .th{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/3);border-radius:10px;background:linear-gradient(180deg,#fff,rgba(255,255,255,.86));box-shadow:0 2px 6px rgba(20,25,60,.18),inset 0 1px 0 #fff;transform:translateX(calc(var(--i)*100%));transition:transform .28s cubic-bezier(.3,1.2,.5,1)}
+.ffsw .th{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/3);border-radius:10px;background:linear-gradient(180deg,#fff,rgba(255,255,255,.86));box-shadow:0 2px 6px rgba(20,25,60,.18),inset 0 1px 0 #fff;transform:translateX(calc(var(--i)*100%));transition:transform var(--t-base) var(--ease-spring)}
 .ffsw button{position:relative;z-index:1;text-align:center;padding:8px 0;font-weight:700;font-size:14px;color:var(--text2)}.ffsw button.on{color:var(--text)}
 .ffc2 .ffc-h b{font-size:15px}.ffc2 .ffc-h span{font-size:12.5px}.ffc2 .ffc-big{font-size:28px}.ffc2 .ffc-big em{font-size:15px}
 .ffc2 .ffsvg{margin-top:0}

@@ -38,7 +38,7 @@
 .tp-pill{min-height:40px;padding:9px 16px;font-size:15px}
 .tp-cta{min-height:58px;border-radius:20px;font-size:17px}
 .tp-tabs{height:72px;border-radius:36px;box-shadow:0 2px 4px rgba(14,19,37,.06),0 22px 40px -14px rgba(14,19,37,.35);border:.5px solid rgba(60,60,67,.1)}
-.tp-tabs button{font-size:11px}
+.tp-tabs button{font-size:12px}
 /* register: bigger faces, bigger switch, the Save button stays on screen above the tab bar */
 .tl-st{border-radius:20px;padding:7px 8px}
 .tl-main .tp-av{width:40px;height:40px;font-size:16px}
@@ -72,7 +72,7 @@
 .ffwk{background:var(--card);border-radius:26px;padding:14px 12px 12px;box-shadow:var(--shadow);margin-top:12px}
 .ffwk-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 8px}.ffwk-h b{font-size:17px}.ffwk-h span{font-size:12px;color:var(--text2)}.ffwk-h i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
 .ffwk-r{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.ffd{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 8px;border-radius:16px}.ffd small{font-size:11.5px;font-weight:700;color:var(--text2)}.ffd b{font-size:17px;font-weight:700}
+.ffd{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 8px;border-radius:16px}.ffd small{font-size:12px;font-weight:700;color:var(--text2)}.ffd b{font-size:17px;font-weight:700}
 .ffd span{display:flex;gap:3px;height:7px}.ffd span i{width:7px;height:7px;border-radius:50%}.ffd span i.no{background:transparent}
 .ffd.today{background:var(--accent);color:#fff}.ffd.today small{color:rgba(255,255,255,.85)}.ffd.today span i{box-shadow:0 0 0 1.5px #fff}
 

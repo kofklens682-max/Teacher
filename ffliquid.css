@@ -34,10 +34,10 @@ html.moving .ffm,html.moving .tp-page:nth-child(1) .ffc,html.moving .tp-page:nth
 /* indigo instead of purple in the charts */
 .ffseg i.d{background:linear-gradient(#6F86F0,#3B5BDB) !important}.ffseg i.n{background:linear-gradient(#35B8FF,#0A74FF) !important}
 /* ---------- 3. the charts switch in place ---------- */
-.ffc-body{transition:opacity .17s ease,transform .17s ease}
+.ffc-body{transition:opacity var(--t-base) var(--ease),transform var(--t-base) var(--ease)}
 .ffc-body.out{opacity:0;transform:translateX(var(--dx,0px))}
-.ffc-body.in{animation:ffbin .5s var(--ease) both}@keyframes ffbin{from{opacity:0;transform:translateX(var(--dx,0px))}}
-.ffsw .th{transition:transform .42s var(--ease)}
+.ffc-body.in{animation:ffbin var(--t-base) var(--ease) both}@keyframes ffbin{from{opacity:0;transform:translateX(var(--dx,0px))}}
+.ffsw .th{transition:transform var(--t-base) var(--ease)}
 /* ---------- 4. Attendance: exact colors, no haze ---------- */
 .tp-page:nth-child(3) .hn-next{background:linear-gradient(160deg,#34C759,#25A94A) !important;box-shadow:0 16px 30px -14px rgba(37,169,74,.75),inset 0 1px 0 rgba(255,255,255,.35) !important}
 .tp-page:nth-child(3) .hn-next .hn-when{background:rgba(255,255,255,.22) !important;box-shadow:none !important}
@@ -56,7 +56,7 @@ html.moving .ffm,html.moving .tp-page:nth-child(1) .ffc,html.moving .tp-page:nth
 .lvc::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(130deg,rgba(255,255,255,.3),rgba(255,255,255,0) 42%);pointer-events:none}
 .lvc.on{opacity:1;box-shadow:inset 1px 1.5px 0 rgba(255,255,255,.55),0 0 0 3px #fff,0 0 0 5.5px var(--c1),0 18px 28px -12px var(--c2)}
 .lvc-e{position:absolute;top:9px;right:11px;font-size:30px;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28));animation:ffloat 3.4s ease-in-out infinite}
-.lvc b{font-size:19px;font-weight:800;letter-spacing:-.02em;position:relative;z-index:1}.lvc>span:last-child{font-size:11.5px;opacity:.92;position:relative;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lvc b{font-size:19px;font-weight:800;letter-spacing:-.02em;position:relative;z-index:1}.lvc>span:last-child{font-size:12px;opacity:.92;position:relative;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lvh{position:relative;overflow:hidden;border-radius:28px;padding:16px;color:#fff;background:linear-gradient(155deg,var(--c1),var(--c2));box-shadow:0 20px 38px -16px var(--c2),inset 0 1px 0 rgba(255,255,255,.45);margin-top:2px}
 .lvh::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(125deg,rgba(255,255,255,.3),rgba(255,255,255,0) 40%)}
 .lvh-top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.95}.lvh-top em{font-style:normal;background:rgba(255,255,255,.22);border-radius:99px;padding:4px 11px;letter-spacing:0;text-transform:none;font-size:13px}
@@ -73,10 +73,10 @@ html.moving .ffm,html.moving .tp-page:nth-child(1) .ffc,html.moving .tp-page:nth
 .rm.now .rm-c{box-shadow:inset 0 0 0 2px var(--c1),0 14px 28px -14px var(--c1)}.rm.done .rm-c{opacity:.88}
 .rm-e{flex:none;width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:31px;line-height:1;background:linear-gradient(155deg,color-mix(in srgb,var(--c1) 24%,#fff),color-mix(in srgb,var(--c2) 12%,#fff));box-shadow:inset 1px 1.5px 0 #fff,0 8px 14px -8px var(--c2);animation:ffloat 3.6s ease-in-out infinite;animation-delay:var(--k,0s)}
 .rm.now .rm-e{animation:ffnow 2.2s ease-in-out infinite}.rm.done .rm-e{animation:none}
-.rm .tx{flex:1;min-width:0}.rm .tx .k{display:block;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--c1)}.rm.done .tx .k{color:var(--text2)}
+.rm .tx{flex:1;min-width:0}.rm .tx .k{display:block;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--c1)}.rm.done .tx .k{color:var(--text2)}
 .rm .tx b{display:block;font-size:16px;letter-spacing:-.01em;line-height:1.25;margin-top:1px}.rm .tx>span:not(.k):not(.rm-d){display:block;font-size:12.5px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rm-here{display:inline-block;margin-left:7px;font-style:normal;font-size:11px;font-weight:800;color:#fff;background:var(--c1);border-radius:99px;padding:2px 8px;vertical-align:2px}
-.rm-d{display:flex;gap:6px;margin-top:7px}.rm-d i{font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:3px 9px;background:rgba(110,125,150,.16);color:var(--text2)}.rm-d i.d{background:var(--c1);color:#fff}.rm-d i.n{background:#fff;color:var(--c1);box-shadow:inset 0 0 0 1.5px var(--c1)}.rm-d b{display:inline;font-size:11px;margin:0}
+.rm-here{display:inline-block;margin-left:7px;font-style:normal;font-size:12px;font-weight:800;color:#fff;background:var(--c1);border-radius:99px;padding:2px 8px;vertical-align:2px}
+.rm-d{display:flex;gap:6px;margin-top:7px}.rm-d i{font-style:normal;font-size:12px;font-weight:700;border-radius:99px;padding:3px 9px;background:rgba(110,125,150,.16);color:var(--text2)}.rm-d i.d{background:var(--c1);color:#fff}.rm-d i.n{background:#fff;color:var(--c1);box-shadow:inset 0 0 0 1.5px var(--c1)}.rm-d b{display:inline;font-size:12px;margin:0}
 .rm-ch{color:#B6BDC9}.rm-ch svg{width:18px;height:18px}
 @media (prefers-reduced-motion:reduce){.lvc-e,.rm-e,.lvh-big,.rm.now .rm-n i{animation:none}}
 .rm{grid-template-columns:34px minmax(0,1fr)}.rm-c{min-width:0;overflow:hidden}.rm .tx{min-width:0}

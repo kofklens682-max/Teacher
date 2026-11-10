@@ -43,20 +43,20 @@
 .at-dot{width:12px;height:12px;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}
 .tp-roundbtn{background:linear-gradient(150deg,#41A0FF,#0A64EA) !important;color:#fff !important;box-shadow:inset 1px 1.2px 0 rgba(255,255,255,.6),0 10px 18px -8px rgba(10,100,234,.7) !important}
 /* Books */
-.bk{box-shadow:0 18px 28px -14px rgba(20,25,60,.5),inset 0 1px 0 rgba(255,255,255,.4)}
+.bk{box-shadow:0 9px 14px -9px rgba(20,25,60,.5),inset 0 1px 0 rgba(255,255,255,.4)}
 /* ---------- 3. motion, copied from iOS: one curve, parallax, a dim under the screen, a sheet that rises ---------- */
 .tp{--ease:cubic-bezier(.32,.72,0,1)}
-html .tp-push{transition:transform .5s var(--ease);box-shadow:-1px 0 0 rgba(0,0,0,.05),-26px 0 50px -14px rgba(0,0,0,.22)}
+html .tp-push{transition:transform var(--t-slow) var(--ease);box-shadow:-1px 0 0 rgba(0,0,0,.05),-12px 0 22px -10px rgba(0,0,0,.2)}
 html .tp-push.under{transform:translate3d(-30%,0,0)}
-html .tp-push.gone{transition:transform .42s var(--ease)}
-html .tp-viewport{transition:transform .5s var(--ease)}
+html .tp-push.gone{transition:transform var(--t-slow) var(--ease)}
+html .tp-viewport{transition:transform var(--t-slow) var(--ease)}
 html .tp-viewport.under{transform:translate3d(-30%,0,0)}
-.tp-viewport::after{content:"";position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9;transition:opacity .5s var(--ease)}
+.tp-viewport::after{content:"";position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9;transition:opacity var(--t-slow) var(--ease)}
 .tp-viewport.under::after{opacity:.12}
-html .tp-sheet .panel{transition:transform .5s var(--ease);border-radius:34px 34px 0 0}
-html .tp-sheet.closing .panel{transition:transform .38s var(--ease)}
-html .tp-sheet .scrim{transition:opacity .5s var(--ease)}
-html .tp-track.settle{transition:transform .5s var(--ease)}
+html .tp-sheet .panel{transition:transform var(--t-slow) var(--ease);border-radius:34px 34px 0 0}
+html .tp-sheet.closing .panel{transition:transform var(--t-base) var(--ease)}
+html .tp-sheet .scrim{transition:opacity var(--t-slow) var(--ease)}
+html .tp-track.settle{transition:transform var(--t-slow) var(--ease)}
 /* content arrives one piece after another, like the iPhone's own apps */
 .tp-page>:nth-child(2){animation-delay:.03s}.tp-page>:nth-child(3){animation-delay:.06s}.tp-page>:nth-child(4){animation-delay:.09s}.tp-page>:nth-child(5){animation-delay:.12s}.tp-page>:nth-child(6){animation-delay:.15s}.tp-page>:nth-child(7){animation-delay:.18s}
 /* rings fill and bars rise when they appear (Apple Fitness / Charts) */

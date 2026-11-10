@@ -12,7 +12,7 @@ html[data-pal="a"]{ /* A: Teacher's orange (the pencil, the school bus; Apple's 
   --pa:#2DB852;--pa2:#52DA80;--pasoft:rgba(52,199,89,.14);
   --pbg:#F3F8F5;--pbg2:#ECF4EF;--pglow:rgba(52,199,89,.12);--pglow2:rgba(90,170,220,.1);
   --ph1:#52DA80;--ph2:#34C759;--ph3:#26AE4F;--phsh:rgba(38,174,79,.42);--pgo:#1E9F47;
-  --pw-paid:#F0A92E;--pw-owe:#F0614F;--pw-came:#34C759;--pw-week:#4A9BC9;
+  --pw-paid:#34C759;--pw-owe:#F0614F;--pw-came:#34C759;--pw-week:#4A9BC9;
   --pbar:rgba(250,254,252,.5);--ptabon:#1FA84A;
 }
 html[data-pal="c"]{ /* C: chalkboard green with a sunny yellow (Apple Notes yellow + Reminders green) */
@@ -131,7 +131,7 @@ html .tp-ind{background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,25
 .ffh-chips span,.ffh-when{background:linear-gradient(135deg,rgba(255,255,255,.3),rgba(255,255,255,.08)) !important;box-shadow:var(--glass-rim) !important;-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur)}
 /* the lesson card, about 30% smaller */
 .ffh{padding:12px 14px 12px !important;border-radius:22px !important;margin-top:2px !important}
-.ffh-top{font-size:11.5px !important}
+.ffh-top{font-size:12px !important}
 .ffh-main{margin:4px 0 0 !important}
 .ffh-name{font-size:34px !important;line-height:1.05}
 .ffh-sub{font-size:13px !important;margin-top:2px !important}
@@ -160,3 +160,52 @@ html .tp-ind{box-shadow:var(--glass-rim) !important}
 .tp .tp-pill{color:#0A7CFF !important;background:rgba(10,124,255,.1) !important}
 .tp .tp-pill svg{color:#0A7CFF !important;stroke:currentColor}
 .tp .tp-pill.strong{background:#0A7CFF !important;color:#fff !important}
+
+/* ===== 10 Nov style audit (L3-L6, L46, L47): finger sizes. The picture stays as it is; an invisible area around it grows to 44 high
+   (tokens: --tap). Where neighbors are close, the area stops half way to the neighbor so two areas never overlap. ===== */
+.tp-back,.tp-undo,button.tp-avatar,.tp-iconbtn,.tp-roundbtn,.pv-x,.tp-stulist button,.dr-del,.tp-swatches button,.pl-tick,.at-edit,.pl-unpay,.tp-pill,.tp-segs button,.ffmp-btn,.tp-chips2 button,.pm-chg button,.ds-stu button,.dn-g{position:relative}
+.tp-back::after{content:"";position:absolute;inset:-6px}
+.tp-undo::after{content:"";position:absolute;inset:-11px -8px}
+button.tp-avatar::after{content:"";position:absolute;inset:-4px -2px}
+.tp-iconbtn::after{content:"";position:absolute;inset:-4px -2px}
+.tp-roundbtn::after{content:"";position:absolute;inset:-2px}
+.pv-x::after{content:"";position:absolute;inset:-5px}
+.tp-stulist button::after{content:"";position:absolute;inset:-12px -6px -12px -8px}
+.dr-del::after{content:"";position:absolute;inset:-7px}
+.tp-swatches button::after{content:"";position:absolute;inset:-4px}
+.pl-tick::after{content:"";position:absolute;inset:-4px}
+.at-edit::after{content:"";position:absolute;inset:-5px}
+.pl-ok::after{content:"";position:absolute;inset:-4px 0}
+.pl-unpay::after{content:"";position:absolute;inset:-7px -2px}
+.gc::before{content:"";position:absolute;inset:-1px}
+.tp-lights .lt::after{content:"";position:absolute;inset:-10px -3px}
+.tp-lights.plain .lt::after{inset:-5px 0}
+.tp-pill::after{content:"";position:absolute;inset:-2px 0}
+.tp-segs button::after{content:"";position:absolute;inset:-3px 0}
+.ffmp-btn::after{content:"";position:absolute;inset:-4px 0}
+.ffsw button::after{content:"";position:absolute;inset:-5px 0}
+.tp-seg2:not(.pla) button::after{content:"";position:absolute;inset:-5px 0}
+.tp-chips2 button::after,.pm-chg button::after,.ds-stu button::after{content:"";position:absolute;inset:-3px 0}
+.dn-g::after{content:"";position:absolute;inset:-4px 0}
+
+/* ===== The Present / Absent switch on the register rows: iPhone switch, 51 x 31, with a 44 high tap area.
+   Track green = Present, red = Absent. The chosen letter is dark on the white thumb; the other letter is white on the track. ===== */
+.tp-seg2.pla{width:51px;height:31px;box-sizing:border-box;padding:2px;margin:0;border-radius:999px;flex:none}
+.tp-seg2.pla .seg-thumb{top:2px;bottom:2px;left:2px;width:calc((100% - 4px) / 2);border-radius:999px}
+.tp-seg2.pla button{height:27px;padding:0;line-height:27px;font-size:13px;font-weight:800;border-radius:999px;color:rgba(255,255,255,.92)}
+.tp-seg2.pla button.on{color:#1C1C1E}
+.tp-seg2.pla button::after{content:"";position:absolute;inset:-8px 0 -8px -6px}
+.tp-seg2.pla button+button::after{inset:-8px -6px -8px 0}
+.tl-st.here .tp-seg2.pla.slide{background:#34C759 !important;box-shadow:none !important}
+.tl-st.absent .tp-seg2.pla.slide{background:#FF3B30 !important;box-shadow:none !important}
+.tl-st .tp-seg2.pla .seg-thumb{--seg-on:#fff}
+html .tp-seg2.pla .seg-thumb::before{background:#fff !important}
+
+/* ===== Text: tab labels in Glass were 11 (glass.css), now 12 like everywhere else ===== */
+html.glass .tp-tabs button span{font-size:12px}
+
+/* ===== Motion (L35, L36, L40): the one bounce is --ease-spring. liquid.css still has its own bounce curves; these rules come later and win ===== */
+html .tp-ind{transition:transform var(--t-base) var(--ease-spring),box-shadow var(--t-base) !important}
+.tp-tabs button svg,.tp-tabs button > span{transition:transform var(--t-base) var(--ease-spring),color var(--t-fast) !important}
+html .seg-thumb::before{transition:transform var(--t-base) var(--ease-spring),box-shadow var(--t-base)}
+.tp-seg2.slide button{transition:color var(--t-fast),opacity var(--t-fast),transform var(--t-base) var(--ease-spring) !important}
