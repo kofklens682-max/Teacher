@@ -4,6 +4,7 @@ const VERSION = 'teacher-v92';
 const SHELL = [
   './',
   './index.html',
+  './tokens.css',
   './style.css',
   './js/icons.js',
   './data/course.js',
