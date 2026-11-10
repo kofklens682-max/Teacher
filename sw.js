@@ -77,7 +77,9 @@ self.addEventListener('activate', (e) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => k.startsWith('teacher-') && k !== VERSION && k !== MEDIA).map((k) => caches.delete(k))))
       // the old slide-deck pictures and voices are not used any more: keep only the lesson files (IELTS Turbo files keep their names when rebuilt: fetch them again)
-      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !r.url.includes('/media/packs/') || r.url.includes('/media/packs/turbo/')).map((r) => c.delete(r))))))
+      // 10 Nov 2026: this used to delete everything outside media/packs on EVERY update, so the week icons (media/wk), the file reader (media/pdfjs)
+      // and the kids pictures (media/k) needed internet again after each update. Now only folders the app no longer uses are removed.
+      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !/\/media\/(packs|pdfjs|wk|k)\//.test(r.url) || r.url.includes('/media/packs/turbo/')).map((r) => c.delete(r))))))
       .then(() => self.clients.claim())
   );
 });
