@@ -114,8 +114,8 @@ const lessonOpen = (g, d) => iso(d) < iso(TODAY) || (iso(d) === iso(TODAY) && no
 const whenLabel = (g, d) => (iso(d) === iso(TODAY) ? 'today' : `${DAYS_LONG[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`) + ' at ' + timeOn(g, d);
 const notOpenToast = (g, d) => toast(`This lesson starts ${whenLabel(g, d)}. The register opens then.`);
 function savedDates(g) { return Object.keys(S.saved[g.id] || {}).filter((k) => S.saved[g.id][k]).sort(); }
-function attPct(g) { // the share of students present over this month's taken registers (or all of them early in a month)
-  const all = savedDates(g), ym = iso(TODAY).slice(0, 7), month = all.filter((k) => k.startsWith(ym)), use = month.length ? month : all;
+function attPct(g) { // the share of students present over this month's taken registers (or the last ones early in a month)
+  const all = savedDates(g), ym = iso(TODAY).slice(0, 7), month = all.filter((k) => k.startsWith(ym)), use = month.length ? month : all.slice(-12); // T11: early in a month, the last 12 registers, not every one ever taken
   let here = 0, total = 0;
   use.forEach((k) => { const r = rec(g, fromIso(k)); g.students.forEach((s) => { if (!(s.id in r.att) && !r.saved) return; total++; if (r.get(s.id) !== 'absent') here++; }); });
   return total ? Math.round((here / total) * 100) : null;
@@ -1327,12 +1327,18 @@ async function start() {
   setTimeout(prewarm, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* the browser decides */ }
   setInterval(checkLocks, 15000);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    setTimeout(checkLocks, 300);
-    const now = midnight(new Date()); if (iso(now) !== iso(TODAY)) { TODAY = now; makeCopy('day'); draw(); }
-  });
 }
+// 10 Nov (audit T50): ONE visibilitychange handler (there were six in store, bridge, home2, leave and here, each drawing on its own).
+// Leaving: the second copy is written at once and Budget gets the newest list. Coming back: a new day, Budget's schedule changes
+// and lessons that ended meanwhile are taken in quietly, then the app draws once.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { if (next) writeSecond(); publishRoster(); return; }
+  if (!root || !R) return;
+  const now = midnight(new Date()); if (iso(now) !== iso(TODAY)) { TODAY = now; makeCopy('day'); }
+  lessonPull(true);
+  if (typeof clockTick === 'function') clockTick(true); // js/leave.js
+  draw();
+});
 window.addEventListener('error', (e) => { try { toast('Something went wrong: ' + (e.message || 'error')); } catch (_) { /* ignore */ } });
 // 9 Nov: the first screen is drawn only after ALL the scripts have loaded (the newer Home code is in the files after this one).
 // Before, the app drew the old Home at once and swapped in the new one half a second later.

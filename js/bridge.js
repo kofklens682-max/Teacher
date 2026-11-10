@@ -24,9 +24,16 @@ function firstMonth(g, s) {
 
 /* ---------- the payments of one student ---------- */
 const YM = /^\d{4}-\d\d$/;
+// 10 Nov (audit T1): the payments are sorted into one list per student once, and again only when S.pay.pays changes
+// (every change makes a new list or changes its length), instead of searching all payments on every call.
+let payIdx = null, payRef = null, payLen = -1;
 function payRows(sid) {
-  return S.pay.pays.filter((p) => p.sid === sid).map((p) => ({ ...p, alloc: YM.test(p.m || '') ? [{ m: p.m, amount: +p.amount }] : null }))
-    .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
+  if (S.pay.pays !== payRef || S.pay.pays.length !== payLen) {
+    payRef = S.pay.pays; payLen = payRef.length; payIdx = new Map();
+    payRef.forEach((p) => { const r = { ...p, alloc: YM.test(p.m || '') ? [{ m: p.m, amount: +p.amount }] : null }, a = payIdx.get(p.sid); if (a) a.push(r); else payIdx.set(p.sid, [r]); });
+    payIdx.forEach((a) => a.sort((x, y) => x.date.localeCompare(y.date) || String(x.id).localeCompare(String(y.id))));
+  }
+  return (payIdx.get(sid) || []).slice();
 }
 const paidIn = (sid, m) => S.pay.pays.filter((p) => p.sid === sid && p.m === m).reduce((a, p) => a + +p.amount, 0);
 
@@ -60,9 +67,16 @@ function ledger(g, s, ym) {
 }
 
 /* ---------- Teacher -> Budget ---------- */
+// 10 Nov (audit T1): a save no longer rebuilds this list at once. It waits until the phone has been idle for about a second
+// (many taps = one rebuild), and each student's month answers are kept and worked out again only when something they depend
+// on changed: the months' charges, the first month or the student's payments.
+let rosterT = 0;
+const rosterMemo = new Map(); // student id -> { sig, t, c }
+function rosterSoon() { clearTimeout(rosterT); rosterT = setTimeout(() => idle(() => publishRoster()), 1000); }
 function publishRoster() {
+  clearTimeout(rosterT); rosterT = 0;
   try {
-    const to = ymAdd(ymOf(TODAY), FUTURE), groups = [], charges = {}, cov = {}, paid = {}, st = {};
+    const cur = ymOf(TODAY), to = ymAdd(cur, FUTURE), near = ymAdd(cur, 3), groups = [], charges = {}, cov = {}, paid = {}, st = {}, seen = new Set();
     S.groups.forEach((g) => {
       const p = planOf(g) || {};
       groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })),
@@ -70,12 +84,22 @@ function publishRoster() {
         slots: slotsOf(g) });
       if (!hasFee(g)) return;
       g.students.forEach((s) => {
-        const o = charges[s.id] = {}, c = cov[s.id] = {}, pd = paid[s.id] = {}, t = st[s.id] = {}, cur = ymOf(TODAY);
-        for (let m = firstMonth(g, s); m <= to; m = ymAdd(m, 1)) { o[m] = chargeOf(g, s, m); if (m <= ymAdd(cur, 3)) t[m] = ledger(g, s, m).st; }
-        ledger(g, s, to).rows.forEach((r) => { if (r.covered) c[r.m] = r.covered; });
-        S.pay.pays.forEach((p) => { if (p.sid === s.id && YM.test(p.m || '')) pd[p.m] = (pd[p.m] || 0) + +p.amount; });
+        const o = charges[s.id] = {}, pd = paid[s.id] = {}, first = firstMonth(g, s), rows = payRows(s.id);
+        for (let m = first; m <= to; m = ymAdd(m, 1)) o[m] = chargeOf(g, s, m);
+        rows.forEach((x) => { if (YM.test(x.m || '')) pd[x.m] = (pd[x.m] || 0) + +x.amount; });
+        // everything ledger() reads for this student: today's month, the first month, the kind of fee, the charges, the payments
+        const sig = JSON.stringify([cur, first, isSingle(g), o, rows.map((x) => [x.id, x.m || '', +x.amount, x.date])]);
+        let k = rosterMemo.get(s.id);
+        if (!k || k.sig !== sig) {
+          const t = {}, c = {};
+          for (let m = first; m <= near; m = ymAdd(m, 1)) t[m] = ledger(g, s, m).st;
+          ledger(g, s, to).rows.forEach((r) => { if (r.covered) c[r.m] = r.covered; });
+          k = { sig, t, c }; rosterMemo.set(s.id, k);
+        }
+        st[s.id] = k.t; cov[s.id] = k.c; seen.add(s.id);
       });
     });
+    rosterMemo.forEach((_, id) => { if (!seen.has(id)) rosterMemo.delete(id); });
     // st = Teacher's own answer for each month (paid / part / unpaid / free, as on Home: a month counts as paid only when
     // nothing is owed up to it); cov = how much of each month is covered; paid = the money marked for each month.
     // Budget shows these, so both apps always say the same thing.
@@ -123,7 +147,7 @@ function lessonPush() { // Teacher -> Budget: what changed here
   });
   try { if (wrote) localStorage.setItem(LS_KEY, JSON.stringify(L)); } catch (e) { /* the groups themselves are kept */ }
 }
-function lessonPull() { // Budget -> Teacher: what changed there
+function lessonPull(quiet) { // Budget -> Teacher: what changed there (quiet = the caller draws)
   const L = lsRead(); let ch = false; S.lsm = S.lsm || {};
   Object.entries(L.g).forEach(([id, e]) => {
     const m = S.lsm[id]; if (!e || !(e.at > (m ? m.at : 0))) return;
@@ -138,15 +162,14 @@ function lessonPull() { // Budget -> Teacher: what changed there
     if (JSON.stringify([e.name || g.name, e.slots]) !== lsSig(g) || !m) { lsApply(g, e); ch = true; }
     S.lsm[id] = { at: e.at, sig: lsSig(g) };
   });
-  if (ch) { save(); if (typeof draw === 'function') draw(); }
+  if (ch) { save(); if (!quiet && typeof draw === 'function') draw(); }
   return ch;
 }
 window.addEventListener('storage', (e) => { if (e.key === LS_KEY) lessonPull(); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) lessonPull(); });
+// coming back to the app (lessonPull) and leaving it (publishRoster at once): app.js has the one visibilitychange handler (10 Nov, audit T50)
 
-{ const _save = save; save = function () { lessonPush(); _save(); publishRoster(); }; }
+{ const _save = save; save = function () { lessonPush(); _save(); rosterSoon(); }; } // Budget's list waits for an idle second (T1)
 { let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); lessonPull(); publishRoster(); } }, 500); } // once, when the app has opened
-document.addEventListener('visibilitychange', () => publishRoster()); // also when you leave for Budget
 // 10 Nov (audit T5): the one fresh start of payments (30 Oct 2026) is finished and its code is gone, so restoring an old backup
 // or copy can never clear the payment marks again. S.pay.fresh1 stays in the data, but nothing acts on it.
 

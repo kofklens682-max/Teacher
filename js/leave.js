@@ -29,8 +29,7 @@ function clockTick(first) {
   if (ch) save();
   const sig = clockSig(); if ((ch || (lastSig && sig !== lastSig)) && !first) draw(); lastSig = sig;
 }
-setInterval(() => clockTick(false), 20000);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(() => clockTick(false), 400); });
+setInterval(() => clockTick(false), 20000); // coming back to the app: app.js's one visibilitychange handler calls clockTick(true), then draws once
 { let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); clockTick(true); draw(); } }, 500); } // once the saved data has loaded
 
 /* ---------- 2. stay on this lesson ---------- */

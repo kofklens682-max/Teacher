@@ -407,5 +407,5 @@ function home2Click(b, d) {
   return false;
 }
 
-// Budget's schedule changed (in another tab, or while Teacher was in the background): show it
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && typeof draw === 'function') draw(); });
+// Budget's schedule changed (in another tab, or while Teacher was in the background): app.js's one visibilitychange handler
+// pulls it and draws once (10 Nov, audit T50).

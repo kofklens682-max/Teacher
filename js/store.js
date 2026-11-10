@@ -87,8 +87,7 @@ async function writeSecond() {
     if (quickFailed) { try { localStorage.removeItem(KEY); } catch (e) { /* nothing to remove */ } }
   } catch (e) { if (quickFailed) toast('Could not save on this phone. Free up some space.'); }
 }
-// leaving the app: write the second copy at once
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && next) writeSecond(); });
+// leaving the app: write the second copy at once (the visibilitychange part is in app.js's one handler, 10 Nov)
 window.addEventListener('pagehide', () => { if (next) writeSecond(); });
 
 // ---------- start ----------
