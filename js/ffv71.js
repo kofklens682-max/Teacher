@@ -35,8 +35,7 @@ function ffThen() {
     const hero = box.querySelector('.ffh'), t = ffThen(); if (hero && t) hero.insertAdjacentHTML('afterend', t);
     return ffAfterHdr(box.innerHTML);
   };
-  const _att = PAGES[2];
-  PAGES[2] = function () { return ffAfterHdr(_att.apply(this, arguments)); };
+  // 10 Nov 2026 (user): the month button and the paid counts are on Home only; Attendance does not repeat them
   const _c = home2Click;
   home2Click = function (b, d) {
     if (d.ffmon) { const P = payState(); if (P.ym !== d.ffmon) { P.ym = d.ffmon; T.ffMonX = document.querySelector('[data-ffmonrow]')?.scrollLeft; draw(); } return true; }

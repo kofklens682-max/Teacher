@@ -21,7 +21,7 @@ function ffAtt() {
   const D = TODAY, k = iso(D), stu = (n) => `${n} student${n === 1 ? '' : 's'}`, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D)), next = list.find((g) => !rec(g, D).saved);
   const hero = next ? `<div class="hn-next at-hero h-in"><div class="hn-top"><span class="hn-tag">Next to mark</span><span class="hn-when">${lessonOpen(next, D) ? 'open now' : 'opens ' + esc(timeOn(next, D))}</span></div>
       <b class="hn-name">${esc(next.name)}</b><span class="hn-sub">${esc(LVNAME(next.lvl))} · ${esc(timeOn(next, D))} · ${stu(next.students.length)}</span>
-      <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>` : (list.length ? doneCard(list, D) : '');
+      <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button></div></div>` : (list.length ? doneCard(list, D) : '');
   const ym = k.slice(0, 7); let here = 0, total = 0, taken = 0;
   S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { taken++; const r = rec(g, fromIso(x)); g.students.forEach((s) => { total++; if (r.get(s.id) !== 'absent') here++; }); }));
   const pc = total ? Math.round((here / total) * 100) : null;

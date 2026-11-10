@@ -45,7 +45,8 @@ pgHomeNew = function () {
   const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
   const brk = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
   const hero = g && !doneOn(g, TODAY) ? ffHero(g) : secTodayHero();
-  return head + brk + hero + ffMini(g) + ffInsights2() + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '');
+  const hol = `<button class="tp-dashed h-in" data-sheet="breaks">${ic('CalendarX2')} Holiday or break</button>`; // 10 Nov 2026 (user): the Holiday button is back on Home
+  return head + brk + hero + ffMini(g) + ffInsights2() + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '') + hol;
 };
 {
   const _h = home2Click;
