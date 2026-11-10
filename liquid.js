@@ -30,9 +30,9 @@
    and the lens that bends the picture at the edge of the tab bar (Chrome; other browsers keep the plain glass). Styles: glass.css. */
 (function () {
   var root = document.documentElement, tp = document.querySelector('.tp');
-  if (!tp || tp.querySelector('.g2-edge')) return;
+  if (!tp || document.querySelector('.g2-edge')) return;
   // soft edges (top and bottom) instead of bars
-  ['t', 'b'].forEach(function (k) { var e = document.createElement('div'); e.className = 'g2-edge ' + k; tp.appendChild(e); });
+  ['t', 'b'].forEach(function (k) { var e = document.createElement('div'); e.className = 'g2-edge ' + k; document.body.appendChild(e); });
   // scroll: show the top edge once the page moved; shrink the tab bar while going down
   var last = new WeakMap();
   document.addEventListener('scroll', function (ev) {
