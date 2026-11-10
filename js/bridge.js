@@ -157,7 +157,7 @@ function lessonPull(quiet) { // Budget -> Teacher: what changed there (quiet = t
       S.lsm[id] = { at: e.at, sig: g && S.groups.includes(g) ? lsSig(g) : '' }; ch = true; return;
     }
     if (!g) { if (m) { S.lsm[id] = { at: e.at, sig: '' }; return; } // removed here earlier
-      g = { id, name: String(e.name || 'Group').slice(0, 60), lvl: 'own', book: 'Own book', days: [], time: '15:00', len: 80, week: 1, les: 1, students: [], color: '', gone: [], created: Date.now() };
+      g = { id, name: String(e.name || 'Group').slice(0, 60), lvl: 'own', book: 'Own book', days: [], time: '15:00', len: 80, week: 1, les: 1, students: [], color: '', gone: [], created: Date.now(), ci: newCi() };
       S.groups.push(g); ch = true; }
     if (JSON.stringify([e.name || g.name, e.slots]) !== lsSig(g) || !m) { lsApply(g, e); ch = true; }
     S.lsm[id] = { at: e.at, sig: lsSig(g) };
@@ -174,13 +174,17 @@ window.addEventListener('storage', (e) => { if (e.key === LS_KEY) lessonPull(); 
 // or copy can never clear the payment marks again. S.pay.fresh1 stays in the data, but nothing acts on it.
 
 /* ---------- a small "Undo" next to the message ---------- */
-let undoFn = null, undoT = 0;
-function payToast(msg, fn) {
-  toast(msg); undoFn = fn;
-  const el = root && root.querySelector('.tp-toast'); if (!el) return;
-  el.innerHTML = `<span>${esc(msg)}</span><button class="tp-undo" data-payundo>Undo</button>`;
-  clearTimeout(undoT); undoT = setTimeout(() => { undoFn = null; }, 8000);
-  clearTimeout(toastT); toastT = setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 300); }, 8000); // 8 seconds to notice a wrong tap (a plain message goes in 2.6)
+// 10 Nov (audit T32): every action keeps its own Undo for 8 seconds. Undo takes back the newest one; if an older one is still
+// in its 8 seconds, its message and Undo come back, so a second payment no longer wipes out the Undo of the first.
+let undoList = [];
+function payToast(msg, fn) { undoList = undoList.filter((u) => u.until > Date.now()); undoList.push({ msg, fn, until: Date.now() + 8000 }); showUndo(); }
+function showUndo(pre = '') {
+  const now = Date.now(); undoList = undoList.filter((u) => u.until > now); const u = undoList[undoList.length - 1]; if (!u) return false;
+  toast(pre + u.msg);
+  const el = root && root.querySelector('.tp-toast'); if (!el) return true;
+  el.innerHTML = `<span>${esc(pre + u.msg)}</span><button class="tp-undo" data-payundo>Undo</button>`;
+  clearTimeout(toastT); toastT = setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 300); }, u.until - now); // 8 seconds to notice a wrong tap (a plain message goes in 2.6)
+  return true;
 }
 
 /* ---------- the student's page: the months, tap to mark ---------- */
@@ -236,14 +240,14 @@ function applyFee(g, st, m, v, all) {
 }
 function sheetPayRec(s) {
   const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
-  const ym = ymOf(TODAY), L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id], fee = baseFee(g, st);
-  const owe = L.rows.filter((r) => r.charge - r.covered > 0);
-  const firsts = []; for (let m = S.pay.start; m <= ymAdd(ym, 3); m = ymAdd(m, 1)) firsts.push(m);
+  const ym = payState().ym, L = ledger(g, st, ym), single = isSingle(g), own = S.pay.stuFee[st.id], fee = baseFee(g, st); // T15: "Owes" counts up to the same month as Home's month picker and "Who still owes"
+  const cur = ymOf(TODAY), Lc = ym === cur ? L : ledger(g, st, cur), owe = L.rows.filter((r) => r.charge - r.covered > 0);
+  const firsts = []; for (let m = S.pay.start; m <= ymAdd(cur, 3); m = ymAdd(m, 1)) firsts.push(m);
   return `<div class="tp-sh-h"><button class="tp-back" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}">Edit</button><b>${esc(st.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + ' lessons this month' : dMoney(fee) + " so'm a month"}</em></div>
+    <div class="pm-top ${L.debt > 0 ? 'owe' : 'ok'}"><span>${L.debt > 0 ? 'Owes' : L.credit > 0 ? 'Paid ahead' : 'All paid'}</span><b>${L.debt > 0 || L.credit > 0 ? dMoney(L.debt > 0 ? L.debt : L.credit) + " so'm" : 'Nothing owed'}</b><em>${L.debt > 0 ? owe.map((r) => ymLabel(r.m)).join(', ') : single ? lessonsCame(g, st, ym) + (ym === cur ? ' lessons this month' : ' lessons in ' + ymName(ym)) : dMoney(fee) + " so'm a month"}</em></div>
     <p class="tp-small pm-how">Tap a month = paid in full. Tap a paid month to change it: part payment, a discount, or not paid. Budget asks you to add the money.</p>
     ${monthGrid(g, st, s.open)}
-    ${single ? '' : `<div class="pm-chg"><span>Month</span>${L.rows.slice(-4).map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div>`}
+    ${single ? '' : `<div class="pm-chg"><span>Month</span>${Lc.rows.slice(-4).map((r) => `<button class="${s.open === r.m ? 'on' : ''}" data-pmedit="${st.id}|${g.id}|${r.m}">${ymLabel(r.m)}</button>`).join('')}</div>`}
     ${s.open ? editPanel(g, st, s.open) : ''}
     <label class="tp-f pm-from"><span>Starts paying from</span><select data-payfromsel="${st.id}">${firsts.map((m) => `<option value="${m}" ${m === firstMonth(g, st) ? 'selected' : ''}>${ymName(m)}</option>`).join('')}</select></label>`;
 }
@@ -274,8 +278,8 @@ function sheetOweGrp(s) {
 
 /* ---------- "Mark who paid" on Home: every group, numbered ---------- */
 function sheetPayPick(s) {
-  const gs = feeGroups(), ym = ymOf(TODAY);
-  return `<div class="tp-sh-h"><span></span><b>Mark who paid</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
+  const gs = feeGroups(), ym = payState().ym; // T15: the month Home shows
+  return `<div class="tp-sh-h"><span></span><b>Mark who paid${ym === ymOf(TODAY) ? '' : ' · ' + ymName(ym)}</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
     ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${feeStu(g, ym, true).length}</em></div><div class="pl-list">${abc(feeStu(g, ym, true)).map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
       return ms.length ? oweLine(g, st, L, i + 1) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
 }
@@ -284,12 +288,13 @@ function sheetPayPick(s) {
 {
   const _h = home2Click, _f = feesClick;
   const mine = (b, d) => {
-    if (d.payundo !== undefined) { if (undoFn) { const f = undoFn; undoFn = null; f(); save(); draw(); toast('Undone'); } return true; }
+    if (d.payundo !== undefined) { const u = undoList.pop(); if (u && u.until > Date.now()) { u.fn(); save(); draw(); if (!showUndo('Undone. Before that: ')) toast('Undone'); } return true; }
     if (d.paym) {
       const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;
-      const charge = chargeOf(g, st, m), paid = paidIn(sid, m);
-      if (paid || !charge) { if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } else { T.sheet = { s: 'payrec', g: gid, sid, open: m }; draw(); } return true; }
-      const p = addPay(sid, m, charge - Math.min(charge, ledger(g, st, m).rows.find((r) => r.m === m).covered)); save(); draw();
+      const charge = chargeOf(g, st, m), paid = paidIn(sid, m), left = charge ? charge - Math.min(charge, (ledger(g, st, m).rows.find((r) => r.m === m) || { covered: 0 }).covered) : 0;
+      // 10 Nov (audit T9): a month credit already covers opens like a paid one: no 0 so'm payment, no Budget pop-up
+      if (paid || !charge || left <= 0) { if (T.sheet && T.sheet.s === 'payrec' && T.sheet.sid === sid) { T.sheet.open = T.sheet.open === m ? null : m; draw(); } else { T.sheet = { s: 'payrec', g: gid, sid, open: m }; draw(); } return true; }
+      const p = addPay(sid, m, left); save(); draw();
       payToast(`${st.name} · ${ymName(m)} · ${dMoney(p.amount)} so'm paid`, () => { S.pay.pays = S.pay.pays.filter((x) => x !== p); tbSend('del', p); });
       return true;
     }

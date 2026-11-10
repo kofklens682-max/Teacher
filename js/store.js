@@ -10,7 +10,8 @@
 const KEY = 'teacher-app-v1', DBN = 'teacher-app', COPY_DAYS = 14, COPY_MONTHS = 12;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // Fees: see js/fees.js. start = the first month the app counts fees (months before it are never shown as unpaid).
-const blankPay = () => ({ start: new Date().toISOString().slice(0, 7), plan: {}, stuFee: {}, disc: {}, sdisc: {}, sfee: {}, dex: {}, pays: [], extras: [], xpaid: {} });
+const localYm = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }; // 10 Nov (audit T21): this phone's month, not the UTC month
+const blankPay = () => ({ start: localYm(), plan: {}, stuFee: {}, disc: {}, sdisc: {}, sfee: {}, dex: {}, pays: [], extras: [], xpaid: {} });
 const blank = () => ({ v: 1, rev: 0, groups: [], rec: {}, hw: {}, saved: {}, taught: {}, edits: {}, links: {}, audio: {}, files: {}, mats: {}, ownDone: {}, rep: {}, dbl: {}, pend: {}, pauses: [], pay: blankPay(), created: Date.now() });
 let S = blank(), topRev = 0, quickFailed = false;
 
@@ -19,7 +20,8 @@ function normalize(d) {
   for (const k of ['rec', 'hw', 'saved', 'taught', 'edits', 'links', 'audio', 'files', 'mats', 'ownDone', 'rep', 'pend']) if (!out[k] || typeof out[k] !== 'object' || Array.isArray(out[k])) out[k] = {};
   out.pauses = (Array.isArray(out.pauses) ? out.pauses : []).filter((x) => x && /^\d{4}-\d\d-\d\d$/.test(x.from) && /^\d{4}-\d\d-\d\d$/.test(x.to) && x.from <= x.to).map((x) => ({ id: String(x.id || uid()), from: x.from, to: x.to, label: String(x.label || '').slice(0, 40), gids: Array.isArray(x.gids) ? x.gids.map(String) : [], disc: (Array.isArray(x.disc) ? x.disc : []).filter((d) => d && d.gid && /^\d{4}-\d\d$/.test(d.ym) && +d.amount > 0).map((d) => ({ gid: String(d.gid), ym: d.ym, amount: +d.amount })) })); // breaks: no lessons from..to (gids empty = every group)
   if (!Array.isArray(out.groups)) out.groups = [];
-  out.groups = out.groups.filter((g) => g && typeof g === 'object').map((g) => ({
+  out.groups = out.groups.filter((g) => g && typeof g === 'object').map((g, i) => ({
+    ci: Number.isInteger(g.ci) && g.ci >= 0 ? g.ci : i, // 10 Nov: the group's own color number, kept from when it was made (a group from before keeps its place)
     id: String(g.id || uid()), name: String(g.name || 'Group'), lvl: String(g.lvl || 'A1'), book: String(g.book || ''),
     days: Array.isArray(g.days) ? g.days.map(Number).filter((x) => x >= 0 && x <= 6) : [],
     time: /^\d\d:\d\d$/.test(g.time) ? g.time : '15:00', len: Math.min(240, Math.max(20, +g.len || 80)),

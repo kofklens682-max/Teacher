@@ -117,9 +117,12 @@ function savedDates(g) { return Object.keys(S.saved[g.id] || {}).filter((k) => S
 function attPct(g) { // the share of students present over this month's taken registers (or the last ones early in a month)
   const all = savedDates(g), ym = iso(TODAY).slice(0, 7), month = all.filter((k) => k.startsWith(ym)), use = month.length ? month : all.slice(-12); // T11: early in a month, the last 12 registers, not every one ever taken
   let here = 0, total = 0;
-  use.forEach((k) => { const r = rec(g, fromIso(k)); g.students.forEach((s) => { if (!(s.id in r.att) && !r.saved) return; total++; if (r.get(s.id) !== 'absent') here++; }); });
+  use.forEach((k) => { const r = rec(g, fromIso(k)); g.students.forEach((s) => { if (!wasIn(s, k, r)) return; total++; if (r.get(s.id) !== 'absent') here++; }); });
   return total ? Math.round((here / total) * 100) : null;
 }
+// 10 Nov (audit T10): a student counts on a register only if marked on it, or if it was saved while he was in the group
+// (added before that day, and not after his last month)
+const wasIn = (s, k, r) => s.id in r.att || (r.saved && (!s.added || iso(new Date(s.added)) <= k) && (!s.until || k.slice(0, 7) <= s.until));
 // a record on a day with no lesson only counts once its register is saved: a stray tap must not turn a Sunday into a lesson day
 const kept = (g, d) => !!(S.rec[g.id] || {})[iso(d)] && (hasLesson(g, d) || !!(S.saved[g.id] || {})[iso(d)]);
 function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1) a date, never after today; dates with a record count too
@@ -283,6 +286,7 @@ function scBig(f) {
   const L = lv(f.lvl), u = weekOf(f.lvl, f.w), l = u.lessons[f.l - 1], k = l.kd, S = k.big || [], key = bigKey(f);
   const st = T.big[key] || (T.big[key] = { i: 0, sel: -1, shown: false });
   const n = S.length; st.n = n; st.i = Math.max(0, Math.min(st.i, n - 1));
+  if (!n) return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><span></span></div><div class="tp-inner"><div class="tp-empty2">${ic('Info')}<b>No slides for this lesson</b></div></div>`; // T22: no broken bar
   const s = S[st.i] || [], pick = st.sel >= 0;
   const show = (ans, big) => (st.shown ? `<div class="bg-a${big ? ' big' : ''}">${esc(ans)}</div>` : `<button class="bg-show" data-bgshow="${key}">Show the answer</button>`);
   let body = '';
@@ -357,7 +361,7 @@ function pgAtt() {
     return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="--c:${hc(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timeOn(g, D))} · ${stu(g.students.length)}</span></span>${pill(g)}<span class="tl-chev">${ic('ChevronDown')}</span></button><button class="at-edit" data-push="group" data-g="${g.id}" aria-label="${esc(g.name)}: students, program and edit">${ic('Users')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, D)}</div></div></div>`; }).join('');
   // this month, every group: how many came, how many registers were taken
   const ym = iso(TODAY).slice(0, 7); let here = 0, total = 0, taken = 0;
-  S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { taken++; const r = rec(g, fromIso(x)); g.students.forEach((s) => { total++; if (r.get(s.id) !== 'absent') here++; }); }));
+  S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { taken++; const r = rec(g, fromIso(x)); g.students.forEach((s) => { if (!wasIn(s, x, r)) return; total++; if (r.get(s.id) !== 'absent') here++; }); }));
   const pc = total ? Math.round((here / total) * 100) : null;
   const minis = `<div class="at-two"><div class="at-mini"><span class="h">${MONTHS[TODAY.getMonth()]}</span><b>${pc === null ? '–' : pc}<small>${pc === null ? '' : '%'}</small></b><span class="s">came to lessons</span><span class="ho-bar"><i style="--w:${pc || 0}%"></i></span></div>
     <div class="at-mini"><span class="h">Taken</span><b>${taken}<small> register${taken === 1 ? '' : 's'}</small></b><span class="s">this month, all groups</span></div></div>`;
@@ -441,7 +445,7 @@ function pgBooks() {
   if (T.bookSeg === 'books') body = cont + `<div class="tp-shelf">${files.map((f) => { const have = S.files[f[0]];
       return `<button class="tp-book" data-book="${esc(f[0])}">${bookCover(f[0])}<span>${esc(bookMeta(f[0]).t)}</span><small>${esc(bookMeta(f[0]).sub)}${have ? ' · on this phone' : ' · tap to add'}</small></button>`; }).join('')}</div>
     <p class="tp-small">Add each PDF from your phone once (from Telegram, Drive or Downloads); it then opens from here, even offline.</p>`;
-  else if (T.bookSeg === 'audio') body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings.</div>` : '') + audio.map((a) => `<div class="tp-media"><button class="mi play" style="background:#0FA37F" data-play="${a.id}" aria-label="Play ${esc(a.name)}">${ic('Play')}</button><span class="tx"><b>${esc(a.name)}</b><span>${fmtSize(a.size || 0)}</span></span><button class="tp-iconbtn" data-rmaudio="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button></div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="audio">${ic('Plus')} Add audio</button>`;
+  else if (T.bookSeg === 'audio') body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings.</div>` : '') + audio.map((a) => `<div class="tp-media"><button class="mi play" style="background:#0FA37F" data-play="${a.id}" aria-label="Play ${esc(a.name)}">${ic(playing === a.id ? 'Pause' : 'Play')}</button><span class="tx"><b>${esc(a.name)}</b><span>${fmtSize(a.size || 0)}</span></span><button class="tp-iconbtn" data-rmaudio="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button></div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="audio">${ic('Plus')} Add audio</button>`;
   else body = (L.id === 'A1' ? `<div class="tp-note2">Beginners don't use recordings. Videos start at Elementary.</div>` : '') + links.map((a, i) => `<div class="tp-media"><a class="mi" style="background:#FF5A5F" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener">${ic('CirclePlay')}</a><a class="tx" href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener"><b>${esc(a.name)}</b><span>${esc(a.note || a.url)}</span></a>${a.id ? `<button class="tp-iconbtn" data-rmlink="${a.id}" aria-label="Remove ${esc(a.name)}">${ic('X')}</button>` : `<span class="tp-chev">${ic('ExternalLink')}</span>`}</div>`).join('') + `<button class="tp-dashed" data-sheet="media" data-kind="video">${ic('Plus')} Add a link</button>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">Your files and links</div><div class="tp-lt">Books</div></div><div class="hdr-btns">${lightsHtml('tabs')}</div></div>
     <div class="tp-segs" data-noswipe>${levelChips}</div>
@@ -543,6 +547,7 @@ function frame() {
   R = { vp: root.querySelector('.tp-viewport'), track: root.querySelector('.tp-track'), pages: [...root.querySelectorAll('.tp-page')],
     screens: root.querySelector('.tp-screens'), tabs: root.querySelector('.tp-tabs'), ind: root.querySelector('.tp-ind'), sheets: root.querySelector('.tp-sheets'),
     screen: null, sheet: null, anim: -1 };
+  root.addEventListener('pointerdown', (e) => { R.lastDown = e.timeStamp; }, true); // which touch a click belongs to (T51)
   bindSwipe(); bindTabSlide(); bindSegSlide();
 }
 // Chip strips: remember their sideways scroll across a redraw, then glide the chosen chip into view if it is hidden.
@@ -775,7 +780,7 @@ function bindSegSlide() {
   root.addEventListener('pointerdown', (e) => {
     const sw = e.target.closest('.tp-seg2.slide'); if (!sw) return;
     const btns = [...sw.querySelectorAll('button')], th = sw.querySelector('.seg-thumb');
-    st = { sw, btns, th, x0: e.clientX, y0: e.clientY, id: e.pointerId, on: false, i: btns.findIndex((b) => b.classList.contains('on')) };
+    st = { sw, btns, th, x0: e.clientX, y0: e.clientY, id: e.pointerId, t0: e.timeStamp, on: false, i: btns.findIndex((b) => b.classList.contains('on')) };
   });
   root.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return;
@@ -788,11 +793,11 @@ function bindSegSlide() {
   const up = (e) => {
     if (!st || e.pointerId !== st.id) return; const k = st; st = null;
     if (!k.on) return;
-    k.sw.classList.remove('sliding'); k.th.style.transform = ''; k.sw._slid = Date.now();
+    k.sw.classList.remove('sliding'); k.th.style.transform = ''; k.sw._slid = k.t0;
     const seg = k.btns[k.i].dataset.bookseg, au = k.btns[k.i].dataset.aud;
     if (au) { if (au !== T.aud) { T.aud = au; keepUi(); } return draw(); }
     if (seg) { if (seg !== T.bookSeg) { T.bookSeg = seg; R.anim = 3; } return draw(); }
-    k.sw._slid = 0; k.btns[k.i].click(); k.sw._slid = Date.now(); // any other switch (P / L / A, the week strip): as if the chosen option was tapped
+    k.sw._slid = 0; k.btns[k.i].click(); k.sw._slid = k.t0; // any other switch (P / L / A, the week strip): as if the chosen option was tapped
   };
   root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up);
 }
@@ -822,6 +827,7 @@ function closeSheetNow() { if (T.sheet) goBack(); }
 function pushScreen(sc) { T.push.push(sc); stepIn(); draw(true); }
 function goTab(i) {
   if (i === T.tab && !T.push.length) { R.pages[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (i !== 3 && player) stopAudio(); // leaving Books stops the recording (T23)
   const hadPush = T.push.length; T.tab = i; T.push = [];
   if (hadPush) unwind();
   R.track.classList.add('settle');
@@ -831,7 +837,7 @@ function goTab(i) {
 function paintSwipe(s) { if (s.dx === undefined || s.lv) return; tabFx(T.tab - s.dx / s.W); R.track.style.transform = `translateX(calc(${-T.tab * 25}% + ${s.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - s.dx / s.W) * 100}%)`; }
 function bindSwipe() {
   const vp = R.vp, tr = R.track; let st = null;
-  vp.addEventListener('pointerdown', (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, pts: [] }; });
+  vp.addEventListener('pointerdown', (e) => { if (e.button > 0 || e.target.closest('[data-noswipe],input,textarea,select')) return; st = { x0: e.clientX, y0: e.clientY, on: false, id: e.pointerId, t0: e.timeStamp, pts: [] }; });
   vp.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
     if (!st.on) {
@@ -860,7 +866,7 @@ function bindSwipe() {
     const b = s.pts[s.pts.length - 1], a = b && (s.pts.find((p) => b[0] - p[0] <= 120) || b), a2 = a === b ? s.pts[s.pts.length - 2] : a;
     const v = b && a2 && b[0] > a2[0] && e.timeStamp - b[0] < 100 ? (b[1] - a2[1]) / (b[0] - a2[0]) : 0;
     if (s.lv) {
-      const L = s.lv; vp._moved = Date.now();
+      const L = s.lv; vp._moved = s.t0;
       // a flick counts only when the finger really travelled that way (moving out and back, then letting go, stays)
       const go = L.peek && (L.dir > 0 ? s.dx < -L.w * 0.25 || (v < -0.3 && s.dx < -24) : s.dx > L.w * 0.25 || (v > 0.3 && s.dx > 24));
       if (go) return lvGo(T.tab, L.cur + L.dir, s.dx, v, { peek: L.peek, at: L.at });
@@ -877,7 +883,7 @@ function bindSwipe() {
     tabFxTo(T.tab - s.dx / s.W, i, ms); movingFor(ms + 120);
     tr.style.transitionDuration = ms + 'ms'; tr.classList.add('settle', 'glide');
     clearTimeout(tr._t); tr._t = setTimeout(() => { tr.style.transitionDuration = ''; tr.classList.remove('glide'); }, ms + 40);
-    vp._moved = Date.now();
+    vp._moved = s.t0;
     if (i !== T.tab) return goTab(i);
     syncTabs();
   };
@@ -885,14 +891,14 @@ function bindSwipe() {
 }
 function bindTabSlide() {
   const bar = R.tabs, ind = R.ind; let st = null;
-  bar.addEventListener('pointerdown', (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, over: T.tab }; });
+  bar.addEventListener('pointerdown', (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, t0: e.timeStamp, over: T.tab }; });
   bar.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return;
     if (!st.on) { if (Math.abs(e.clientX - st.x0) < 8) return; st.on = true; R.sliding = true; bar.classList.add('sliding'); try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
     const r = bar.getBoundingClientRect(), w = (r.width - 10) / 4, x = Math.max(0, Math.min(w * 3, e.clientX - r.left - 5 - w / 2));
     ind.style.transform = `translateX(${x}px)`; st.over = Math.round(x / w); bar.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === st.over));
   });
-  const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = Date.now(); R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
+  const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = s.t0; R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
   bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
 }
 // ---------- level pager (Units and Books) ----------
@@ -1029,9 +1035,10 @@ function refreshRow(grid, g, d, sid) {
 function onClick(e) {
   const b = e.target.closest('button,a,label'); if (!b || !root.contains(b)) return;
   if (b.tagName === 'A' || b.tagName === 'LABEL') return;
-  if ((R.vp._moved && Date.now() - R.vp._moved < 350) || (R.tabs._slid && Date.now() - R.tabs._slid < 350)) return;
+  // 10 Nov (audit T51): only the click that ends a swipe or a slide is skipped (same touch), not a quick new tap right after it
+  if ((R.vp._moved && R.vp._moved === R.lastDown) || (R.tabs._slid && R.tabs._slid === R.lastDown)) return;
   if (R.sheet && R.sheet._dragged && Date.now() - R.sheet._dragged < 350) return; // the end of a pull isn't a tap
-  const sw = b.closest('.tp-seg2'); if (sw && sw._slid && Date.now() - sw._slid < 350) return; // nor the end of a slide
+  const sw = b.closest('.tp-seg2'); if (sw && sw._slid && sw._slid === R.lastDown) return; // nor the end of a slide
   const d = b.dataset, top = T.push[T.push.length - 1];
   if (d.look !== undefined) {
     try { localStorage.setItem('teacher-look', d.look === 'glass' ? 'glass' : 'normal'); } catch (err) { /* not needed */ }
@@ -1087,7 +1094,7 @@ function onClick(e) {
     save(); const p = lastLesson(g); top.date = p ? iso(p) : null; if (R.screen) R.screen._swap = true; toast('Register removed'); return draw();
   }
   if (d.regtoday !== undefined) { top.date = iso(TODAY); if (R.screen) R.screen._swap = true; return draw(); }
-  if (d.addstu) { const n = val('tp-newstu'); if (!n) return toast('Type the name first'); gById(d.addstu).students.push({ id: uid(), name: n, added: Date.now() }); save(); draw(); return toast(n + ' added'); }
+  if (d.addstu) { const n = val('tp-newstu'), g = gById(d.addstu); if (!n) return toast('Type the name first'); if (!g) return; const twin = sameName(g.students, n); g.students.push({ id: uid(), name: n, added: Date.now() }); save(); draw(); return toast(twin ? n + ' added. ' + twinNote(n) : n + ' added'); }
   if (d.taught) {
     const g = gById(d.taught), k = iso(TODAY), t = taughtOn(g, TODAY);
     if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(); return toast('Undone'); }
@@ -1100,15 +1107,22 @@ function onClick(e) {
   if (d.sharelink) return shareLink(d.sharelink, d.pt);
   if (d.book) return openSheet({ s: 'book', book: d.book });
   if (d.openbook) { try { localStorage.setItem('teacher-lastbook', d.openbook); } catch (err) { /* not needed */ } return openBook(d.openbook); } // remembered for Continue on Books
-  if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook; delete S.files[f]; save(); delFile('pdf:' + f).catch(() => {}); closeSheetNow(); return toast('Removed from the app'); }
+  if (d.rmbook) { if (!confirmTwice(b, 'Tap again to remove it')) return; const f = d.rmbook, was = S.files[f]; delete S.files[f]; save(); closeSheetNow(); return removedFile('Removed from the app', () => { S.files[f] = was; }, () => !!S.files[f], 'pdf:' + f); }
   if (d.play) return playAudio(b, d.play);
   if (d.openmat) return openMat(d.openmat);
-  if (d.rmmat) { if (!confirmTwice(b, '')) return; S.mats[d.key] = (S.mats[d.key] || []).filter((a) => a.id !== d.rmmat); if (!S.mats[d.key].length) delete S.mats[d.key]; save(); delFile('mat:' + d.rmmat).catch(() => {}); draw(); return toast('Removed'); }
-  if (d.rmaudio) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.audio[id] = (S.audio[id] || []).filter((a) => a.id !== d.rmaudio); save(); delFile('audio:' + d.rmaudio).catch(() => {}); draw(); return toast('Removed'); }
-  if (d.rmlink) { if (!confirmTwice(b, '')) return; const id = C.levels[T.bookLvl].id; S.links[id] = (S.links[id] || []).filter((a) => a.id !== d.rmlink); save(); draw(); return toast('Removed'); }
+  if (d.rmmat) { if (!confirmTwice(b, '')) return; const r = takeOut(S.mats, d.key, d.rmmat); if (!r) return; save(); draw(); return removedFile('Removed', r.back, () => Object.values(S.mats).some((l) => l.some((x) => x.id === d.rmmat)), 'mat:' + d.rmmat); }
+  if (d.rmaudio) { if (!confirmTwice(b, '')) return; const r = takeOut(S.audio, C.levels[T.bookLvl].id, d.rmaudio); if (!r) return; if (playing === d.rmaudio) stopAudio(); save(); draw(); return removedFile('Removed', r.back, () => Object.values(S.audio).some((l) => l.some((x) => x.id === d.rmaudio)), 'audio:' + d.rmaudio); }
+  if (d.rmlink) { if (!confirmTwice(b, '')) return; const r = takeOut(S.links, C.levels[T.bookLvl].id, d.rmlink); if (!r) return; save(); draw(); return payToast('Removed', r.back); }
   if (d.sheet) return openSheet({ s: d.sheet, g: d.g, key: d.key, kind: d.kind, sid: d.sid });
   if (d.closesheet !== undefined) return closeSheetNow();
-  if (d.fLvl) { keepForm(); Object.assign(T.sheet.form, { lvl: d.fLvl, week: 1, les: 1 }); return draw(); }
+  if (d.fLvl) { // 10 Nov (audit T29): a new program keeps the week and lesson when the new level has them, and says so when it can't
+    keepForm(); const F = T.sheet.form; if (F.lvl === d.fLvl) return;
+    const L2 = planned(d.fLvl) && lv(d.fLvl), w = L2 && +F.week <= L2.units.length ? +F.week : 1, max = L2 ? weekOf(d.fLvl, w).lessons.length : 3, l = w === +F.week ? Math.min(+F.les || 1, max) : 1;
+    const moved = T.sheet.g && planned(F.lvl) && L2 && (w !== +F.week || l !== +F.les), was = `Week ${F.week} · ${dayWord(F.lvl)} ${F.les}`;
+    Object.assign(F, { lvl: d.fLvl, week: w, les: l }); draw();
+    if (moved) toast(`${LVNAME(d.fLvl)} has no ${was}. It is now Week ${w} · ${dayWord(d.fLvl)} ${l}: check it below.`);
+    return;
+  }
   if (d.fColor !== undefined) { keepForm(); T.sheet.form.color = d.fColor; b.parentElement.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); return; }
   if (d.fStep) { keepForm(); const F = T.sheet.form; if (d.fStep === '2' && !F.name) return toast('Give the group a name first'); F.step = +d.fStep; return draw(); }
   if (d.fColopen !== undefined) { keepForm(); T.sheet.form.colorOpen = true; return draw(); }
@@ -1138,9 +1152,14 @@ function confirmTwice(b, msg) {
   if (!msg) toast('Tap again to remove');
   return false;
 }
+// 10 Nov (audit T33): two students (or groups) with the same name are allowed, but the app says so, so they can be told apart
+const sameName = (list, n) => list.some((x) => x.name.trim().toLowerCase() === n.trim().toLowerCase());
+const twinNote = (n) => `There are now two "${n}" in this group. Add a last name to tell them apart.`;
 function addFormStudent() {
   const n = val('f-stu'); if (!n) return;
+  const twin = sameName(T.sheet.form.students, n);
   T.sheet.form.students.push({ id: uid(), name: n, added: Date.now() }); draw();
+  if (twin) toast(twinNote(n));
   const inp = root.querySelector('#f-stu'); if (inp) inp.focus();
 }
 // 10 Nov (audit T2): the X next to a saved student in Edit group works like Remove on the student's page: ask once, then
@@ -1193,7 +1212,7 @@ function saveGroup() {
   // 10 Nov (audit T26): an empty fee box no longer takes the fee away without a word: the first Save asks
   if (old && planOf(old) && !(+F.fee > 0) && !(T.sheet.noFee && Date.now() - T.sheet.noFee < 5000)) { T.sheet.noFee = Date.now(); return toast('The fee is empty. Tap Save again to remove the fee from this group.'); }
   const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
-  const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: (F.times || {})[[...F.days].sort((a, b) => a - b)[0]] || F.time || '15:00', times: Object.fromEntries(F.days.map((d) => [d, (F.times || {})[d] || F.time || '15:00'])), len: +F.len || 80, color: F.color || '', week: +F.week || 1, les: +F.les || 1, solo: !!F.solo });
+  const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [], ci: newCi() }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: (F.times || {})[[...F.days].sort((a, b) => a - b)[0]] || F.time || '15:00', times: Object.fromEntries(F.days.map((d) => [d, (F.times || {})[d] || F.time || '15:00'])), len: +F.len || 80, color: F.color || '', week: +F.week || 1, les: +F.les || 1, solo: !!F.solo });
   if (old && g.lens && !(+F.len === (T.sheet.form.len0 || +F.len))) delete g.lens; // a new length for all days replaces the per-day lengths from Budget
   if (g.lens) Object.keys(g.lens).forEach((d) => { if (!g.days.includes(+d)) delete g.lens[d]; });
   // 10 Nov (audit T2): nobody is dropped here any more. The X removes a saved student at once (with Undo); a student who left
@@ -1203,7 +1222,9 @@ function saveGroup() {
   if (planned(g.lvl)) { const p = advance(g, 0); g.week = p.w; g.les = p.l; }
   if (!old) S.groups.push(g);
   if (+F.fee > 0) S.pay.plan[g.id] = F.feeKind === 'single' ? { kind: 'single', rate: +F.fee } : { kind: 'group', fee: +F.fee }; else delete S.pay.plan[g.id];
-  save(); closeSheetNow(); toast(old ? 'Group saved' : `${g.name} added`);
+  save(); closeSheetNow();
+  const twin = sameName(S.groups.filter((x) => x !== g), g.name); // T33
+  toast((old ? 'Group saved' : `${g.name} added`) + (twin ? `. Another group is also called "${g.name}": a different name tells them apart.` : ''));
 }
 async function saveMedia(kind) {
   const n = val('f-mname'), id = C.levels[T.bookLvl].id;
@@ -1219,14 +1240,30 @@ async function saveMedia(kind) {
   }
   save(); closeSheetNow(); toast('Added');
 }
-let player = null, playing = null;
+// 10 Nov (audit T32): a removed file, recording or link can be brought back for 8 seconds; the file itself is deleted only after that
+function takeOut(box, key, id) { // take one item out of box[key]; back() puts it where it was
+  const list = box[key] || [], i = list.findIndex((a) => a.id === id); if (i < 0) return null;
+  const a = list[i]; box[key] = list.filter((x) => x !== a); if (!box[key].length) delete box[key];
+  return { back: () => { const l = box[key] || (box[key] = []); if (!l.some((x) => x.id === a.id)) l.splice(Math.min(i, l.length), 0, a); } };
+}
+function removedFile(msg, back, isBack, fileKey) { payToast(msg, back); setTimeout(() => { if (!isBack()) delFile(fileKey).catch(() => {}); }, 8500); }
+// 10 Nov (audit T23): one recording plays at a time; its address is freed when it ends or stops, it stops when you leave Books,
+// and its button keeps "Pause" after a redraw (pgBooks reads `playing`).
+let player = null, playing = null, playerUrl = '';
+function stopAudio() {
+  if (player) { player.onended = null; player.pause(); }
+  if (playerUrl) URL.revokeObjectURL(playerUrl);
+  player = null; playing = null; playerUrl = '';
+  if (root) root.querySelectorAll('[data-play]').forEach((x) => { x.innerHTML = ic('Play'); });
+}
 async function playAudio(btn, id) {
-  if (playing === id && player) { player.pause(); player = null; playing = null; btn.innerHTML = ic('Play'); return; }
-  if (player) { player.pause(); root.querySelectorAll('[data-play]').forEach((x) => { x.innerHTML = ic('Play'); }); }
+  const again = playing === id && player; stopAudio(); if (again) return;
   const blob = await getFile('audio:' + id).catch(() => null); if (!blob) return toast('The file is missing; add it again');
-  player = new Audio(URL.createObjectURL(blob)); playing = id; btn.innerHTML = ic('Pause');
-  player.onended = () => { btn.innerHTML = ic('Play'); playing = null; };
-  player.play().catch(() => toast('Could not play this file'));
+  stopAudio(); // another tap may have started one while the file was loading
+  playerUrl = URL.createObjectURL(blob); player = new Audio(playerUrl); playing = id;
+  const b = root.querySelector(`[data-play="${id}"]`) || btn; b.innerHTML = ic('Pause');
+  player.onended = () => stopAudio();
+  player.play().catch(() => { stopAudio(); toast('Could not play this file'); });
 }
 async function openBook(f) {
   const blob = await getFile('pdf:' + f).catch(() => null); if (!blob) return toast('The PDF is missing; add it again');
@@ -1326,7 +1363,19 @@ async function start() {
   makeCopy('day');
   setTimeout(prewarm, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* the browser decides */ }
-  setInterval(checkLocks, 15000);
+  setInterval(clockRefresh, 15000);
+}
+// 10 Nov (audit T13): Home's "in 25 min / Now / ends in 40 min / Not marked" follow the clock, and a new day starts at midnight
+// even when the app stays open. Every 15 s: registers that should open now (checkLocks); once a minute, Home is drawn again
+// only if what it shows has changed.
+let minuteSig = '';
+function clockRefresh() {
+  if (document.hidden || !R) return;
+  const now = new Date(), day = midnight(now);
+  if (iso(day) !== iso(TODAY)) { TODAY = day; makeCopy('day'); minuteSig = ''; return draw(); }
+  checkLocks();
+  const sig = iso(day) + ' ' + now.getHours() + ':' + now.getMinutes(); if (sig === minuteSig) return; minuteSig = sig;
+  if (T.tab === 0 && !T.push.length && !T.sheet && !R.sliding && safe(PAGES[0]) !== R.pages[0]._html) draw();
 }
 // 10 Nov (audit T50): ONE visibilitychange handler (there were six in store, bridge, home2, leave and here, each drawing on its own).
 // Leaving: the second copy is written at once and Budget gets the newest list. Coming back: a new day, Budget's schedule changes
@@ -1339,7 +1388,11 @@ document.addEventListener('visibilitychange', () => {
   if (typeof clockTick === 'function') clockTick(true); // js/leave.js
   draw();
 });
-window.addEventListener('error', (e) => { try { toast('Something went wrong: ' + (e.message || 'error')); } catch (_) { /* ignore */ } });
+window.addEventListener('error', (e) => { // 10 Nov (audit T19): only for a mistake in this app's own scripts, not harmless browser messages
+  const f = String((e && e.filename) || '');
+  if (!f.startsWith(location.origin) || /\/media\/|pdf\.worker|pdf\.min/.test(f) || /ResizeObserver/.test(e.message || '')) return;
+  try { toast('Something went wrong: ' + (e.message || 'error')); } catch (_) { /* ignore */ }
+});
 // 9 Nov: the first screen is drawn only after ALL the scripts have loaded (the newer Home code is in the files after this one).
 // Before, the app drew the old Home at once and swapped in the new one half a second later.
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

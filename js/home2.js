@@ -61,7 +61,10 @@ function homeCfg() {
   return c;
 }
 const card = (title, right, body) => `<div class="tp-sec dr-sec"><h4>${title}</h4>${right ? `<span>${right}</span>` : ''}</div>${body}`;
-const grpColor = (g) => PIE[S.groups.indexOf(g) % PIE.length];
+// 10 Nov (audit T35): each group keeps the color number it got when it was made (g.ci), so adding or removing a group never repaints the others
+const gci = (g) => (Number.isInteger(g.ci) ? g.ci : Math.max(0, S.groups.indexOf(g)));
+const newCi = () => { const used = new Set(S.groups.map(gci)); let n = 0; while (used.has(n)) n++; return n; };
+const grpColor = (g) => PIE[gci(g) % PIE.length];
 
 const monthNav = () => { const ym = payState().ym, cur = ymOf(TODAY); return `<div class="h2-mn"><button class="tp-iconbtn" data-paymonth="-1" ${ym <= S.pay.start ? 'disabled' : ''} aria-label="Previous month">${ic('ChevronLeft')}</button><b>${ymName(ym)}</b><button class="tp-iconbtn" data-paymonth="1" ${ym >= ymAdd(cur, MAXAHEAD) ? 'disabled' : ''} aria-label="Next month">${ic('ChevronRight')}</button></div>`; };
 function secPaid() { // the big picture: how many students, who paid, who did not
@@ -128,7 +131,7 @@ const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${curLes(g).w} · ${dayWo
 const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
 // iPhone system colors, one per group (in the order of your groups), used everywhere on Home
 const IOS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#FFCC00', '#5856D6', '#30B0C7', '#A2845E'];
-const hc = (g) => IOS[Math.max(0, S.groups.indexOf(g)) % IOS.length];
+const hc = (g) => IOS[gci(g) % IOS.length];
 function secNext() { // one lesson big (the one that is on, or the next); today's other lessons smaller underneath: what's coming and what's taught
   const { list } = todayBlocks(), now = nowMin(), b = list.find((x) => x.to > now); if (!list.length) return '';
   const on = b && b.from <= now, g = b && b.g, st = g ? g.students.length : 0;
@@ -274,15 +277,17 @@ function sheetPayPick(s) {
 /* ---------- Extra charges ---------- */
 const X_IDEAS = ['Book', 'Workbook', 'Trip', 'Exam fee', 'Materials'];
 function sheetExtra(s) {
-  if (!s.form) { const x = s.key && S.pay.extras.find((e) => e.id === s.key), g0 = x ? gById(x.gid) : feeGroups()[0] || S.groups[0];
+  // 10 Nov (audit T7, T8): no groups yet, or the charge's group was removed: no error screen
+  if (!S.groups.length) return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>Extra charge</b><span></span></div><div class="tp-empty2">${ic('Package')}<b>No groups yet</b><span>Add a group first. Then you can add a charge for its students.</span></div>`;
+  if (!s.form) { const x = s.key && S.pay.extras.find((e) => e.id === s.key), g0 = feeGroups()[0] || S.groups[0];
     s.form = x ? { name: x.name, amount: x.amount, gid: x.gid, sids: [...x.sids], date: x.date } : { name: '', amount: '', gid: g0.id, sids: g0.students.map((t) => t.id), date: iso(TODAY) }; }
-  const F = s.form, g = gById(F.gid);
+  const F = s.form, g = gById(F.gid) || { students: [] };
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>${s.key ? 'Edit charge' : 'Extra charge'}</b><button class="tp-back strong" data-xsave>Save</button></div>
     <label class="tp-f"><span>What is it for?</span><input id="f-xn" value="${esc(F.name)}" placeholder="e.g. Family and Friends 3 book" autocomplete="off"></label>
     <div class="tp-chips2 dr-fill">${X_IDEAS.map((t) => `<button data-xname="${t}">${t}</button>`).join('')}</div>
     <label class="tp-f"><span>Price for each student (so'm)</span><input id="f-xa" inputmode="numeric" value="${F.amount || ''}" placeholder="0" autocomplete="off"></label>
     <div class="tp-f"><span>Which group?</span><div class="tp-chips2">${S.groups.map((x) => `<button class="${F.gid === x.id ? 'on' : ''}" style="${gvg(x)}" data-xg="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
-    <div class="tp-f"><span>Who must pay · ${F.sids.length} of ${g.students.length}</span><div class="tp-chips2">${g.students.map((t) => `<button class="${F.sids.includes(t.id) ? 'on' : ''}" data-xs="${t.id}">${esc(t.name)}</button>`).join('')}</div>
+    <div class="tp-f"><span>${gById(F.gid) ? `Who must pay · ${F.sids.length} of ${g.students.length}` : 'The group of this charge was removed. Choose a group.'}</span><div class="tp-chips2">${g.students.map((t) => `<button class="${F.sids.includes(t.id) ? 'on' : ''}" data-xs="${t.id}">${esc(t.name)}</button>`).join('')}</div>
       <div class="tp-chips2 dr-fill"><button data-xall="1">Everyone</button><button data-xall="0">Nobody</button></div></div>
     <label class="tp-f"><span>Date</span><input id="f-xd" class="h2-date" type="date" value="${F.date}"></label>
     ${s.key ? `<button class="tp-danger" data-xdel="${s.key}">Remove this charge</button>` : ''}`;
@@ -391,9 +396,10 @@ function home2Click(b, d) {
   if (d.xname) { keepX(); T.sheet.form.name = d.xname; draw(); return true; }
   if (d.xg) { keepX(); const F = T.sheet.form, g = gById(d.xg); F.gid = g.id; F.sids = g.students.map((t) => t.id); draw(); return true; }
   if (d.xs) { keepX(); const F = T.sheet.form; F.sids = F.sids.includes(d.xs) ? F.sids.filter((x) => x !== d.xs) : [...F.sids, d.xs]; draw(); return true; }
-  if (d.xall !== undefined) { keepX(); const F = T.sheet.form; F.sids = d.xall === '1' ? gById(F.gid).students.map((t) => t.id) : []; draw(); return true; }
+  if (d.xall !== undefined) { keepX(); const F = T.sheet.form, g = gById(F.gid); F.sids = d.xall === '1' && g ? g.students.map((t) => t.id) : []; draw(); return true; }
   if (d.xsave !== undefined) {
     keepX(); const s = T.sheet, F = s.form, amount = +String(F.amount).replace(/\D/g, '') || 0;
+    if (!gById(F.gid)) { toast('Choose a group'); return true; } // its group was removed
     if (!F.name.trim()) { toast('Write what it is for'); return true; } if (!amount) { toast('Write the price'); return true; } if (!F.sids.length) { toast('Choose who must pay'); return true; }
     const x = { id: s.key || uid(), name: F.name.trim(), amount, gid: F.gid, sids: [...F.sids], date: F.date || iso(TODAY) };
     const i = S.pay.extras.findIndex((e) => e.id === x.id); if (i >= 0) S.pay.extras[i] = x; else S.pay.extras.push(x);
