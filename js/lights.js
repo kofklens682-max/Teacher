@@ -18,25 +18,44 @@ const ROLE = { q: ['q', 'y', 'r'], y: ['y', 'q', 'r'], r: ['r', 'y', 'q'], e: ['
 const ROLE_NAME = { q: 'Vocabulary (words and reading)', y: 'Vocabulary (words and reading)', r: 'Reading / vocabulary', e: 'Lesson (grammar explained)', l: 'Lesson (grammar explained)', z: 'Big screen slides, else Exercises', x: 'Exercises', m: 'Murphy explained, else Exercises' };
 PK_KINDS.forEach(([k, name]) => { ACTIONS['k:' + k] = ['FileText', 'File: ' + (ROLE_NAME[k] || name)]; }); // one action per kind of file: Vocabulary and speaking, Grammar explained, Murphy explained, Big screen slides ...
 ACTIONS.none = ['X', 'Nothing (hide this dot)'];
-const DOT_DEFAULT = { blurAmt: 30, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['files', 'att', 'budget'], file: ['k:q', 'k:e', 'k:z'] };
+// 10 Nov 2026 (user): inside a lesson and inside a file the dots are the FILES of that lesson, by their place (1st, 2nd, 3rd...), so they work the same
+// for kids, Pre-Int and IELTS whatever the files are called. A lesson with fewer files shows fewer dots; a dot never does nothing.
+for (let n = 1; n <= 6; n++) ACTIONS['f:' + n] = ['FileText', 'File ' + n + ' of the lesson'];
+const DOT_CHOICES = { home: ['files', 'atttab', 'budget', 'units', 'books', 'pay', 'extra', 'group', 'settings', 'none'], inside: ['f:1', 'f:2', 'f:3', 'f:4', 'f:5', 'f:6', 'files', 'nextfile', 'att', 'plan', 'students', 'budget', 'none'], file: ['f:1', 'f:2', 'f:3', 'f:4', 'f:5', 'f:6', 'nextfile', 'prevfile', 'files', 'att', 'share', 'top', 'close', 'none'] };
+DOT_CHOICES.tabs = DOT_CHOICES.home;
+const numIcon = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17.5" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor" stroke="none" font-family="-apple-system,Roboto,Arial,sans-serif">${n}</text></svg>`;
+const DOT_DEFAULT = { blurAmt: 30, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['f:1', 'f:2', 'f:3'], file: ['f:1', 'f:2', 'f:3'] };
 const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Attendance and Books'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
 const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Blue', 'Green', 'Orange'];
 function dotsGet() {
   let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
   const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
+  if (v.v !== 2) { v.inside = null; v.file = null; } // once: the dots inside a lesson and inside a file become "the first three files" (they can be changed again)
   return { blurAmt: v.blur === false ? 0 : Number.isFinite(v.blurAmt) ? Math.max(0, Math.min(100, v.blurAmt)) : DOT_DEFAULT.blurAmt, style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
 }
-const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify(c)); } catch (e) { /* not saved */ } };
+const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify({ ...c, v: 2 })); } catch (e) { /* not saved */ } };
 const lightsHtml = (where = 'home') => {
-  const c = dotsGet(), b = c[where].map((a, i) => (a === 'none' ? '' : `<button class="lt ${DOT_CLS[i]}" data-light="${a}" aria-label="${ACTIONS[a][1]}">${c.style === 'icons' ? ic(ACTIONS[a][0]) : ''}</button>`)).join('');
+  const c = dotsGet(), inLesson = where === 'inside' || where === 'file', ctx = inLesson ? lightCtx() : {}, ks = ctx.key && PACKS[ctx.key] ? fileKinds(ctx.key).map((x) => x[0]) : [], used = new Set();
+  const b = c[where].map((a, i) => {
+    let act = a, label = ACTIONS[a][1], cur = '', icon = c.style === 'icons' ? ic(ACTIONS[a][0]) : '';
+    if (a.startsWith('f:')) { // the file at this place in the lesson; none there: the next file that has no dot yet; no files at all: the list of files
+      if (!ks.length) { act = 'files'; label = ACTIONS.files[1]; icon = c.style === 'icons' ? ic(ACTIONS.files[0]) : ''; }
+      else { let k = ks[+a.slice(2) - 1]; if (!k || used.has('k:' + k)) k = ks.find((x) => !used.has('k:' + x)); if (!k) return '';
+        act = 'k:' + k; label = (PK_KINDS.find((x) => x[0] === k) || [0, 'File'])[1]; icon = c.style === 'icons' ? numIcon(ks.indexOf(k) + 1) : ''; if (PV.el && PV.ctx && PV.ctx.kind === k) cur = ' cur'; }
+    }
+    if (act === 'none' || used.has(act)) return '';
+    used.add(act);
+    return `<button class="lt ${DOT_CLS[i]}${cur}" data-light="${act}" data-dot="${where}|${i}" aria-label="${label}">${icon}</button>`;
+  }).join('');
   return b ? `<div class="tp-lights ${c.style}" role="group" aria-label="Shortcuts">${b}</div>` : '';
 };
 // every screen on top gets the dots in its bar (between Back and Edit)
 const withLights = (html) => html.replace(/(<div class="tp-pushbar">(?:(?!<\/div>)[\s\S])*?)(<\/div>)/, '$1' + lightsHtml('inside') + '$2');
 function dotsSettingsHtml() {
   const c = dotsGet(), opts = (cur) => Object.keys(ACTIONS).map((k) => `<option value="${k}"${k === cur ? ' selected' : ''}>${ACTIONS[k][1]}</option>`).join('');
-  const rows = (where, label) => `<div class="tp-f"><span>${label}</span>${c[where].map((a, i) => `<label class="dt-row"><i class="dt-sw ${DOT_CLS[i]}"></i><select data-dotsel="${where}|${i}" aria-label="${label}: ${DOT_NAMES[i]} dot">${opts(a)}</select></label>`).join('')}</div>`;
+  const rows = (where, label) => `<div class="tp-f"><span>${label}</span>${c[where].map((a, i) => `<button class="tp-lrow dt-row" data-dotedit="${where}|${i}"><i class="dt-sw ${DOT_CLS[i]}"></i><span class="tx"><b>${ACTIONS[a][1]}</b></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>`;
   return `<div class="tp-card2"><div class="h">${ic('Sliders')}Three dots</div>
+    <p class="tp-small" style="text-align:left">Tap a row to change that dot. You can also press and hold a dot on any screen.</p>
     <div class="tp-f"><span>Look</span><div class="tp-chips2 dr-fill"><button class="${c.style === 'icons' ? 'on' : ''}" data-dotstyle="icons">With icons</button><button class="${c.style === 'plain' ? 'on' : ''}" data-dotstyle="plain">Plain dots</button></div></div>
     ${DOT_WHERE.map(([w, l]) => rows(w, l)).join('')}
     <div class="tp-f"><span>Budget</span><div class="tp-chips2 dr-fill"><button class="${c.budget === 'app' ? 'on' : ''}" data-dotbud="app">Open the app</button><button class="${c.budget === 'web' ? 'on' : ''}" data-dotbud="web">Open in browser</button></div></div>
@@ -183,7 +202,7 @@ async function pvOpen(ref, title, gid) {
   const hadSheet = !!T.sheet, hadViewer = !!PV.el; if (hadSheet) { T.sheet = null; draw(); } // the list closes; its history step is reused (or given back)
   if (hadSheet && hadViewer) { R.skipPop = (R.skipPop || 0) + 1; try { history.back(); } catch (e) { R.skipPop--; } }
   pvRelease(); PV.sizes = null; if (PV.pending) PV.pending.clear(); PV.busy = false; // the file that was open before is let go first
-  pvEnsure(hadSheet && !hadViewer); PV.ctx = { key, kind, gid: gid || (lightCtxBase() || {}).gid || null };
+  pvEnsure(hadSheet && !hadViewer); PV.ctx = { key, kind, gid: gid || (lightCtxBase() || {}).gid || null }; pvDots();
   PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-scroll').scrollTop = 0; PV.name = name; pvPlaceholder(name);
   const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
@@ -203,6 +222,7 @@ function pvPlaceholder(name) {
   if (t) { const c = document.createElement('canvas'); c.width = t.c.width; c.height = t.c.height; c.getContext('2d', { willReadFrequently: true }).drawImage(t.c, 0, 0); c.className = 'on pv-under'; box.appendChild(c); }
   wrap.appendChild(box);
 }
+function pvDots() { if (!PV.el) return; const old = PV.el.querySelector(".pv-bar .tp-lights"), h = lightsHtml("file"); if (old) old.outerHTML = h; else if (h) PV.el.querySelector(".pv-bar").insertAdjacentHTML("beforeend", h); } // the dots in the file bar follow the file that is open
 function lightCtxBase() { const keep = PV.ctx; PV.ctx = null; const c = lightCtx(); PV.ctx = keep; return c; }
 // Page sizes are remembered, so changing the zoom builds the boxes at once (no waiting).
 async function pvLayout() {
@@ -361,6 +381,9 @@ document.addEventListener('click', (e) => {
   const pl = e.target.closest && e.target.closest('[data-pkplan]'); if (pl) { const g = gById(pl.dataset.pkplan); T.sheet = null; if (PV.el) pvClose(); T.push.push(planScreen(g)); draw(true); return; } // the sheet's (or the file's) history step now belongs to that screen
   const ds = e.target.closest && e.target.closest('[data-dotstyle],[data-dotbud],[data-dotreset]');
   if (ds) { const c = dotsGet(); if (ds.dataset.dotstyle) c.style = ds.dataset.dotstyle; else if (ds.dataset.dotbud) c.budget = ds.dataset.dotbud; else { DOT_WHERE.forEach(([w]) => { c[w] = DOT_DEFAULT[w]; }); c.style = 'icons'; c.budget = 'app'; c.blurAmt = 30; } dotsSet(c); return draw(); }
+  const de = e.target.closest && e.target.closest('[data-dotedit]'); if (de) { const [w, i] = de.dataset.dotedit.split('|'); return openSheet({ s: 'dotpick', where: w, i: +i, from: 'settings' }); }
+  const dp = e.target.closest && e.target.closest('[data-dotpick]'); if (dp) { const [w, i, k] = dp.dataset.dotpick.split('|'), c = dotsGet(); if (c[w] && ACTIONS[k]) { c[w] = c[w].slice(); c[w][+i] = k; dotsSet(c); } if (T.sheet && T.sheet.from === 'settings') return openSheet({ s: 'settings' }); closeSheetNow(); return; }
+  const held = dotHeld && e.target.closest && e.target.closest('[data-dot]'); if (held) { dotHeld = false; e.preventDefault(); e.stopPropagation(); if (PV.el) return toast('To change a dot: Profile and settings, Three dots'); const [w, i] = held.dataset.dot.split('|'); return openSheet({ s: 'dotpick', where: w, i: +i }); }
   const l = e.target.closest && e.target.closest('[data-light]'); if (l) { l.classList.remove('pop'); void l.offsetWidth; l.classList.add('pop'); lightGo(l.dataset.light); }
 }, true);
 // the files are fetched once and kept: the PDF reader too, so files open without internet
@@ -391,3 +414,17 @@ document.addEventListener('input', (e) => { const s = e.target.closest && e.targ
 // 9 Nov speed audit: switched OFF. Flipping a class on the whole page at every scroll made the phone restyle the entire app
 // several times a second; the cards no longer blur, so there is nothing to turn off while moving.
 function movingFor() { /* nothing */ }
+
+/* ---------- 10 Nov 2026: change a dot: press and hold it (or Settings, Three dots). A short list of only what fits that place ---------- */
+let dotHoldT = 0, dotHeld = false;
+document.addEventListener('pointerdown', (e) => { const l = e.target.closest && e.target.closest('[data-dot]'); dotHeld = false; clearTimeout(dotHoldT); if (!l) return;
+  dotHoldT = setTimeout(() => { dotHeld = true; try { navigator.vibrate && navigator.vibrate(10); } catch (x) { /* no buzz */ } }, 550); }, true);
+['pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, () => { clearTimeout(dotHoldT); dotHeld = false; }, true));
+document.addEventListener('pointerup', () => clearTimeout(dotHoldT), true);
+document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.tp-lights')) e.preventDefault(); });
+function sheetDotPick(s) {
+  const c = dotsGet(), cur = (c[s.where] || [])[s.i], place = (DOT_WHERE.find((x) => x[0] === s.where) || [0, ''])[1];
+  const rows = (DOT_CHOICES[s.where] || []).map((k) => `<button class="tp-lrow pv-row${k === cur ? ' cur' : ''}" data-dotpick="${s.where}|${s.i}|${k}"><span class="pv-ic">${ic(ACTIONS[k][0])}</span><span class="tx"><b>${ACTIONS[k][1]}</b></span><span class="tp-chev">${ic(k === cur ? 'Check' : 'ChevronRight')}</span></button>`).join('');
+  return `<div class="tp-sh-h">${s.from === 'settings' ? `<button class="tp-back" data-sheet="settings">${ic('ChevronLeft')} Back</button>` : '<button class="tp-back" data-closesheet>Cancel</button>'}<b>${DOT_NAMES[s.i]} dot</b><span></span></div><p class="tp-small" style="text-align:left">${place}. Choose what this dot opens.</p>${rows}`;
+}
+document.addEventListener('DOMContentLoaded', () => { if (typeof SHEETS !== 'undefined') SHEETS.dotpick = (s) => sheetDotPick(s); });

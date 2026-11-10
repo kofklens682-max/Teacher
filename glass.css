@@ -119,3 +119,4 @@ html.glass .tp-toast { background: rgba(40, 44, 54, .72) !important; -webkit-bac
 /* cards are content, not glass: clean solid white, one soft shadow */
 html.glass .ffm, html.glass .ffc2, html.glass .tp-segs, html.glass .tp-card2, html.glass .at-list > * { background: #fff !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .g2-edge { display: none; } html.glass .g2-edge { display: block; }
+.tp-lights .lt.cur { outline: 2px solid rgba(255,255,255,.95); outline-offset: 1px; transform: scale(1.08); } /* 10 Nov: the dot of the file that is open */
