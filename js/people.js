@@ -110,11 +110,11 @@ SHEETS.soloday = (s) => sheetSoloDay(s);
       if (document.getElementById('f-sfee')) { const v = numVal('f-sfee'), gf = (planOf(g) || {}).fee || 0; if (!v || v === gf) delete S.pay.stuFee[sid]; else S.pay.stuFee[sid] = v; }
       save(); closeSheetNow(); toast(`${nm} saved`); return true;
     }
-    if (d.sturm) {
-      if (!confirmTwice(b, 'Tap again to remove')) return true;
-      const [sid, gid] = d.sturm.split('|'), g = gById(gid), i = g ? g.students.findIndex((x) => x.id === sid) : -1; if (i < 0) return true;
-      const st = g.students[i]; g.students.splice(i, 1); g.gone = [...(g.gone || []), st]; save(); closeSheetNow();
-      payToast(`${st.name} removed from ${g.name}`, () => { g.students.splice(i, 0, st); g.gone = (g.gone || []).filter((x) => x.id !== st.id); });
+    if (d.sturm) { // ask once (saying what is still owed), then Undo for 8 seconds (removeStudent in app.js, also used by Edit group)
+      const [sid, gid] = d.sturm.split('|'), g = gById(gid), st = g && g.students.find((x) => x.id === sid); if (!st) return true;
+      const owe = hasFee(g) ? ledger(g, st, ymOf(TODAY)).debt : 0;
+      if (!confirmTwice(b, owe ? `Owes ${dMoney(owe)} so'm. Tap again to remove` : 'Tap again to remove')) return true;
+      removeStudent(g, st); closeSheetNow();
       return true;
     }
     if (d.solod) { const [gid, k] = d.solod.split('|'); openSheet({ s: 'soloday', g: gid, key: k }); return true; }

@@ -387,7 +387,8 @@ function histGrid(g, cur) { // the register as a table: names down, lesson dates
 }
 function scRegister(f) {
   const g = gById(f.g); if (!g) return scGone();
-  purgeStray();
+  // 10 Nov (audit T6): drawing never deletes or saves. Unsaved ticks on a day that is no longer a lesson day stay where they are
+  // (kept() already hides them), so they come back if the day becomes a lesson day again.
   if (f.date && !hasLesson(g, fromIso(f.date)) && !(S.saved[g.id] || {})[f.date]) f.date = null; // never open on a day without a lesson
   if (!f.date) { const d = lastLesson(g); f.date = d ? iso(d) : null; }
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit group</button></div>`;
@@ -678,7 +679,7 @@ function syncSheet() {
   const cur = R.sheet, sh = T.sheet;
   if (cur && sh && cur._sh === sh) { setHTML(cur._panel, safe(SHEETS[sh.s], sh)); return; }
   if (cur && sh) { // another sheet in the same place (Settings → Automatic copies): a soft cross-fade
-    cur._sh = sh; setHTML(cur._panel, safe(SHEETS[sh.s], sh), true); cur._panel.scrollTop = 0; return;
+    cur._sh = sh; setHTML(cur._panel, safe(SHEETS[sh.s], sh), true); cur._panel.scrollTop = 0; markClean(cur); return;
   }
   if (cur && !sh) { R.sheet = null; closeAnim(cur); return; }
   if (!sh) return;
@@ -688,8 +689,25 @@ function syncSheet() {
   el._sh = sh; el._panel = el.querySelector('.panel'); el._scrim = el.querySelector('.scrim');
   setHTML(el._panel, safe(SHEETS[sh.s], sh));
   R.sheets.appendChild(el); R.sheet = el;
+  markClean(el); el._panel.addEventListener('input', () => { el._dirty = true; }); el._panel.addEventListener('change', () => { el._dirty = true; });
   bindSheetDrag(el);
   void el._panel.offsetHeight; afterPaint(() => el.classList.add('show')); // drawn below the screen first, then it slides up
+}
+// 10 Nov (audit T17): a changed form is not thrown away by a tap outside or a pull down. The first one only asks; doing it
+// again within 4 seconds closes without saving. Cancel still closes at once.
+const FORM_SHEETS = ['group', 'extra', 'disc', 'gdisc', 'lesson', 'media', 'stu'];
+const snapOf = (sh) => JSON.stringify([sh.form, sh.f], (k, v) => (['step', 'colorOpen', 'times', 'len0', 'students'].includes(k) ? undefined : v)); // typed times fire "input" anyway
+const idsOf = (a) => (a || []).map((x) => x.id).join(',');
+function markClean(el) { el._dirty = false; el._ask = 0; el._snap = snapOf(el._sh); }
+function sheetDirty(el) {
+  const sh = el && el._sh; if (!sh || !FORM_SHEETS.includes(sh.s)) return false;
+  if (el._dirty || snapOf(sh) !== el._snap) return true;
+  if (sh.s === 'group' && sh.form) { const g = sh.g && gById(sh.g); return idsOf(sh.form.students) !== idsOf(g ? g.students : []); } // a saved student removed with the X is already gone from the group too
+  return false;
+}
+function askDiscard(el, again) { // true = stay open this time
+  if (!sheetDirty(el) || (el._ask && Date.now() - el._ask < 4000)) return false;
+  el._ask = Date.now(); toast(`Discard your changes? ${again} to close without saving.`); return true;
 }
 // Run fn once the browser has drawn the new element (two frames), or after 120 ms if frames are paused.
 function afterPaint(fn) { let done = false; const go = () => { if (!done) { done = true; fn(); } }; requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 120); }
@@ -736,7 +754,7 @@ function bindSheetDrag(el) {
     if (!st) return; const k = st; st = null;
     if (k.mode !== 'drag') return;
     el._dragged = Date.now(); el.classList.remove('dragging');
-    if (k.dy > Math.min(110, p.offsetHeight * 0.2) || (k.v > 0.35 && k.dy > 16)) closeSheetNow();
+    if ((k.dy > Math.min(110, p.offsetHeight * 0.2) || (k.v > 0.35 && k.dy > 16)) && !askDiscard(el, 'Pull down again')) closeSheetNow();
     else { p.style.transform = ''; s.style.opacity = ''; }
   };
   p.addEventListener('touchstart', (e) => start(e.touches[0].clientX, e.touches[0].clientY, e.target), { passive: true });
@@ -748,7 +766,7 @@ function bindSheetDrag(el) {
     const mv = (ev) => follow(ev.clientX, ev.clientY, ev), up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); release(); };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
   });
-  s.addEventListener('click', () => closeSheetNow()); // a tap outside the sheet closes it
+  s.addEventListener('click', () => { if (!askDiscard(el, 'Tap outside again')) closeSheetNow(); }); // a tap outside the sheet closes it (a changed form asks first)
 }
 // A switch with a gliding highlight (Books | Audio | Videos): tap an option, or press and slide along it — the
 // highlight follows the finger and the option under it is chosen when the finger lifts (like iOS).
@@ -1001,10 +1019,6 @@ function keepForm() {
 function tapCtx(b) { const grid = b.closest('.tl-grid'); if (!grid) return null; const c = { g: gById(grid.dataset.g), d: fromIso(grid.dataset.date), grid };
   if (!hasLesson(c.g, c.d) && !(S.saved[c.g.id] || {})[iso(c.d)]) { toast('This is not a lesson day for this group'); return null; } // no stray registers on days without a lesson
   return c; }
-function purgeStray() { // unsaved registers on days with no lesson are leftovers of old taps: drop them
-  let n = 0; S.groups.forEach((g) => Object.keys(S.rec[g.id] || {}).forEach((k) => { if (!(S.saved[g.id] || {})[k] && !hasLesson(g, fromIso(k))) { delete S.rec[g.id][k]; if (S.hw[g.id]) delete S.hw[g.id][k]; n++; } }));
-  if (n) save();
-}
 function refreshRow(grid, g, d, sid) {
   const s = g.students.find((x) => x.id === sid), row = grid.querySelector(`.tl-st[data-sid="${sid}"]`); if (!s || !row) return;
   const r = rec(g, d), a = r.get(sid) === 'absent' ? 'absent' : 'here'; // changed in place, so the colour glides
@@ -1101,12 +1115,16 @@ function onClick(e) {
   if (d.opengrp) { const sec = b.closest('.tl-sec'), on = !sec.classList.contains('open'); T.open[d.opengrp] = on; sec.classList.toggle('open', on); b.setAttribute('aria-expanded', on); return; }
   if (d.fDay !== undefined) { keepForm(); const ds = T.sheet.form.days, k = +d.fDay; T.sheet.form.days = ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k].sort(); return draw(); }
   if (d.fAdd !== undefined) { keepForm(); addFormStudent(); return; }
-  if (d.fRm !== undefined) { keepForm(); T.sheet.form.students.splice(+d.fRm, 1); return draw(); }
+  if (d.fRm !== undefined) { keepForm(); return formRemoveStudent(b, +d.fRm); }
   if (d.savegroup !== undefined) return saveGroup();
-  if (d.delgroup) {
+  if (d.delgroup) { // 10 Nov (audit T4): ask once, Undo for 8 seconds; what the group leaves behind is cleaned only after that
     if (!confirmTwice(b, 'Tap again to remove the group')) return;
-    S.groups = S.groups.filter((g) => g.id !== d.delgroup); save(); T.sheet = null; T.push = [];
-    unwind(); draw(); return toast('Group removed');
+    const i = S.groups.findIndex((g) => g.id === d.delgroup); if (i < 0) return;
+    const g = S.groups[i]; S.groups.splice(i, 1); save(); T.sheet = null; T.push = [];
+    unwind(); draw();
+    payToast(`${g.name} removed`, () => { if (!S.groups.some((x) => x.id === g.id)) S.groups.splice(Math.min(i, S.groups.length), 0, g); });
+    setTimeout(() => { if (!S.groups.some((x) => x.id === g.id)) { dropGroupData(g); save(); } }, 8500);
+    return;
   }
   if (d.savelesson) { const v = { notes: val('f-notes'), link: val('f-link'), hw: val('f-hw') }; if (v.notes || v.link || v.hw) S.edits[d.savelesson] = v; else delete S.edits[d.savelesson]; save(); closeSheetNow(); return toast('Lesson saved'); }
   if (d.savemedia) return saveMedia(d.savemedia);
@@ -1125,15 +1143,63 @@ function addFormStudent() {
   T.sheet.form.students.push({ id: uid(), name: n, added: Date.now() }); draw();
   const inp = root.querySelector('#f-stu'); if (inp) inp.focus();
 }
+// 10 Nov (audit T2): the X next to a saved student in Edit group works like Remove on the student's page: ask once, then
+// Undo for 8 seconds. A student who still owes money goes to his page instead, where "Stopped coming" keeps the money on the books.
+function formRemoveStudent(b, i) {
+  const s = T.sheet, F = s.form, x = F.students[i]; if (!x) return;
+  const g = s.g && gById(s.g), st = g && g.students.find((t) => t.id === x.id);
+  if (!st) { F.students.splice(i, 1); return draw(); } // added in this form and not saved yet: nothing to keep
+  const owe = hasFee(g) ? ledger(g, st, ymOf(TODAY)).debt : 0, first = st.name.split(' ')[0];
+  if (owe > 0) {
+    if (sheetDirty(R.sheet)) return toast(`${first} still owes ${dMoney(owe)} so'm. Save the group first, then tap the X again.`);
+    openSheet({ s: 'stu', g: g.id, sid: st.id });
+    return toast(`${first} still owes ${dMoney(owe)} so'm. If ${first} stopped coming, choose "Stopped coming": the money stays on the books.`);
+  }
+  if (!confirmTwice(b, '')) return;
+  removeStudent(g, st);
+}
+// Remove = gone from every month (g.gone keeps the name). Used by the X in Edit group and by Remove on the student's page.
+function removeStudent(g, st) {
+  const i = g.students.indexOf(st); if (i < 0) return;
+  const formOf = () => (T.sheet && T.sheet.s === 'group' && T.sheet.g === g.id ? T.sheet.form : null);
+  g.students.splice(i, 1); g.gone = [...(g.gone || []), st]; save();
+  const F = formOf(), fi = F ? F.students.findIndex((x) => x.id === st.id) : -1;
+  if (fi >= 0) { F.students.splice(fi, 1); draw(); }
+  payToast(`${st.name} removed from ${g.name}`, () => {
+    if (!g.students.includes(st)) g.students.splice(Math.min(i, g.students.length), 0, st);
+    g.gone = (g.gone || []).filter((x) => x.id !== st.id);
+    const F2 = formOf(); if (F2 && !F2.students.some((x) => x.id === st.id)) F2.students.splice(Math.min(fi < 0 ? i : fi, F2.students.length), 0, { ...st });
+  });
+}
+// 10 Nov (audit T4): what a removed group leaves behind (registers, plan, fees, discounts, charges, its students' payments),
+// cleaned once its 8-second Undo is over.
+function dropGroupData(g) {
+  const id = g.id, P = S.pay, sids = new Set([...g.students, ...(g.left || []), ...(g.gone || [])].map((s) => s.id));
+  ['rec', 'hw', 'saved', 'taught', 'pend', 'rep', 'dbl', 'ownDone', 'cal'].forEach((k) => { if (S[k]) delete S[k][id]; });
+  delete P.plan[id];
+  ['disc', 'dex'].forEach((k) => Object.keys(P[k] || {}).forEach((x) => { if (x.startsWith(id + '|')) delete P[k][x]; }));
+  P.dsc = (P.dsc || []).filter((x) => x.gid !== id);
+  const xs = P.extras.filter((x) => x.gid === id); P.extras = P.extras.filter((x) => x.gid !== id);
+  xs.forEach((x) => Object.keys(P.xpaid).forEach((k) => { if (k.startsWith(x.id + '|')) delete P.xpaid[k]; }));
+  P.pays = P.pays.filter((p) => !sids.has(p.sid));
+  ['stuFee', 'from', 'lost'].forEach((k) => { if (P[k]) sids.forEach((sid) => delete P[k][sid]); });
+  ['sfee', 'sdisc', 'sfree'].forEach((k) => Object.keys(P[k] || {}).forEach((x) => { if (sids.has(x.split('|')[0])) delete P[k][x]; }));
+  S.pauses = S.pauses.filter((p) => { if (!p.gids.includes(id)) return true; p.gids = p.gids.filter((x) => x !== id); p.disc = p.disc.filter((x) => x.gid !== id); return p.gids.length > 0; }); // a break for this group only goes too ("no groups" would mean every group)
+  const key = 'own-' + id; delete S.edits[key]; (S.mats[key] || []).forEach((a) => delFile('mat:' + a.id).catch(() => {})); delete S.mats[key];
+}
 function saveGroup() {
   keepForm(); const F = T.sheet.form; if (!F.name) return toast('Give the group a name');
-  const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
   const old = T.sheet.g && gById(T.sheet.g);
+  // 10 Nov (audit T26): an empty fee box no longer takes the fee away without a word: the first Save asks
+  if (old && planOf(old) && !(+F.fee > 0) && !(T.sheet.noFee && Date.now() - T.sheet.noFee < 5000)) { T.sheet.noFee = Date.now(); return toast('The fee is empty. Tap Save again to remove the fee from this group.'); }
+  const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
   const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [] }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: (F.times || {})[[...F.days].sort((a, b) => a - b)[0]] || F.time || '15:00', times: Object.fromEntries(F.days.map((d) => [d, (F.times || {})[d] || F.time || '15:00'])), len: +F.len || 80, color: F.color || '', week: +F.week || 1, les: +F.les || 1, solo: !!F.solo });
   if (old && g.lens && !(+F.len === (T.sheet.form.len0 || +F.len))) delete g.lens; // a new length for all days replaces the per-day lengths from Budget
   if (g.lens) Object.keys(g.lens).forEach((d) => { if (!g.days.includes(+d)) delete g.lens[d]; });
-  if (old) { const keep = new Set(F.students.map((s) => s.id)); g.gone = [...(g.gone || []), ...old.students.filter((s) => !keep.has(s.id))]; }
-  g.students = F.students;
+  // 10 Nov (audit T2): nobody is dropped here any more. The X removes a saved student at once (with Undo); a student who left
+  // while the form was open stays in g.left, and one added somewhere else while it was open is kept.
+  const was = old ? old.students : [], left = new Set([...(g.left || []), ...(g.gone || [])].map((s) => s.id)), inForm = new Set(F.students.map((s) => s.id));
+  g.students = [...F.students.filter((s) => !left.has(s.id)), ...was.filter((s) => !inForm.has(s.id))];
   if (planned(g.lvl)) { const p = advance(g, 0); g.week = p.w; g.les = p.l; }
   if (!old) S.groups.push(g);
   if (+F.fee > 0) S.pay.plan[g.id] = F.feeKind === 'single' ? { kind: 'single', rate: +F.fee } : { kind: 'group', fee: +F.fee }; else delete S.pay.plan[g.id];
