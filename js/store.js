@@ -34,7 +34,7 @@ function normalize(d) {
   out.pay = { start: P.sep26 ? first : (first > '2026-09' ? '2026-09' : first), sep26: 1, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
   for (const k of ['plan', 'stuFee', 'disc', 'sdisc', 'sfee', 'sfree', 'dex', 'xpaid', 'from', 'lost']) out.pay[k] = P[k] && typeof P[k] === 'object' && !Array.isArray(P[k]) ? P[k] : {};
   out.pay.dsc = Array.isArray(P.dsc) ? P.dsc.filter((d) => d && d.id && d.gid && Array.isArray(d.months) && d.months.length && +d.v > 0 && (d.kind === 'pct' || d.kind === 'sum')).map((d) => ({ ...d, v: +d.v, sid: d.sid || null })) : []; // 4 Nov: discounts for chosen months (js/discount.js)
-  out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026) is done: never again
+  out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026): kept in the data only; nothing acts on it any more (10 Nov)
   out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
   out.rev = +out.rev || 0;
   if (!out.lsm || typeof out.lsm !== 'object' || Array.isArray(out.lsm)) out.lsm = {}; // lesson record: what both apps last agreed on, per group

@@ -6,8 +6,8 @@
      pops up "Nikolay paid 200 000 for October" with Add to my balance / Already counted. Removing a payment here asks
      Budget to take it out again (or simply drops it if Budget has not added it yet).
    Teacher still publishes "teacher-roster" (groups, students, monthly charges) so Budget knows the names.
-   Fresh start (user's choice): once, the old payment marks are cleared (an automatic copy is kept first); groups,
-   students, fees and discounts stay. Loaded after home2.js: it replaces ledger() and the payment sheets. */
+   The one fresh start of payments (30 Oct 2026) is done; its code was removed on 10 Nov so a restore can never repeat it.
+   Loaded after home2.js: it replaces ledger() and the payment sheets. */
 
 const RS_KEY = 'teacher-roster', TB_KEY = 'teacher-to-budget';
 const FUTURE = 24; // months ahead you can look at
@@ -145,19 +145,10 @@ window.addEventListener('storage', (e) => { if (e.key === LS_KEY) lessonPull(); 
 document.addEventListener('visibilitychange', () => { if (!document.hidden) lessonPull(); });
 
 { const _save = save; save = function () { lessonPush(); _save(); publishRoster(); }; }
-{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); lessonPull(); freshStart(); publishRoster(); } }, 500); } // once, when the app has opened
+{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); lessonPull(); publishRoster(); } }, 500); } // once, when the app has opened
 document.addEventListener('visibilitychange', () => publishRoster()); // also when you leave for Budget
-
-// The fresh start the user asked for (30 Oct 2026): the payment marks made with the old ways are cleared once, after a copy.
-async function freshStart() {
-  if (S.pay.fresh1) return;
-  const n = S.pay.pays.length;
-  if (n) { try { await makeCopy('before', 'the fresh start of payments'); } catch (e) { /* the daily copy and the second copy still exist */ } }
-  S.pay.pays = []; S.pay.fresh1 = Date.now();
-  try { localStorage.removeItem(TB_KEY); localStorage.removeItem('budget-payments'); } catch (e) { /* nothing waiting */ }
-  save(); if (typeof draw === 'function') draw();
-  if (n) toast('Fresh start: mark who paid again. A copy of the old marks is kept in Automatic copies.');
-}
+// 10 Nov (audit T5): the one fresh start of payments (30 Oct 2026) is finished and its code is gone, so restoring an old backup
+// or copy can never clear the payment marks again. S.pay.fresh1 stays in the data, but nothing acts on it.
 
 /* ---------- a small "Undo" next to the message ---------- */
 let undoFn = null, undoT = 0;
