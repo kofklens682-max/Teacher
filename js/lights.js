@@ -208,7 +208,10 @@ async function pvOpen(ref, title, gid) {
   PV.el.querySelector('.pv-t').textContent = title || 'File'; PV.zoom = 1; PV.el.querySelector('.pv-scroll').scrollTop = 0; PV.name = name; pvPlaceholder(name);
   const slow = setTimeout(() => { if (seq === PV.seq && !PV.doc) pvMsg('Opening…'); }, 900); // only when it is really slow
   try {
-    const lib = await pvLib(), blob = await packGet(name); if (seq !== PV.seq || !PV.el) { clearTimeout(slow); return; }
+    // 11 Nov 2026 (user: opening a file is not smooth): the file slides up FIRST, on an empty page; the heavy work (reading and drawing
+    // the pages) starts only when the slide is over, so the two no longer fight for the phone. The file itself is fetched meanwhile.
+    const blobP = packGet(name); blobP.catch(() => {}); if (!hadViewer) await new Promise((r) => setTimeout(r, 460));
+    const lib = await pvLib(), blob = await blobP; if (seq !== PV.seq || !PV.el) { clearTimeout(slow); return; }
     const task = lib.getDocument({ data: await blob.arrayBuffer(), worker: pvWorker(lib), isEvalSupported: false, isOffscreenCanvasSupported: false, canvasFactory: new PvCanvasFactory(), maxImageSize: 16777216 }); PV.task = task;
     const doc = await task.promise;
     clearTimeout(slow); if (seq !== PV.seq || !PV.el) { try { task.destroy(); } catch (e) { /* done */ } if (PV.task === task) PV.task = null; return; } PV.doc = doc; pvMsg(''); await pvLayout();

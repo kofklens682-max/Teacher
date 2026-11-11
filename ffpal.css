@@ -223,3 +223,8 @@ html.glass .tp-pushbar .tp-back, html.glass .tp-pushbar .tp-pill, html.glass .tp
 .tp-lights .lt:focus, .tp-lights .lt:focus-visible { outline: none !important; border-radius: 50% !important; }
 @media (pointer: coarse) { .tp button:focus-visible, .tp-lights .lt:focus-visible { outline: none !important; } }
 html body .pv, html body .pv *, html body .tp-pv, html body .tp-pv * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* 11 Nov: the SQUARE around a dot, the real cause. With plain dots (no icons) the button is a 26x34 box and the round dot is drawn inside it,
+   so the ring of the open file went around the box. The ring now goes around the round dot itself. */
+.tp-lights.plain .lt.cur { box-shadow: none !important; outline: none !important; transform: none !important; }
+.tp-lights.plain .lt.cur::before { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--c) !important; transform: scale(1.12); }
+.tp-lights.plain .lt, .tp-lights.plain .lt:focus, .tp-lights.plain .lt:focus-visible { outline: none !important; -webkit-tap-highlight-color: transparent; }
