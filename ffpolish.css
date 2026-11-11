@@ -1,21 +1,6 @@
-/* 8 Nov PREVIEW: background per tab, Units / Attendance / Books in the same glass style, iPhone motion. Loaded last. */
+/* 8 Nov PREVIEW: Units / Attendance / Books in the same glass style, iPhone motion. Loaded last. */
 @property --p{syntax:'<number>';inherits:false;initial-value:0}
-@property --b1{syntax:'<color>';inherits:true;initial-value:#0A84FF}
-@property --b2{syntax:'<color>';inherits:true;initial-value:#AF52DE}
-@property --b3{syntax:'<color>';inherits:true;initial-value:#34C759}
-@property --b4{syntax:'<color>';inherits:true;initial-value:#FF9500}
-/* ---------- 1. the background: a rich gradient "wallpaper" that changes color with the tab ---------- */
-.tp{--b1:#2F8CFF;--b2:#B05CFF;--b3:#35D6A0;--b4:#FFB347;transition:--b1 .8s ease,--b2 .8s ease,--b3 .8s ease,--b4 .8s ease}
-.tp[data-tab="1"]{--b1:#B05CFF;--b2:#FF5FA2;--b3:#4D8DFF;--b4:#FFC857}   /* Units: purple and pink */
-.tp[data-tab="2"]{--b1:#22D3A0;--b2:#2F8CFF;--b3:#7BE36B;--b4:#B05CFF}   /* Attendance: green and teal */
-.tp[data-tab="3"]{--b1:#FFA43A;--b2:#FF5F6D;--b3:#FFD84D;--b4:#B05CFF}   /* Books: orange and gold */
-.tp::before{background:
-  radial-gradient(75% 42% at 10% 4%,color-mix(in srgb,var(--b1) 34%,transparent),transparent 72%),
-  radial-gradient(65% 38% at 100% 20%,color-mix(in srgb,var(--b2) 30%,transparent),transparent 72%),
-  radial-gradient(75% 40% at 0% 64%,color-mix(in srgb,var(--b3) 26%,transparent),transparent 72%),
-  radial-gradient(80% 42% at 100% 98%,color-mix(in srgb,var(--b4) 30%,transparent),transparent 72%),
-  linear-gradient(180deg,#F4F6FF 0%,#F6F2FF 50%,#FFF4F2 100%) !important}
-.tp-page{background:transparent}.tp-push{background:radial-gradient(75% 30% at 8% 0%,color-mix(in srgb,var(--b1) 26%,transparent),transparent 72%),radial-gradient(70% 30% at 100% 55%,color-mix(in srgb,var(--b2) 20%,transparent),transparent 72%),linear-gradient(180deg,#F4F6FF 0%,#F6F2FF 55%,#FFF4F2 100%)}
+.tp-page{background:transparent}
 /* ---------- 2. Units, Attendance, Books: the same hero, glass rows and bright cards ---------- */
 .hn-next{border-radius:30px !important;color:#fff;background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#19C8FF,#0A74FF 52%,#6A3DF5) !important;
   box-shadow:0 22px 44px -16px rgba(40,110,255,.7),inset 0 1px 0 rgba(255,255,255,.5) !important}
@@ -59,15 +44,14 @@ html .tp-sheet .scrim{transition:opacity var(--t-slow) var(--ease)}
 html .tp-track.settle{transition:transform var(--t-slow) var(--ease)}
 /* content arrives one piece after another, like the iPhone's own apps */
 .tp-page>:nth-child(2){animation-delay:.03s}.tp-page>:nth-child(3){animation-delay:.06s}.tp-page>:nth-child(4){animation-delay:.09s}.tp-page>:nth-child(5){animation-delay:.12s}.tp-page>:nth-child(6){animation-delay:.15s}.tp-page>:nth-child(7){animation-delay:.18s}
-/* rings fill and bars rise when they appear (Apple Fitness / Charts) */
-.ffring{animation:ffr 1s var(--ease) both}@keyframes ffr{from{--p:0}}
+/* bars rise when they appear (Apple Charts); 11 Nov: the rings are drawn full at once (the --p animation repainted them every frame) */
 .ffsvg .bar{transform-box:fill-box;transform-origin:50% 100%;animation:ffbar .75s var(--ease) both}@keyframes ffbar{from{transform:scaleY(0)}}
 .ffseg i{animation:ffseg .6s var(--ease) both}@keyframes ffseg{from{opacity:0;transform:translateY(8px)}}
 /* press feedback like iOS: a quick dim, a tiny shrink on cards and buttons */
 .ffm,.ffh-go,.tp-cta,.tp-pill,.hn-btns button,.un-row2,.tp-lrow{transition:transform .28s var(--ease),opacity .2s,background-color .2s}
 .ffm:active,.ffh-go:active,.tp-cta:active,.hn-btns button:active{transform:scale(.97)}
 .un-row2:active,.tp-lrow:active,.tp-pill:active{opacity:.6}
-@media (prefers-reduced-motion:reduce){.ffring,.ffsvg .bar,.ffseg i{animation:none}html .tp-push,html .tp-viewport,html .tp-sheet .panel{transition-duration:.01s}}
+@media (prefers-reduced-motion:reduce){.ffsvg .bar,.ffseg i{animation:none}html .tp-push,html .tp-viewport,html .tp-sheet .panel{transition-duration:.01s}}
 .hn-next .hn-tag{background:none !important;box-shadow:none !important;padding-left:0;letter-spacing:.06em}
 .tp-page:nth-child(3) .tp-lt{font-size:33px}.hdr-btns{gap:6px}
 .at-hero{margin-top:2px}.at-two{margin-top:10px}

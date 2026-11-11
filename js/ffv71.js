@@ -1,22 +1,6 @@
 'use strict';
-/* 9 Nov (Teacher 7.1): 1) month strip is back at the top (scroll sideways, tap a month: who paid / who did not),
-   2) "Then" widget under the current lesson, 3) lighter scrolling. Loaded last. */
-
-/* ---- 1. month strip ---- */
-function ffMonthStrip() {
-  if (!S.pay || !feeGroups().length) return '';
-  const cur = ymOf(TODAY), sel = payState().ym, from = S.pay.start && S.pay.start <= cur ? S.pay.start : cur, list = [];
-  for (let m = cur, i = 0; m >= from && i < 18; m = ymAdd(m, -1), i++) list.unshift(m);
-  const sc = statusCounts(sel), yr = (m) => (m.slice(0, 4) !== cur.slice(0, 4) ? ` ’${m.slice(2, 4)}` : '');
-  return `<div class="ffmon h-in" data-noswipe><div class="ffmon-row" data-ffmonrow>${list.map((m) => `<button class="${m === sel ? 'on' : ''}" data-ffmon="${m}">${esc(SHORT(m))}${yr(m)}</button>`).join('')}</div>
-    <div class="ffmon-sum"><b>${ymName(sel)}</b><span>${sc.n ? `<i class="ok"></i>${sc.ok} paid <i class="no"></i>${sc.n - sc.ok} not paid` : 'no fees yet'}</span></div></div>`;
-}
-function ffAfterHdr(html) {
-  const strip = ffMonthStrip(); if (!strip) return html;
-  const box = document.createElement('div'); box.innerHTML = html; const h = box.querySelector('.tp-hdr');
-  if (h) h.insertAdjacentHTML('afterend', strip); else box.insertAdjacentHTML('afterbegin', strip);
-  return box.innerHTML;
-}
+/* 9 Nov (Teacher 7.1): 1) the month button on Home (now ffMonthStrip in ffv72.js), 2) "Then" widget under the current lesson.
+   Loaded last. 11 Nov: Home puts both in place itself (pgHomeNew in ffhome.js), no second pass over its HTML. */
 
 /* ---- 2. what comes after the current lesson ---- */
 function ffThen() {
@@ -28,24 +12,10 @@ function ffThen() {
   return `<div class="ffnx h-in"><div class="ffnx-h">Then · after ${esc(g.name)}</div>${more.slice(0, 3).map(row).join('')}</div>`;
 }
 {
-  const _home = pgHomeNew;
-  pgHomeNew = function () {
-    const html = _home.apply(this, arguments); if (!S.groups.length) return html;
-    const box = document.createElement('div'); box.innerHTML = html;
-    const hero = box.querySelector('.ffh'), t = ffThen(); if (hero && t) hero.insertAdjacentHTML('afterend', t);
-    return ffAfterHdr(box.innerHTML);
-  };
   // 10 Nov 2026 (user): the month button and the paid counts are on Home only; Attendance does not repeat them
   const _c = home2Click;
   home2Click = function (b, d) {
-    if (d.ffmon) { const P = payState(); if (P.ym !== d.ffmon) { P.ym = d.ffmon; T.ffMonX = document.querySelector('[data-ffmonrow]')?.scrollLeft; draw(); } return true; }
+    if (d.ffmon) { const P = payState(); if (P.ym !== d.ffmon) { P.ym = d.ffmon; draw(); } return true; }
     return _c(b, d);
   };
-  const _d = draw;
-  draw = function () {
-    const r = _d.apply(this, arguments);
-    document.querySelectorAll('[data-ffmonrow]').forEach((row) => { const on = row.querySelector('.on'); if (on) row.scrollLeft = T.ffMonX !== undefined ? T.ffMonX : on.offsetLeft - row.clientWidth + on.offsetWidth + 20; });
-    return r;
-  };
-  document.addEventListener('scroll', (e) => { const r = e.target; if (r instanceof Element && r.dataset && r.dataset.ffmonrow !== undefined) T.ffMonX = r.scrollLeft; }, true);
 }

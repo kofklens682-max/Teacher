@@ -47,7 +47,7 @@ html[data-pal="f"]{ /* F: mint with a coral pop (opposites on the wheel, like Ap
 .tp{--accent:var(--pa);--accent2:var(--pa2);--g1:var(--pa2);--g2:var(--pa);--good:#34C759}
 .tp-avatar{background:linear-gradient(160deg,var(--pa2),var(--pa)) !important;box-shadow:inset 1px 1.2px 0 rgba(255,255,255,.5),0 6px 14px -6px var(--phsh) !important}
 /* the page: warm cream with a faint green glow at the top, like Budget (same on every tab; Units keeps its level color in the cards) */
-.tp::before,.tp[data-tab="1"]::before,.tp[data-tab="2"]::before,.tp[data-tab="3"]::before{background:radial-gradient(90% 34% at 0% 0%,var(--pglow),transparent 72%),radial-gradient(70% 30% at 100% 8%,var(--pglow2),transparent 72%),linear-gradient(180deg,var(--pbg),var(--pbg2)) !important}
+.tp::before{background:radial-gradient(90% 34% at 0% 0%,var(--pglow),transparent 72%),radial-gradient(70% 30% at 100% 8%,var(--pglow2),transparent 72%),linear-gradient(180deg,var(--pbg),var(--pbg2)) !important}
 /* the lesson card: one deep green card */
 .ffh{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.2),transparent 55%),linear-gradient(150deg,var(--ph1),var(--ph2) 55%,var(--ph3)) !important;box-shadow:0 18px 34px -18px var(--phsh),inset 0 1px 0 rgba(255,255,255,.3) !important}
 .ffh .ffring i{background:var(--ph3) !important;color:#fff}
@@ -60,7 +60,6 @@ html[data-pal="f"]{ /* F: mint with a coral pop (opposites on the wheel, like Ap
 .ffm-row .ffm .ffring{background:conic-gradient(var(--ac) calc(var(--p)*1%),rgba(90,70,30,.1) 0) !important}
 .ffm-row .ffm .ffring i{background:#fff !important;color:var(--ac);box-shadow:none}
 .ffm .ffrg{background:rgba(90,70,30,.06) !important;box-shadow:none !important}
-html.moving .ffm-row .ffm{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
 /* cards and rows on Home: solid white */
 .tp-page:nth-child(1) .ffc,.tp-page:nth-child(1) .tp-lrow,.tp-page:nth-child(1) .tp-card2,.ffnx,.ffmp-btn{background:#fff !important;border:0 !important;box-shadow:var(--shadow) !important}
 .ffsw{background:rgba(90,70,30,.07) !important;box-shadow:none !important}
@@ -83,7 +82,7 @@ html .tp-ind{background:#fff !important;box-shadow:0 2px 8px rgba(60,45,10,.16) 
 
 /* ===== CRISP CARDS + SOFT-GLASS BUTTONS (user, 9 Nov): every card is solid white with a hairline and a tight shadow (no blur, no gradient,
    same radius everywhere); glass is only for the controls you press: switches, month button, chips, the bars. ===== */
-html .tp-page:nth-child(n) :is(.ffc,.ffm,.tp-lrow,.tp-card2,.un-row2,.tl-sec,.at-mini,.bk-card,.tp-empty2,.ffnx,.lvcage,.tp-segs,.tp-shelf,.tp-media){
+html .tp-page:nth-child(n) :is(.ffc,.ffm,.tp-lrow,.tp-card2,.un-row2,.tl-sec,.at-mini,.tp-empty2,.ffnx,.tp-segs,.tp-shelf,.tp-media){
   background:#fff !important;border:1px solid rgba(15,70,50,.09) !important;border-radius:20px !important;
   box-shadow:0 1px 2px rgba(15,70,50,.06) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
 html .tp-page:nth-child(n) .tp-lrow{border-radius:18px !important}
@@ -140,7 +139,6 @@ html .tp-ind{background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,25
 .ffh-chips{margin:6px 0 10px !important;gap:6px !important}.ffh-chips span{padding:4px 9px !important;font-size:12px !important}.ffh-chips svg{width:13px !important;height:13px !important}
 .ffh-go{min-height:42px !important;border-radius:14px !important;font-size:15.5px !important}.ffh-go svg{width:18px !important;height:18px !important}
 .ffm-row{margin-top:8px}
-.ffm{min-height:96px !important}
 .ffm{min-height:106px !important}
 html .tp-ind{box-shadow:var(--glass-rim) !important}
 .ffh{padding:10px 13px 11px !important}
@@ -149,7 +147,7 @@ html .tp-ind{box-shadow:var(--glass-rim) !important}
 .ffh-go{min-height:40px !important}
 
 /* ===== 7.9 speed audit: nothing animates or changes on the app's root (that made the phone restyle every element) ===== */
-.tp,.tp[data-tab]{transition:none !important;--b1:#4DB88A;--b2:#4A9BC9;--b3:#34C759;--b4:#52DA80}
+.tp{transition:none !important}
 .tp-push{background:linear-gradient(180deg,var(--pbg),var(--pbg2)) !important}
 /* small visual fixes */
 .ffm .ffrg{width:42px !important;height:42px !important;top:9px !important}

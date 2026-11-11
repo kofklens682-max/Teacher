@@ -61,32 +61,11 @@
 .ffring i{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-style:normal;background:var(--card);color:var(--c)}
 .ffring i svg{width:22px;height:22px}
 .ffh .ffring{background:conic-gradient(#fff calc(var(--p)*1%),rgba(255,255,255,.28) 0)}.ffh .ffring i{background:#0B5BD6;color:#fff}.ffh .ffring i b{font-size:15px}
-/* widgets */
-.ffw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.ffw{background:var(--card);border-radius:26px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:flex-start;min-height:158px;text-align:left}
-.ffw .ffring{width:46px;height:46px}.ffw .ffring i{width:36px;height:36px}.ffw .ffring i svg{width:19px;height:19px}
-.ffn{font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1;margin-top:auto}.ffn em{font-style:normal;font-size:16px;font-weight:700;color:var(--text2);letter-spacing:0}
-.ffl{font-size:15px;font-weight:700;margin-top:5px}.ffw small{font-size:13px;color:var(--text2);margin-top:1px}
-.ffw:active{transform:scale(.98)}
-/* week strip */
-.ffwk{background:var(--card);border-radius:26px;padding:14px 12px 12px;box-shadow:var(--shadow);margin-top:12px}
-.ffwk-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 8px}.ffwk-h b{font-size:17px}.ffwk-h span{font-size:12px;color:var(--text2)}.ffwk-h i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
-.ffwk-r{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.ffd{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 8px;border-radius:16px}.ffd small{font-size:12px;font-weight:700;color:var(--text2)}.ffd b{font-size:17px;font-weight:700}
-.ffd span{display:flex;gap:3px;height:7px}.ffd span i{width:7px;height:7px;border-radius:50%}.ffd span i.no{background:transparent}
-.ffd.today{background:var(--accent);color:#fff}.ffd.today small{color:rgba(255,255,255,.85)}.ffd.today span i{box-shadow:0 0 0 1.5px #fff}
 
 /* ======================= BRIGHT colors (user: "I always like the bright ones") ======================= */
 .tp{--accent:#0A7CFF;--good:#1FD65F;--late:#FFAB00;--bad:#FF3B5C}
 .ffh{background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,.38),transparent 55%),linear-gradient(150deg,#19C8FF,#0A74FF 52%,#6A3DF5);box-shadow:0 22px 44px -16px rgba(40,110,255,.7),inset 0 1px 0 rgba(255,255,255,.5)}
 .ffh .ffring i{background:rgba(8,40,160,.45)}
-.ffw{color:#fff;box-shadow:0 18px 30px -16px var(--sh),inset 0 1px 0 rgba(255,255,255,.35)}
-.ffw .ffring{background:conic-gradient(#fff calc(var(--p)*1%),rgba(255,255,255,.32) 0)}.ffw .ffring i{background:rgba(0,0,0,.14);color:#fff}
-.ffw .ffl{color:#fff}.ffw small,.ffw .ffn em{color:rgba(255,255,255,.88)}
-.ffw.wg{--sh:rgba(18,184,79,.75);background:radial-gradient(110% 90% at 100% 0%,rgba(255,255,255,.3),transparent 55%),linear-gradient(145deg,#43EB86,#0FB84B)}
-.ffw.wo{--sh:rgba(255,138,0,.75);background:radial-gradient(110% 90% at 100% 0%,rgba(255,255,255,.35),transparent 55%),linear-gradient(145deg,#FFCB3D,#FF7A00)}
-.ffw.wp{--sh:rgba(150,50,255,.7);background:radial-gradient(110% 90% at 100% 0%,rgba(255,255,255,.3),transparent 55%),linear-gradient(145deg,#D58BFF,#8B2FFF)}
-.ffw.wb{--sh:rgba(10,124,255,.7);background:radial-gradient(110% 90% at 100% 0%,rgba(255,255,255,.3),transparent 55%),linear-gradient(145deg,#4DD6FF,#0A74FF)}
 .tp-cta,.save-day{background:linear-gradient(135deg,#34E37B,#10B548);box-shadow:0 16px 28px -12px rgba(16,181,72,.7)}
 .tp-cta.pk-all{background:linear-gradient(135deg,#4DB8FF,#0A74FF);box-shadow:0 16px 28px -12px rgba(10,116,255,.7)}
 .tp-cta.ghost{background:var(--card);color:var(--accent);box-shadow:var(--shadow)}
@@ -95,4 +74,3 @@
 .tl-st{background:#DDFBE8}.tl-st.absent{background:#FFE3E8}
 .tp-seg2.pla button.on,.tp-seg2.pla .seg-thumb{background:#1FD65F}
 .ffh .ffring i{background:#2268F0}
-.ffw.wg .ffring i{background:#22C95E}.ffw.wo .ffring i{background:#FF9410}.ffw.wp .ffring i{background:#9640FF}.ffw.wb .ffring i{background:#1E9AFF}

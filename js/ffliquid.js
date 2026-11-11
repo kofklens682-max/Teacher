@@ -1,5 +1,5 @@
 'use strict';
-/* 8 Nov PREVIEW (last file): the charts card switches IN PLACE (the thumb glides, the chart slides and fades), and the Units wallpaper follows the level color. */
+/* 8 Nov PREVIEW (last file): the charts card switches IN PLACE (the thumb glides, the chart slides and fades). */
 {
   const order = ['att', 'pay', 'crs'], _h = home2Click;
   home2Click = function (b, d) {
@@ -15,22 +15,5 @@
       return true;
     }
     return _h(b, d);
-  };
-  const _d = draw;
-  draw = function () {
-    const r = _d.apply(this, arguments), tp = document.querySelector('.tp');
-    // 9 Nov speed audit: the page color no longer changes per level (setting colors on the app's root made the phone restyle every element)
-    if (tp && tp.style.getPropertyValue('--b1')) ['--b1', '--b2', '--b3', '--b4'].forEach((k) => tp.style.removeProperty(k));
-    return r;
-  };
-}
-/* the row of level cards keeps its place, and starts with the chosen level in view */
-{
-  document.addEventListener('scroll', (e) => { const r = e.target; if (r instanceof Element && r.classList.contains('lvc-row')) T.ffLvX = r.scrollLeft; }, true);
-  const _d2 = draw;
-  draw = function () {
-    const r = _d2.apply(this, arguments), row = document.querySelector('.lvc-row');
-    if (row) { const on = row.querySelector('.lvc.on'); if (T.ffLvX !== undefined) row.scrollLeft = T.ffLvX; else if (on) row.scrollLeft = Math.max(0, on.offsetLeft - 18); if (on && T.ffLvSel !== on.dataset.kidlvl + on.dataset.unitlvl) { T.ffLvSel = on.dataset.kidlvl + on.dataset.unitlvl; row.scrollTo({ left: Math.max(0, on.offsetLeft - 18), behavior: 'smooth' }); } }
-    return r;
   };
 }

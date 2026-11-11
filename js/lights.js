@@ -391,8 +391,13 @@ setTimeout(() => idle(() => { fetch('media/pdfjs/pdf.min.js').catch(() => {}); f
 document.addEventListener('change', (e) => { const s = e.target.closest && e.target.closest('select[data-dotsel]'); if (!s) return; const [w, i] = s.dataset.dotsel.split('|'), c = dotsGet(); c[w][+i] = s.value; dotsSet(c); draw(); });
 
 /* ---------- the dots appear: the orange one pops, then the capsule stretches to the left and the other dots come out of it together (no bounce) ---------- */
+// 11 Nov (rulebook: a decoration plays once per app open): the first time the dots are on screen they play; later tab changes,
+// pushed screens and the file viewer show them still (no restyle, no forced layout).
+let lightsPlayed = false;
 function lightsPlay(el) {
+  if (lightsPlayed) return;
   const d = el && el.querySelector && el.querySelector('.tp-lights'); if (!d) return;
+  lightsPlayed = true;
   d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); clearTimeout(d._t); d._t = setTimeout(() => d.classList.remove('play'), 1100);
 }
 /* ---------- blur while a finger swipes between the tabs ---------- */

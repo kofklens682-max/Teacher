@@ -1,6 +1,15 @@
 'use strict';
-/* 8 Nov PREVIEW (questionnaire): Units = the LIVE app's own screen (chips, blue card, list of weeks), polished like Home.
-   Each week shows an Apple emoji in a soft rounded square (no emoji repeats inside a level). Loaded last. */
+/* 8 Nov PREVIEW (questionnaire): each week has its own picture, no picture repeats inside a level (used by ffWeekIcon in ffwk.js).
+   11 Nov: the topic lists moved here from ffunits.js (the rest of that file was never shown); the Units page is built once in ffwk.js. */
+const TOPIC_EMO = [[/starter|my family|^family|family$/i, '👨‍👩‍👧'], [/australia|where.*from|countr/i, '🌏'], [/weekend/i, '🚴'], [/my things|new things|backpack/i, '🎒'], [/beach|fun at/i, '🏖️'], [/monkey|naughty/i, '🐒'],
+  [/jim.s day|daily|routine|habit|what time/i, '⏰'], [/places to go|places|town|city/i, '🗺️'], [/melon|like a|food|milkshake|restaurant|cook/i, '🍉'], [/fastest|animal|zoo|pet/i, '🐆'], [/park|garden|nature/i, '🌳'], [/museum|history/i, '🏛️'],
+  [/clever baby|baby|grew|young/i, '👶'], [/egypt/i, '🏺'], [/good day|feel|health|body|lifestyle/i, '😊'], [/holiday|travel|trip|plane|tourism|flight/i, '✈️'], [/united kingdom|culture|britain|london/i, '🇬🇧'], [/transport|bus|train|car/i, '🚌'],
+  [/school|class|study|education|university|learn/i, '🏫'], [/fiction|story|fairy|trojan/i, '📖'], [/concert|music|song|band/i, '🎤'], [/dinosaur|fossil/i, '🦖'], [/jacket|wearing|clothes|fashion/i, '🧥'], [/roundabout|direction|road/i, '🚦'], [/bed|sleep|home|house/i, '🛏️'],
+  [/will it|future|predict|plan/i, '🔮'], [/sport|play after|game|football/i, '⚽'], [/present|buy|shop|money|gift/i, '🎁'], [/work|job|career|office/i, '💼'], [/hot today|weather|season|sun/i, '☀️'], [/happy|angry|emotion/i, '😄'], [/bike|ride/i, '🚲'],
+  [/english|speaking|talk|fluency|conversation/i, '🗣️'], [/carnival|festival|party|celebrat/i, '🎭'], [/murphy|grammar/i, '📘'], [/book day|reading|article|extensive/i, '📚'], [/tech|computer|phone|internet|digital/i, '💻'], [/environment|green|climate/i, '🌱'], [/science|experiment/i, '🔬'],
+  [/art|paint|design|creative/i, '🎨'], [/friend|people|relationship|social/i, '👫'], [/listening|podcast/i, '🎧'], [/writing|essay|letter/i, '✍️'], [/ielts|exam|test|mock|final/i, '🎯']];
+const ICON_EMO = { Globe: '🌍', Gamepad2: '🎮', Smartphone: '📱', Sun: '☀️', PawPrint: '🐾', Clock: '⏰', Map: '🗺️', ShoppingBag: '🛍️', Mountain: '⛰️', Leaf: '🍃', Landmark: '🏛️', Users: '👨‍👩‍👧', BookOpen: '📖', School: '🏫', Plane: '✈️', Trophy: '🏆',
+  UtensilsCrossed: '🍽️', PartyPopper: '🎉', Hammer: '🔨', Clapperboard: '🎬', Recycle: '♻️', HeartPulse: '❤️', CalendarClock: '📅', GraduationCap: '🎓' };
 const EMO_FALLBACK = ['📘', '⭐', '🎈', '🧩', '🎨', '🎵', '🌟', '🧠', '💡', '🎯', '🗂️', '📝', '🔤', '🌈', '🪁'];
 function uniqueEmoji(units) {
   const used = new Set(), out = {};
@@ -13,26 +22,4 @@ function uniqueEmoji(units) {
     used.add(pick); out[u.n] = pick;
   });
   return out;
-}
-PAGES[1] = function () {
-  const html = pgUnits(), kids = T.aud === 'kids' && KIDLV.length, L = lv(kids ? T.kidLvl : T.unitLvl), [c1, c2] = GRAD[L.id] || GRAD.own;
-  const box = document.createElement('div'); box.innerHTML = html;
-  const E = planned(L.id) ? uniqueEmoji(L.units) : {};
-  box.querySelectorAll('.un-row2').forEach((b) => { const t = b.querySelector('.un-ic .tp-tile'), n = +b.dataset.w; if (t && E[n]) { const s = document.createElement('span'); s.className = 'emo'; s.textContent = E[n]; t.replaceWith(s); } });
-  const hero = box.querySelector('.un-hero'); if (hero) hero.style.cssText += `;--lc1:${c1};--lc2:${c2}`;
-  return box.innerHTML;
-};
-/* the levels sit in ONE fixed card (no sideways scrolling): a short code big, the name small; the chosen one fills with its color */
-const LVCODE = { RU: ['RU', 'Round-Up'], K2: ['FF 2', 'Book 2'], K3: ['FF 3', 'Book 3'], K4: ['FF 4', 'Book 4'], K5: ['FF 5', 'Book 5'],
-  A1: ['A1', 'Beginner'], A2: ['A2', 'Elementary'], B1: ['B1', 'Pre-Int'], 'B1+': ['B1+', 'Pre-Int+'], B2: ['B2', 'Upper-Int'], I1: ['6.5', 'IELTS'], I2: ['7+', 'IELTS'], IT: ['⚡', 'Turbo'] };
-{
-  const _p = PAGES[1];
-  PAGES[1] = function () {
-    const box = document.createElement('div'); box.innerHTML = _p(); return box.innerHTML; // user: keep the original long chips, only put them in a cage (see .tp-segs in ffunits3.css)
-    const kids = T.aud === 'kids' && KIDLV.length, list = kids ? KIDLV : UNIT_LV(), cur = kids ? T.kidLvl : T.unitLvl;
-    const cage = document.createElement('div'); cage.className = 'lvcage'; cage.setAttribute('data-noswipe', ''); cage.style.setProperty('--n', kids ? list.length : 4);
-    cage.innerHTML = list.map((l) => { const [a, b] = GRAD[l.id] || GRAD.own, [code, name] = LVCODE[l.id] || [l.id, LVNAME(l.id)], gs = S.groups.filter((g) => g.lvl === l.id).length, gn = S.groups.filter((g) => g.lvl === l.id).map((g) => g.name).join(' · ');
-      return `<button class="${l.id === cur ? 'on' : ''}" style="--c1:${a};--c2:${b}" ${kids ? `data-kidlvl="${l.id}"` : `data-unitlvl="${l.id}"`}><b>${esc(code)}</b><span>${esc(gn || name)}</span>${gs ? '<i></i>' : ''}</button>`; }).join('');
-    segs.replaceWith(cage); return box.innerHTML;
-  };
 }

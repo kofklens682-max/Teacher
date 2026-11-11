@@ -71,10 +71,7 @@
 .pl-row.pl-armed .pl-tick { border-color: #34C759; color: #34C759; }
 /* the month chip that "Yes" is waiting for */
 .pl-mo button.on { background: #34C759; border-color: #34C759; color: #fff; transition: background .3s, color .3s, border-color .3s; }
-/* The rings draw themselves when a page opens: every colored piece grows from its start along the circle (like the iPhone activity rings) */
-@keyframes dn-draw { from { stroke-dasharray: 0 var(--L); } }
-.dr-donut circle[style*="--L"] { animation: dn-draw 1s cubic-bezier(.32,.72,0,1) both; }
-@media (prefers-reduced-motion: reduce) { .dr-donut circle { animation: none !important; } }
+/* 11 Nov (smooth): the rings are drawn in their final state (the dash animation repainted them every frame) */
 .pl-unpay { flex: none; font: inherit; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 6px 11px; border: 1.5px solid rgba(192,40,28,.35); background: #FDECEA; color: #C0281C; transition: background .3s, color .3s, transform .15s; }
 .pl-unpay:active { transform: scale(.92); }
 .pl-unpay.on { background: #34C759; border-color: #34C759; color: #fff; }
@@ -147,7 +144,7 @@
 .un-hero { margin-bottom: 14px; animation: h-in .55s cubic-bezier(.32,.72,0,1) both; }
 .un-row { display: flex; align-items: center; gap: 12px; } .un-row > div:first-child { flex: 1; min-width: 0; display: grid; gap: 3px; } .un-hero .hn-name { font-size: 24px; }
 .un-ring { position: relative; width: 58px; height: 58px; flex: none; } .un-ring svg { width: 58px; height: 58px; transform: rotate(-90deg); }
-.un-ring circle { fill: none; stroke-width: 5; } .un-ring .bg { stroke: rgba(255,255,255,.25); } .un-ring .fg { stroke: #fff; stroke-linecap: round; animation: dn-draw 1.1s .2s cubic-bezier(.32,.72,0,1) both; }
+.un-ring circle { fill: none; stroke-width: 5; } .un-ring .bg { stroke: rgba(255,255,255,.25); } .un-ring .fg { stroke: #fff; stroke-linecap: round; }
 .un-ring b { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-size: 15px; font-weight: 800; line-height: 1; } .un-ring b small { display: block; font-size: 12px; font-weight: 700; opacity: .85; margin-top: 2px; }
 .un-list { background: var(--card); border-radius: 22px; box-shadow: var(--shadow); padding: 2px 0; overflow: hidden; animation: h-in .55s .06s cubic-bezier(.32,.72,0,1) both; }
 .un-row2 { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: none; border: 0; font: inherit; color: inherit; text-align: left; transition: background .2s; }
@@ -164,7 +161,6 @@
 
  
  
-.tp-seg2.at-week button.today:not(.on) b { color: #007AFF; }
  
 .at-hero { margin-bottom: 14px; animation: h-in .55s cubic-bezier(.32,.72,0,1) both; }
   
@@ -191,7 +187,7 @@
 .bk-body .tp-shelf, .bk-body .tp-media { animation: h-in .55s .05s cubic-bezier(.32,.72,0,1) both; }
 .bk-body .tp-media { border-radius: 20px; }
 .bk-body .tp-media .mi { border-radius: 50%; background: rgba(0,122,255,.1) !important; color: #007AFF; } .bk-body .tp-media a.mi { background: rgba(255,59,48,.1) !important; color: #FF3B30; }
-@media (prefers-reduced-motion: reduce) { .un-hero, .un-list, .at-hero, .at-list .tl-sec, .at-mini, .bk-hero, .bk-body .tp-shelf, .bk-body .tp-media, .un-ring .fg { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .un-hero, .un-list, .at-hero, .at-list .tl-sec, .at-mini, .bk-hero, .bk-body .tp-shelf, .bk-body .tp-media { animation: none; } }
 
 /* ===== 31 Oct, round 2: Up next = one lesson big, the others smaller inside the card; capsule buttons like iPhone widgets ===== */
 

@@ -1,18 +1,32 @@
 'use strict';
-/* 8 Nov PREVIEW: the background color follows the tab; Units title fix. Loaded last. */
+/* 8 Nov PREVIEW: Units title fix. Loaded last.
+   11 Nov (smooth): the old wallpaper that changed color per tab is gone (nothing showed it any more), so the app's root
+   no longer gets a data-tab attribute on every draw and every tab tap. */
 {
-  const _d = draw;
-  draw = function () {
-    const r = _d.apply(this, arguments), tp = document.querySelector('.tp');
-    if (tp && tp.dataset.tab !== String(T.tab)) tp.dataset.tab = String(T.tab);
-    return r;
-  };
   const _u = pgUnits;
   pgUnits = function () { return _u.apply(this, arguments).replace(/Week (\d+) · Week \1\b/g, 'Week $1'); }; // "Week 12 · Week 12" -> "Week 12"
-  PAGES[1] = pgUnits; // the tab list kept the old function, point it at the fixed one
-  const _g = goTab;
-  goTab = function (i) { const tp = document.querySelector('.tp'); if (tp) tp.dataset.tab = String(i); return _g.apply(this, arguments); }; // the color starts changing at the tap, not after the page moved
-  const tp0 = document.querySelector('.tp'); if (tp0) tp0.dataset.tab = String(T.tab);
+}
+/* ---- 11 Nov (smooth): the tab pages are GPU layers only while a finger swipes between the tabs ----
+   (style.css: .tp-viewport.ff-live). Permanent layers on all four full-screen pages held graphics memory all the time; now the
+   layers are made when a sideways swipe starts and given back after the page has settled. Same start rule as bindSwipe in app.js. */
+{
+  let sw = null, offT = 0;
+  const vp = () => document.querySelector('.tp-viewport');
+  const off = () => { const v = vp(); if (v) v.classList.remove('ff-live'); };
+  document.addEventListener('pointerdown', (e) => {
+    const v = vp(); sw = null; if (!v || e.button > 0 || !v.contains(e.target) || e.target.closest('[data-noswipe],input,textarea,select')) return;
+    sw = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  }, { capture: true, passive: true });
+  document.addEventListener('pointermove', (e) => {
+    if (!sw || e.pointerId !== sw.id) return; const dx = Math.abs(e.clientX - sw.x), dy = Math.abs(e.clientY - sw.y);
+    if (dx < 10 && dy < 10) return;
+    if (dx >= dy * 1.2) { clearTimeout(offT); const v = vp(); if (v) v.classList.add('ff-live'); }
+    sw = null;
+  }, { capture: true, passive: true });
+  // after the finger lets go the page glides for at most 420 ms (app.js bindSwipe), then the layers go
+  const up = (e) => { if (sw && e.pointerId === sw.id) sw = null; const v = vp(); if (v && v.classList.contains('ff-live')) { clearTimeout(offT); offT = setTimeout(off, 700); } };
+  document.addEventListener('pointerup', up, { capture: true, passive: true });
+  document.addEventListener('pointercancel', up, { capture: true, passive: true });
 }
 
 /* ---- Attendance: a hero for the next register and two bright numbers above the group lists ---- */

@@ -13,22 +13,22 @@ function ffWeekIcon(lvlId, n, big) {
 /* bright colors, the same family as Home (no dark navy, no purple or pink) */
 Object.assign(GRAD, { A1: ['#4DEB8B', '#17BC52'], A2: ['#58D8FF', '#0A84FF'], B1: ['#3FE0C8', '#10B5A6'], 'B1+': ['#5AB4FF', '#0A6CFF'], B2: ['#8EA2FF', '#4A66F0'], I1: ['#FFCF4D', '#FF8A00'], I2: ['#FF8A80', '#FF3B30'], IT: ['#B3BDCC', '#6B7A90'],
   RU: ['#FF9A6B', '#F25C2C'], K2: ['#FFCF4D', '#FF9500'], K3: ['#5AB4FF', '#0A6CFF'], K4: ['#4DEB8B', '#17BC52'], K5: ['#8EA2FF', '#4A66F0'], own: ['#FFCF4D', '#FF9500'] });
-/* the Units list: every week row uses ffWeekIcon */
-{
-  const base = PAGES[1];
-  PAGES[1] = function () {
-    const box = document.createElement('div'); box.innerHTML = base(); const kids = T.aud === 'kids' && KIDLV.length, L = lv(kids ? T.kidLvl : T.unitLvl);
-    box.querySelectorAll('.un-row2').forEach((b) => { const old = b.querySelector('.un-ic .emo, .un-ic .gi, .un-ic .tp-tile'), n = +b.dataset.w; if (old && n) { const t = document.createElement('span'); t.innerHTML = ffWeekIcon(L.id, n); old.replaceWith(t.firstChild); } });
-    return box.innerHTML;
-  };
-}
-/* the week screen and the lesson screen: the big tile at the top uses the same picture */
+/* the Units page: every week row uses ffWeekIcon, and the card above the weeks takes the level's own color.
+   11 Nov (smooth): built in ONE pass over the text of pgUnits (app.js). Before, the page was parsed and written back as HTML
+   three times per draw (ffunits3.js twice, then here) only to swap these icons; the screen shows exactly the same. */
+const FF_ROW_ICON = /(<button class="un-row2[^"]*"[^>]*\sdata-w="(\d+)"[^>]*><span class="un-ic[^"]*">)<span class="tp-tile[^"]*"[^>]*>[\s\S]*?<\/span>/g;
+PAGES[1] = function () {
+  const kids = T.aud === 'kids' && KIDLV.length, L = lv(kids ? T.kidLvl : T.unitLvl), [c1, c2] = GRAD[L.id] || GRAD.own;
+  return pgUnits().replace('<div class="hn-next un-hero"', `<div class="hn-next un-hero" style="--lc1:${c1};--lc2:${c2}"`)
+    .replace(FF_ROW_ICON, (m, row, n) => (+n ? row + ffWeekIcon(L.id, +n) : m));
+};
+/* the week screen and the lesson screen: the big tile at the top uses the same picture (the final week's trophy too, as before).
+   11 Nov (smooth): the tile is swapped in the text, the whole screen is no longer parsed and written back on every draw. */
+const FF_HEAD_TILE = /(<div class="tp-whead">)<span class="tp-tile[^"]*"[^>]*>[\s\S]*?<\/span>/;
 ['week', 'lesson'].forEach((k) => {
   const o = PUSH[k];
   PUSH[k] = function (f) {
     const h = o(f); if (!f || !f.lvl || !f.w) return h;
-    const box = document.createElement('div'); box.innerHTML = h; const t = box.querySelector('.tp-whead .tp-tile');
-    if (t && !t.querySelector('svg')?.innerHTML.includes('Trophy')) { const s = document.createElement('span'); s.innerHTML = ffWeekIcon(f.lvl, +f.w, true); t.replaceWith(s.firstChild); }
-    return box.innerHTML;
+    return h.replace(FF_HEAD_TILE, (m, head) => head + ffWeekIcon(f.lvl, +f.w, true));
   };
 });

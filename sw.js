@@ -36,7 +36,6 @@ const SHELL = [
   './js/ffcharts.js',
   './js/ffhome.js',
   './js/ffpolish.js',
-  './js/ffunits.js',
   './js/ffliquid.js',
   './js/ffunits3.js',
   './js/ffwk.js',

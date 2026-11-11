@@ -1,9 +1,7 @@
 /* Teacher app styles. Parts 1-4 = the approved model (plan\app.css, app-v4.css, app5.css, app6.css); part 5 = the real app. */
 /* ===== Teacher app model: same family as the Budget app (Inter, floating pill tab bar, swipe pages, rings, circle motif) ===== */
 
-@media (max-width:860px){}
 
-@media (max-width:520px){}
 .tp{
   --bg:#F2F2F7; --card:#FFFFFF; --text:#000; --text2:rgba(60,60,67,.6); --text3:rgba(60,60,67,.3); --sep:rgba(60,60,67,.14);
   --fill:rgba(14,19,37,.05); --accent:#007AFF; --accent2:#5AC8FA; --good:#34C759; --late:#FF9500; --bad:#FF3B30;
@@ -18,7 +16,7 @@
 
 
 .tp-viewport{position:absolute;inset:0;overflow:hidden;touch-action:pan-y}
-.tp-track{display:flex;height:100%;width:400%;will-change:transform}
+.tp-track{display:flex;height:100%;width:400%}
 .tp-track.settle{transition:transform .38s cubic-bezier(.2,.8,.25,1)}
 .tp-page{width:25%;height:100%;overflow-y:auto;overscroll-behavior:contain;padding:54px 18px 120px;scrollbar-width:none}
 .tp-page::-webkit-scrollbar{display:none}
@@ -226,7 +224,6 @@
 
 
 
-.tp-day.today:not(.on) b{color:var(--accent)}
 
 
 
@@ -583,14 +580,13 @@ label.tp-lrow{cursor:pointer}
 .tp-small{line-height:1.4}
 .tl-main{touch-action:manipulation}
 .tl-st{transition:background .25s}
-@media (prefers-reduced-motion:reduce){.tp *{animation:none!important;transition:none!important}}
 .tp{--g1:#0A84FF;--g2:#007AFF} /* default colours for buttons outside a level (welcome, settings) */
 [hidden]{display:none!important}
 .tp-segs{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px} /* chip strips run to the screen edges */
 /* ===== v2: motion (each change glides; nothing jumps) ===== */
 .tp-sheet .scrim{animation:none;opacity:0;transition:opacity .32s ease;touch-action:none}
 .tp-sheet.show .scrim{opacity:1}
-.tp-sheet .panel{animation:none;transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.85,.25,1);will-change:transform;overscroll-behavior:contain}
+.tp-sheet .panel{animation:none;transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.85,.25,1);overscroll-behavior:contain}
 .tp-sheet.show .panel{transform:none}
 .tp-sheet.dragging .panel{transition:none}
 .tp-sheet.closing{pointer-events:none}
@@ -598,7 +594,6 @@ label.tp-lrow{cursor:pointer}
 .tp-sheet .panel::before{cursor:grab}
 .tp-push.still{animation:none}
 .tp-push.out{animation:tp-out .26s cubic-bezier(.4,0,.7,.2) both}
-@keyframes tp-swap{from{opacity:0;transform:translateY(10px)}}
 .swapin>.tp-list,.swapin>.tp-empty2,.swapin>.tp-shelf,.swapin>.tp-media,.swapin>.tp-dashed,.swapin>.tp-note2,.swapin>.tp-small,.tp-push.swapin .tl-grid,.tp-push.swapin .rg-nav>div,.tp-push.swapin .save-day,.panel.swapin>*{animation:tp-swap .32s cubic-bezier(.2,.8,.2,1) both}
 .swapin>.tp-list,.swapin>.tp-shelf{animation-delay:.03s}
 .tp-segs{scroll-behavior:auto;-webkit-overflow-scrolling:touch}
@@ -641,7 +636,7 @@ label.tp-lrow{cursor:pointer}
 /* v5: level pager (Units and Books): the level part of the page slides sideways; the neighbouring levels wait,
    drawn and parked just off the screen in a layer over the pages, and slide in beside it */
 .lv-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2}
-.lv-float{position:absolute;top:0;left:0;will-change:transform;contain:layout style}
+.lv-float{position:absolute;top:0;left:0;contain:layout style}.lv-float.on{will-change:transform} /* a layer only while a level slides in */
 .lv-float.live{pointer-events:auto}
 .swapin>.lv-pane{animation:tp-swap .32s cubic-bezier(.2,.8,.2,1) both}
 
@@ -701,10 +696,10 @@ html.glass .tp-toast{background:rgba(20,25,50,.6) !important;-webkit-backdrop-fi
 .tl-chev{display:grid;place-items:center;width:28px;height:28px;color:var(--text3);transition:transform var(--t-base) var(--ease)}
 .tl-chev svg{width:20px;height:20px}
 .tl-sec.open .tl-chev{transform:rotate(180deg)}
-.tl-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.3,.9,.4,1)}
+.tl-body{display:grid;grid-template-rows:0fr}
 .tl-sec.open .tl-body{grid-template-rows:1fr}
-.tl-in{min-height:0;overflow:hidden;opacity:0;transition:opacity .25s}
-.tl-sec.open .tl-in{opacity:1;transition-delay:.05s}
+.tl-in{min-height:0;overflow:hidden;opacity:0;transform:translateY(-6px);transition:opacity .25s,transform .25s}
+.tl-sec.open .tl-in{opacity:1;transform:none;transition-delay:.05s}
 .tl-in>*{margin-top:10px}
 .tl-in>.tl-grid{margin-top:12px}
 .tl-in{display:grid;gap:0}
@@ -1057,7 +1052,7 @@ html .tp-push{transition:transform var(--t-slow) var(--ease);backface-visibility
 html .tp-push.prep{transition:none;transform:translateX(100%)}
 html .tp-push.under{transform:translate3d(-24%,0,0)}
 html .tp-push.gone{transition:transform var(--t-slow) var(--ease)}
-html .tp-viewport{transition:transform var(--t-slow) var(--ease);will-change:transform}
+html .tp-viewport{transition:transform var(--t-slow) var(--ease)}
 html .tp-viewport.under{transform:translate3d(-24%,0,0)}
 html .tp-track.settle{transition:transform var(--t-slow) var(--ease)}
 html .tp-track.glide{transition-timing-function:var(--ease)}
@@ -1068,8 +1063,7 @@ html .tp-sheet.dragging .panel{transition:none}
 html .tp-ind{transition:transform var(--t-base) var(--ease-spring),box-shadow var(--t-base)!important}
 html .tp-seg2.slide .seg-thumb{transition:transform var(--t-base) var(--ease-spring)}
 html .tl-chev{transition:transform var(--t-base) var(--ease)}
-html .tl-body{transition:grid-template-rows .42s var(--ease)}
-html .tl-in{transition:opacity .3s ease}
+html .tl-in{transition:opacity .3s ease,transform var(--t-base) var(--ease)}
 @keyframes tp-swap{from{opacity:0;transform:translateY(8px)}}
 html .swapin-el,html .panel.swapin>*{animation:tp-swap .38s var(--ease) both}
 
@@ -1109,23 +1103,22 @@ html.pvcover #tp>.tp-viewport,html.pvcover #tp>.tp-screens,html.pvcover #tp>.tp-
 
 /* the dots appear: one shared timing for the capsule and the dots, no bounce (the orange dot alone pops) */
 .tp-lights{--step:31px}.tp-lights.plain{--step:28px}
-.tp-lights.play{animation:lti-cap .95s var(--ease) both!important}
 .tp-lights.play .lt{animation:lti-slide .95s var(--ease) both!important}
 .tp-lights.play .lt:last-child{animation:lti-pop .5s var(--ease-spring) both!important}
 .tp-lights.play .lt:nth-last-child(2){--o:var(--step)}.tp-lights.play .lt:nth-last-child(3){--o:calc(var(--step) * 2)}
-@keyframes lti-cap{0%{opacity:0;clip-path:inset(-10px -10px -10px 68% round 17px);animation-timing-function:linear}22%{opacity:1;clip-path:inset(-10px -10px -10px 68% round 17px);animation-timing-function:var(--ease)}100%{opacity:1;clip-path:inset(-10px -10px -10px -10px round 17px)}}
 @keyframes lti-slide{0%{opacity:0;transform:translateX(var(--o,0px));animation-timing-function:linear}22%{opacity:1;transform:translateX(var(--o,0px));animation-timing-function:var(--ease)}100%{opacity:1;transform:none}}
 @keyframes lti-pop{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 
 
 .dt-range{width:100%;margin:6px 0 0;accent-color:#007AFF}.dt-scale{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:2px}
 
-/* ===== speed (4 Nov): every page is its own layer, so an animation on one page never repaints the others; the dots animate with transform and opacity only ===== */
-.tp-page{will-change:transform;contain:layout style}
+/* ===== speed (4 Nov): the dots animate with transform and opacity only.
+   11 Nov: the pages and the track are GPU layers only while a finger swipes between the tabs (ff-live, set in ffpolish.js), not all the time ===== */
+.tp-page{contain:layout style}
+.tp-viewport.ff-live .tp-track,.tp-viewport.ff-live .tp-page{will-change:transform}
 .tp-lights{position:relative;background:none!important;box-shadow:none!important}
 .tp-lights::before{content:"";position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.82);box-shadow:0 0 0 .5px rgba(60,60,67,.16),0 2px 8px rgba(0,0,0,.08);transform-origin:100% 50%;pointer-events:none}
 .tp-lights .lt{position:relative;z-index:1}
-.tp-lights.play{animation:none!important}
 .tp-lights.play::before{animation:lti-bg .95s var(--ease) both!important}
 @keyframes lti-bg{0%{opacity:0;transform:scaleX(.32);animation-timing-function:linear}22%{opacity:1;transform:scaleX(.32);animation-timing-function:var(--ease)}100%{opacity:1;transform:none}}
 .tp{touch-action:manipulation}

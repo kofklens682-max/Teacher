@@ -1,21 +1,10 @@
-/* 9 Nov (Teacher 7.1): month strip, "Then" widget, and lighter drawing (blur only on the tab bar and title bar). */
+/* 9 Nov (Teacher 7.1): "Then" widget, and lighter drawing (blur only on the tab bar and title bar). */
 /* --- speed: no live blur on cards and rows (it was redrawn every frame while scrolling), solid-ish glass instead --- */
-.ffm,.ffc,.tp-page .tp-lrow,.tp-page .tp-card2,.un-row2,.tp-segs,.tp-segs button,.lvcage,.at-mini,.ffmon,.ffnx{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+.ffm,.ffc,.tp-page .tp-lrow,.tp-page .tp-card2,.un-row2,.tp-segs,.tp-segs button,.at-mini,.ffnx{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
 .tp-page:nth-child(1) .ffc,.tp-page:nth-child(1) .tp-lrow,.tp-page:nth-child(1) .tp-card2{background:linear-gradient(155deg,rgba(255,255,255,.86),rgba(255,255,255,.7)) !important}
 .tp-segs{background:linear-gradient(155deg,rgba(255,255,255,.86),rgba(255,255,255,.7)) !important}
 .tp-segs button{background:linear-gradient(160deg,rgba(255,255,255,.92),rgba(255,255,255,.74)) !important}
 .tp-segs button.on{background:linear-gradient(150deg,var(--g1),var(--g2)) !important}
-/* --- month strip --- */
-.ffmon{margin:2px 0 10px;border-radius:22px;padding:8px 0 10px;background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.7));border:.5px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 12px 26px -18px rgba(15,40,90,.32)}
-.ffmon-row{display:flex;gap:6px;overflow-x:auto;padding:0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
-.ffmon-row::-webkit-scrollbar{display:none}
-.ffmon-row button{flex:none;scroll-snap-align:center;padding:8px 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--text2);background:rgba(120,120,128,.12);white-space:nowrap;transition:background .25s var(--ease),color .25s var(--ease)}
-.ffmon-row button.on{background:linear-gradient(150deg,#FFB02E,#FF8A00);color:#fff;box-shadow:0 6px 14px -6px #FF8A00,inset 0 1px 0 rgba(255,255,255,.45)}
-.ffmon-row button:active{opacity:.7}
-.ffmon-sum{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 16px 0}
-.ffmon-sum b{font-size:15px;letter-spacing:-.01em}
-.ffmon-sum span{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px}
-.ffmon-sum i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px}.ffmon-sum i.ok{background:#34C759}.ffmon-sum i.no{background:#FF453A}
 /* --- "Then" widget --- */
 .ffnx{margin-top:10px;border-radius:22px;padding:10px 6px 6px;background:linear-gradient(155deg,rgba(255,255,255,.88),rgba(255,255,255,.7));border:.5px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 12px 26px -18px rgba(15,40,90,.32)}
 .ffnx-h{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text2);padding:0 12px 4px}
@@ -26,8 +15,9 @@
 .ffnx-r .tx{display:grid;min-width:0;flex:1}.ffnx-r .tx b{font-size:16px;font-weight:700;letter-spacing:-.01em}
 .ffnx-r .tx span{font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ffnx-time{font-size:15px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
-/* smooth transitions: the moving layers get their own GPU layer */
-.tp-push,.tp-sheet .panel,.tp-sheet .scrim{will-change:transform,opacity;backface-visibility:hidden;transform-style:flat}
-.tp-push:not(.prep):not(.gone):not(.under){will-change:auto}
-.ffm,.ffh,.ffnx,.ffmon{transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .35s cubic-bezier(.32,.72,0,1)}
+/* smooth transitions: a screen or sheet is its own GPU layer only while it moves (11 Nov: not while it rests under another screen or stays open) */
+.tp-push,.tp-sheet .panel,.tp-sheet .scrim{backface-visibility:hidden;transform-style:flat}
+.tp-push:not(.prep):not(.gone){will-change:auto}
+.tp-push.prep,.tp-push.gone,.tp-sheet:not(.show) .panel,.tp-sheet:not(.show) .scrim,.tp-sheet.dragging .panel,.tp-sheet.dragging .scrim,.tp-sheet.closing .panel,.tp-sheet.closing .scrim{will-change:transform,opacity}
+.ffm,.ffh,.ffnx{transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .35s cubic-bezier(.32,.72,0,1)}
 .ffm:active,.ffnx-r:active,.ffh-go:active{transform:scale(.97);transition-duration:.12s}

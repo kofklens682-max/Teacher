@@ -18,12 +18,6 @@ function ffMiniRings(sc) {
 }
 
 /* ---------- the four widgets ---------- */
-function ffNextLessonGroup() { // the group whose next lesson comes first (when nothing is left today)
-  let best = null, when = null;
-  S.groups.forEach((g) => { if (!g.students.length) return; const d = lessonDay(g, TODAY, 1); if (d && (!when || d < when)) { best = g; when = d; } });
-  return best;
-}
-const ffFileCount = (g) => { const cl = curLes(g), P = PACKS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`]; return P ? PK_KINDS.filter(([k]) => P[k]).length : 0; };
 /* Four glanceable widgets, like the iPhone's: each shows ONE number about a different part of your work, and none repeats a button
    that is already on the screen (user, 9 Nov).
    PAID = this month, rings (one per group)    OWE 2+ = students who owe for two months or more
@@ -43,7 +37,7 @@ function ffWeekLessons() {
   for (let i = 0; i < 7; i++) { const d = addDays(mon, i); S.groups.forEach((g) => { if (!g.students.length) return; if (hasLesson(g, d) || kept(g, d)) { tot++; if (doneOn(g, d)) done++; } }); }
   return { tot, done };
 }
-ffMini = function () {
+function ffMini() {
   const ym = payState().ym, sc = statusCounts(ym);
   let w1 = ffMiniW('wo', sc.n ? (sc.ok / sc.n) * 100 : 0, '', 'Wallet', sc.n ? sc.ok + '/' + sc.n : '–', 'Paid · ' + MONTHS[+ym.slice(5) - 1].slice(0, 3), 'data-sheet="paypick"');
   const rg = sc.n ? ffMiniRings(sc) : ''; if (rg) w1 = w1.replace(/<span class="ffring"[^>]*><i>.*?<\/i><\/span>/, rg);
@@ -51,10 +45,10 @@ ffMini = function () {
   const mc = ffMonthCame(), w3 = ffMiniW('wg', mc || 0, '', 'ClipboardCheck', mc === null ? '–' : mc + '%', 'Came · ' + MONTHS[TODAY.getMonth()].slice(0, 3), 'data-tab="2"');
   const wl = ffWeekLessons(), w4 = ffMiniW('wp', wl.tot ? (wl.done / wl.tot) * 100 : 0, '', 'CalendarDays', wl.tot ? wl.done + '/' + wl.tot : '–', 'This week', 'data-tab="2"');
   return '<div class="ffm-row">' + w1 + w2 + w3 + w4 + '</div>';
-};
+}
 
 /* ---------- the month: ONE small button, tap = the other months ---------- */
-ffMonthStrip = function () {
+function ffMonthStrip() {
   if (!S.pay || !feeGroups().length) return '';
   const cur = ymOf(TODAY), sel = payState().ym, from = S.pay.start && S.pay.start <= cur ? S.pay.start : cur, list = [];
   for (let m = cur, i = 0; m >= from && i < 18; m = ymAdd(m, -1), i++) list.push(m);
@@ -62,7 +56,7 @@ ffMonthStrip = function () {
   return `<div class="ffmp h-in" data-noswipe><div class="ffmp-bar"><button class="ffmp-btn" data-ffmonopen aria-haspopup="true">${ic('CalendarDays')}<b>${esc(ymName(sel))}</b>${ic('ChevronDown')}</button>
     <span class="ffmp-sum">${sc.n ? `<i class="ok"></i>${sc.ok} paid<i class="no"></i>${sc.n - sc.ok} not paid` : 'no fees yet'}</span></div>
     <div class="ffmp-menu" role="menu"><div>${list.map((m) => `<button class="${m === sel ? 'on' : ''}" data-ffmon="${m}"><span>${esc(ymName(m))}</span>${m === sel ? ic('Check') : ''}</button>`).join('')}</div></div></div>`;
-};
+}
 {
   const _c = home2Click;
   home2Click = function (b, d) {
@@ -74,8 +68,6 @@ ffMonthStrip = function () {
 
 /* ---------- the Attendance | Paid | Course switch: tap, or hold and slide, or swipe the card ---------- */
 {
-  const _i = ffInsights2;
-  ffInsights2 = function () { return _i.apply(this, arguments).replace('class="ffc ffc2 h-in"', 'class="ffc ffc2 h-in" data-noswipe'); };
   const ORDER = ['att', 'pay', 'crs'];
   let st = null, sup = 0;
   const goTo = (k) => { const b = document.querySelector(`.ffsw [data-ffins="${k}"]`); if (b) b.click(); };
@@ -128,21 +120,4 @@ setTimeout(() => {
     } catch (e) { /* the redraw after the slide still fixes it */ }
     return r;
   };
-}
-
-/* ---------- 7.9: the Attendance | Paid | Course card keeps ONE size (the tallest of the three), like an iPhone widget ---------- */
-function ffEqualizeIns() {
-  const card = document.querySelector('.ffc2'), body = card && card.querySelector('.ffc-body'); if (!body || !card.offsetWidth) return;
-  const key = card.offsetWidth + '|' + S.rev + '|' + (T.ffg || '') + '|' + payState().ym; if (card._eqk === key) return; card._eqk = key;
-  const probe = document.createElement('div'); probe.style.cssText = `position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;width:${card.offsetWidth}px`;
-  card.parentNode.appendChild(probe);
-  const keep = T.ffi; let mx = 0;
-  try { for (const k of ['att', 'pay', 'crs']) { T.ffi = k; probe.innerHTML = ffInsights2(); const b = probe.querySelector('.ffc-body'); if (b) mx = Math.max(mx, b.offsetHeight); } } finally { T.ffi = keep; probe.remove(); }
-  if (mx) body.style.minHeight = mx + 'px';
-}
-{
-  const _d = draw;
-  draw = function () { const r = _d.apply(this, arguments); try { ffEqualizeIns(); } catch (e) { /* none */ } return r; };
-  const _c = home2Click;
-  home2Click = function (b, d) { const r = _c(b, d); if (d.ffgrp) setTimeout(() => { const c = document.querySelector('.ffc2'); if (c) c._eqk = ''; ffEqualizeIns(); }, 260); return r; };
 }

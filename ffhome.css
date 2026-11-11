@@ -32,10 +32,12 @@ html .tp-tabs{background:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,2
 .ffsw button{position:relative;z-index:1;text-align:center;padding:8px 0;font-weight:700;font-size:14px;color:var(--text2)}.ffsw button.on{color:var(--text)}
 .ffc2 .ffc-h b{font-size:15px}.ffc2 .ffc-h span{font-size:12.5px}.ffc2 .ffc-big{font-size:28px}.ffc2 .ffc-big em{font-size:15px}
 .ffc2 .ffsvg{margin-top:0}
+/* 11 Nov: the three panes share one grid cell, so the card is as tall as the tallest from the first frame and never grows later */
+.ffc2 .ffc-body{display:grid}.ffc2 .ffc-pane{grid-area:1/1;min-width:0}.ffc2 .ffc-pane:not(.on){visibility:hidden}
 .ffc-chips.s{margin:0 0 6px}.ffc-chips.s button{padding:6px 12px;font-size:13px;box-shadow:none;background:rgba(120,120,128,.12)}.ffc-chips.s button.on{background:var(--accent)}
 .ffc2 .ffseg{margin:10px 2px 4px}.ffc2 .ffseg i{height:36px}
 /* 5. iPhone title bar */
-.ffnav{position:fixed;left:0;right:0;top:0;z-index:40;height:50px;display:grid;place-items:end center;padding-bottom:9px;opacity:0;pointer-events:none;transition:opacity .18s;
+.ffnav{position:fixed;left:0;right:0;top:0;z-index:40;height:calc(50px + env(safe-area-inset-top,0px));display:grid;place-items:end center;padding-top:env(safe-area-inset-top,0px);padding-bottom:9px;opacity:0;pointer-events:none;transition:opacity .18s;
   background:linear-gradient(rgba(246,246,250,.82),rgba(246,246,250,.7));-webkit-backdrop-filter:blur(22px) saturate(1.9);backdrop-filter:blur(22px) saturate(1.9);border-bottom:.5px solid rgba(60,60,67,.18)}
 .ffnav.on{opacity:1}.ffnav b{font-size:17px;font-weight:700;letter-spacing:-.02em}
 html.pvopen .ffnav{display:none}

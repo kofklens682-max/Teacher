@@ -3,23 +3,12 @@
    Loaded after leave.js. Needs data/ffsys.js (PACKS for the new files, FFSYS = labels and book pages). */
 PK_KINDS.unshift(['ffl', 'Lesson', 'Board, words, drills, answer key · for you'], ['ffs', 'Speaking', 'Sets with sample answers · for you'], ['ffh', 'Homework', 'Print for the students'], ['ffst', 'Story', 'Print for every student']);
 
-/* ---------- Home: one lesson card, two buttons, tomorrow, and "More" ---------- */
+/* ---------- Home: which group is next (Home itself is pgHomeNew in ffhome.js) ---------- */
 function ffNextGroup() {
   const D = TODAY, list = S.groups.filter((g) => hasLesson(g, D) || kept(g, D)).sort((a, b) => startMin(a, D) - startMin(b, D)), left = list.filter((g) => !doneOn(g, D)), now = nowMin();
   const going = list.find((g) => startMin(g, D) <= now && !lessonEnded(g, D) && hasLesson(g, D));
   return going || left.find((g) => !lessonEnded(g, D)) || left[0] || null;
 }
-const ffRow = (icon, color, title, sub, attrs, tag) => `<${tag || 'button'} class="ff-row ff-main" ${attrs}><span class="ff-ic" style="background:${color}">${ic(icon)}</span><span class="tx"><b>${title}</b><span>${sub}</span></span><span class="ff-ch">${ic('ChevronRight')}</span></${tag || 'button'}>`;
-pgHomeNew = function () {
-  if (!S.groups.length) return pgHome();
-  const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, g = ffNextGroup();
-  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
-    <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
-  const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
-  const brk = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
-  const two = `<div class="ff-two">${g ? `<button data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Take attendance</button>` : ''}<button data-sheet="paypick">${ic('Wallet')}Mark who paid</button></div>`;
-  return head + brk + secTodayHero() + two + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '');
-};
 
 /* ---------- the lesson card for a day of the new Family and Friends system ---------- */
 function ffPage(f) {
@@ -78,32 +67,3 @@ function ffHero(g) {
     <div class="ffh-chips"><span>${ic('Users')}${st} students</span>${book ? `<span>${ic('BookOpen')}${esc(book)}</span>` : ''}</div>
     <button class="ffh-go" ${homeOpen(g)}>${ic('BookOpen')}Open lesson</button></div>`;
 }
-function ffWidgets(g) {
-  const D = TODAY, sc = statusCounts(payState().ym), ym = payState().ym, r = g ? rec(g, D) : null, all = g ? g.students.length : 0;
-  const here = g && r && r.saved ? g.students.filter((s) => r.get(s.id) !== 'absent').length : 0, saved = !!(g && r && r.saved);
-  const cl = g ? curLes(g) : null, wks = g ? lv(g.lvl).units.length : 0, M = g && FFSYS ? FFSYS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`] : null, P = M ? PACKS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`] : null;
-  const nf = P ? ['ffl', 'ffs', 'ffh', 'ffst'].filter((k) => P[k]).length : 0, ng = P && P.g ? P.g.length : 0;
-  const w = (cls, ringHtml, big, label, sub, attrs) => `<button class="ffw ${cls} h-in" ${attrs}>${ringHtml}<b class="ffn">${big}</b><span class="ffl">${label}</span><small>${sub}</small></button>`;
-  return `<div class="ffw-grid">
-    ${g ? w('wg', ffRing(all ? (here / all) * 100 : 0, '#34C759', ic('ClipboardCheck')), saved ? `${here}<em>/${all}</em>` : `${all}`, 'Attendance', saved ? 'came today' : 'not taken yet', `data-push="register" data-g="${g.id}"`) : ''}
-    ${sc.n ? w('wo', ffRing(sc.n ? (sc.ok / sc.n) * 100 : 0, '#FF9500', ic('Wallet')), `${sc.ok}<em>/${sc.n}</em>`, 'Paid', MONTHS[+ym.slice(5) - 1], 'data-sheet="paypick"') : ''}
-    ${g ? w('wp', ffRing(wks ? (cl.w / wks) * 100 : 0, '#AF52DE', ic('Target')), `${cl.w}<em>/${wks}</em>`, 'Course week', esc(LVNAME(g.lvl)), 'data-tab="1"') : ''}
-    ${g && nf ? w('wb', ffRing(100, '#0A84FF', ic('FileText')), `${nf}<em> files</em>`, 'Ready to use', `+ ${ng} game${ng === 1 ? '' : 's'}`, homeOpen(g)) : ''}
-  </div>`;
-}
-function ffWeek() {
-  const mon = addDays(TODAY, -wd(TODAY)), L = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const cells = L.map((l, i) => { const d = addDays(mon, i), gs = S.groups.filter((g) => hasLesson(g, d)), today = iso(d) === iso(TODAY);
-    return `<div class="ffd ${today ? 'today' : ''}"><small>${l}</small><b>${d.getDate()}</b><span>${gs.slice(0, 3).map((g) => `<i style="background:${hc(g)}"></i>`).join('') || '<i class="no"></i>'}</span></div>`; }).join('');
-  return `<div class="ffwk h-in"><div class="ffwk-h"><b>This week</b><span>${S.groups.map((g) => `<i style="background:${hc(g)}"></i>${esc(g.name)}`).join(' &nbsp; ')}</span></div><div class="ffwk-r">${cells}</div></div>`;
-}
-pgHomeNew = function () {
-  if (!S.groups.length) return pgHome();
-  const day = `${DAYS_LONG[wd(TODAY)]} ${TODAY.getDate()} ${MONTHS[TODAY.getMonth()]}`, g = ffNextGroup();
-  const head = `<div class="tp-hdr"><div><div class="tp-eyebrow">${day}</div><div class="tp-lt">Home</div></div>
-    <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
-  const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
-  const brk = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
-  const hero = g && !doneOn(g, TODAY) ? ffHero(g) : secTodayHero();
-  return head + brk + hero + ffWidgets(g) + ffInsights() + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '');
-};
