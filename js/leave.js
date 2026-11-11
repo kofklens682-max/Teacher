@@ -303,3 +303,71 @@ function undoNoPay(g, sid, was) { // was = how it was a moment ago (the 8-second
     return _h(b, d);
   };
 }
+
+/* ---------- 11 Nov 2026 (user): move a student to another group, and "came back" ----------
+   Nothing new is stored: both use what "Stopped coming" already uses.
+   MOVE = the student stops in the old group from a month (st.until, old months stay on the books there) and starts in the new group
+          from that same month (a new line there with "added" = the 1st of that month, so the new group's fee counts only from then).
+   CAME BACK = a student who stopped comes again. No empty months in between: the same line simply continues. With empty months in
+          between: a new line from this month, so the months away are not charged; the old months stay as they were. */
+const monthStart = (ym) => new Date(+ym.slice(0, 4), +ym.slice(5) - 1, 1).getTime();
+function sheetMove(s) {
+  const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '<p class="tp-small">This student is not in the group any more.</p>';
+  const cur = ymOf(TODAY), from = s.from || cur, first = st.name.split(' ')[0], others = S.groups.filter((x) => x.id !== g.id && !x.solo);
+  const to = others.find((x) => x.id === s.to) || others[0];
+  const head = `<div class="tp-sh-h"><button class="tp-back" data-sheet="stu" data-g="${g.id}" data-sid="${st.id}">${ic('ChevronLeft')} Back</button><b>Move ${esc(first)}</b>${to ? `<button class="tp-back strong" data-movego="${st.id}|${g.id}|${to.id}|${from}">Save</button>` : '<span></span>'}</div>`;
+  if (!to) return head + '<p class="tp-small">There is no other group yet. Add the new group first, then move the student.</p>';
+  const owe = hasFee(g) ? ledger(g, st, ymAdd(from, -1)).debt : 0;
+  return `${head}
+    <div class="tp-f"><span>To which group?</span><div class="tp-chips2 dr-fill">${others.map((x) => `<button class="${x.id === to.id ? 'on' : ''}" data-moveto="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
+    <div class="tp-f"><span>From which month?</span><div class="tp-chips2 dr-fill">${[cur, ymAdd(cur, 1)].map((m) => `<button class="${m === from ? 'on' : ''}" data-movem="${m}">${ymName(m)}</button>`).join('')}</div></div>
+    <div class="tp-card2"><div class="h">${ic('Check')}What happens</div>
+      <p>From <b>${ymName(from)}</b> ${esc(first)} is in <b>${esc(to.name)}</b>: its registers, its counts and its fee.</p>
+      <p>${esc(first)} stays in ${esc(g.name)} up to and including <b>${ymName(ymAdd(from, -1))}</b>. The attendance and payments there are kept${owe > 0 ? `, and <b>${dMoney(owe)} so'm is still not paid</b> there` : ''}.</p>
+      <p>Nothing is deleted. Undo is possible for 8 seconds.</p></div>`;
+}
+SHEETS.move = (s) => sheetMove(s);
+function moveStudent(g, st, to, from) {
+  const old = st.until, ns = { id: uid(), name: st.name, added: monthStart(from) };
+  to.students.push(ns); st.until = ymAdd(from, -1);
+  settleLeft(); save(); closeSheetNow();
+  payToast(`${st.name}: in ${to.name} from ${ymName(from)}`, () => {
+    to.students = to.students.filter((x) => x.id !== ns.id);
+    const i = (g.left || []).findIndex((x) => x.id === st.id), back = i >= 0 ? g.left.splice(i, 1)[0] : null;
+    if (back) g.students.push({ id: back.id, name: back.name, ...(back.added ? { added: back.added } : {}) });
+    const s2 = g.students.find((x) => x.id === st.id); if (s2) { if (old) s2.until = old; else delete s2.until; }
+  });
+}
+const leftList = (g) => (g.left || []).filter((x) => !g.students.some((s) => s.name === x.name)); // someone who already came back is not offered again
+function cameBack(g, sid) {
+  const i = (g.left || []).findIndex((x) => x.id === sid); if (i < 0) return;
+  const x = g.left[i], cur = ymOf(TODAY), same = x.until >= ymAdd(cur, -1);
+  let nid = x.id;
+  if (same) { g.left.splice(i, 1); g.students.push({ id: x.id, name: x.name, ...(x.added ? { added: x.added } : {}) }); } // no month missed: the same line continues
+  else { nid = uid(); g.students.push({ id: nid, name: x.name, added: monthStart(cur) }); } // months away are not charged
+  save(); draw();
+  payToast(`${x.name} is back in ${g.name}${same ? '' : ' from ' + ymName(cur)}`, () => {
+    g.students = g.students.filter((s) => s.id !== nid);
+    if (same) { g.left = [...(g.left || []), x]; }
+  });
+}
+const backCard = (g) => { const L = leftList(g); return L.length ? `<div class="tp-card2"><div class="h">${ic('RotateCcw')}Stopped coming</div>${L.map((x) => `<div class="tp-lrow" style="padding:6px 0"><span class="tx"><b>${esc(x.name)}</b><span>last month: ${ymName(x.until)}</span></span><button class="tp-pill" data-cameback="${x.id}|${g.id}">Came back</button></div>`).join('')}</div>` : ''; };
+{
+  const _g = scGroup;
+  scGroup = function (f) { const h = _g(f), g = gById(f.g); if (!g || g.solo) return h; const c = backCard(g), at = h.lastIndexOf('</div>'); return c && at > 0 ? h.slice(0, at) + c + h.slice(at) : h; };
+  const _so = scSolo;
+  scSolo = function (f) { const h = _so(f), g = gById(f.g), x = g && !g.students.length && (g.left || [])[0]; return x ? h.replace('The lessons and payments up to then are kept.</p></div>', `The lessons and payments up to then are kept.</p></div><button class="tp-cta ghost" data-cameback="${x.id}|${g.id}">${ic('RotateCcw')}${esc(x.name.split(' ')[0])} came back</button>`) : h; };
+  const _s = sheetStu;
+  sheetStu = function (s) {
+    const h = _s(s), g = gById(s.g), st = g && stuOf(g, s.sid); if (!st || g.solo || st.until) return h;
+    return h.replace(/<button class="tp-danger" data-sturm=/, `<button class="tp-cta ghost" data-sheet="move" data-g="${g.id}" data-sid="${st.id}">${ic('ArrowUpRight')}Move to another group</button><button class="tp-danger" data-sturm=`);
+  };
+  const _h = home2Click;
+  home2Click = function (b, d) {
+    if (d.movem) { T.sheet.from = d.movem; draw(); return true; }
+    if (d.moveto) { T.sheet.to = d.moveto; draw(); return true; }
+    if (d.movego) { const [sid, gid, tid, from] = d.movego.split('|'), g = gById(gid), to = gById(tid), st = g && g.students.find((x) => x.id === sid); if (st && to) moveStudent(g, st, to, from); return true; }
+    if (d.cameback) { const [sid, gid] = d.cameback.split('|'), g = gById(gid); if (g) cameBack(g, sid); return true; }
+    return _h(b, d);
+  };
+}
