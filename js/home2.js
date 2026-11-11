@@ -102,8 +102,8 @@ function secToday() {
   const nextId = (todays.find((g) => endMin(g, TODAY) > nowMin() && !doneOn(g, TODAY)) || {}).id;
   const cnt = todays.reduce((n, g) => n + g.students.length, 0);
   const rows = todays.map((g) => {
-    const u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = doneOn(g, TODAY);
-    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(timeOn(g, TODAY))}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
+    const c = planned(g.lvl) && varLen(lv(g.lvl)) ? curLes(g) : { w: g.week, l: g.les }, u = planned(g.lvl) ? weekOf(g.lvl, c.w) : null, done = doneOn(g, TODAY); // 11 Nov: IELTS Turbo shows the lesson today gives
+    return `<div class="dr-row${g.id === nextId ? ' next' : ''}" style="${gvg(g)}"><button class="dr-main" ${openLessonAttr(g)}><span class="tmp">${esc(timeOn(g, TODAY))}</span><span class="tx"><b>${esc(g.name)}${g.id === nextId ? ' <em>Next</em>' : ''}</b><span>${u ? `Week ${c.w} · ${dayWord(g.lvl)} ${c.l}` : esc(LVNAME(g.lvl))}</span></span><span class="dr-cnt">${ic('Users')}${g.students.length}</span></button>
       ${done ? `<span class="dr-done" title="Taught">${ic("Check")}</span>` : `<button class="dr-reg" data-push="register" data-g="${g.id}" aria-label="Attendance">${ic("ClipboardCheck")}</button>`}</div>`;
   }).join('');
   return card('Today', `${todays.length} lesson${todays.length === 1 ? '' : 's'} · ${cnt} students`, todays.length ? `<div class="dr-list">${rows}</div>` : `<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons today</b><span>Enjoy the day.</span></div>`);
@@ -347,16 +347,17 @@ function pastToggle(g, sid, k) {
 }
 
 /* ---------- taught = the attendance was saved ---------- */
-function autoTaught(g, k) {
-  const ago = Math.round((TODAY - fromIso(k)) / 864e5); if (ago < 0 || ago > 7) return; // today, or a register you forgot this week
+function autoTaught(g, k, force) { // force = "Move the plan" for a register saved more than a week late (T14)
+  const ago = Math.round((TODAY - fromIso(k)) / 864e5); if (ago < 0 || (ago > 7 && !force)) return; // today, or a register you forgot this week
   if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
   if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
   if (g.solo) return soloTaught(g, k);
-  const n = 1 + dblOn(g, fromIso(k)); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l;
+  markTaught(g, k); // app.js: one lesson, or the lessons the day gives (IELTS Turbo: the lesson that fits + a missed short one)
 }
 function undoTaught(g, k) {
   if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }
-  const t = (S.taught[g.id] || {})[k]; if (t) { if (k === iso(TODAY)) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; } else soloUntaught(g, k); }
+  const t = (S.taught[g.id] || {})[k]; if (!t) return;
+  if (k === iso(TODAY) && !(planned(g.lvl) && varLen(lv(g.lvl)))) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; } else unmarkTaught(g, k);
 }
 
 /* ---------- taps and typing ---------- */

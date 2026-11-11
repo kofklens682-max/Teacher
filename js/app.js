@@ -43,8 +43,8 @@ const onWeekday = (g, d) => g.days.includes(wd(d));
 const pausedOn = (g, d) => { const k = iso(d); return (S.pauses || []).some((p) => k >= p.from && k <= p.to && (!p.gids.length || p.gids.includes(g.id))); };
 const hasLesson = (g, d) => {
   if (pausedOn(g, d)) return false;
-  if (!g.solo) return onWeekday(g, d);
-  const ended = soloEnd(g); if (ended && ymOf(d) > ended) return false;
+  if (g.solo) { const ended = soloEnd(g); if (ended && ymOf(d) > ended) return false; }
+  // 11 Nov (user): groups too can cancel ONE lesson or add one on another day (the same S.cal record as individual students)
   const c = S.cal && S.cal[g.id], k = iso(d); if (!c) return onWeekday(g, d);
   const gone = (c.st && (c.st[k] === 'cancel' || c.st[k] === 'moved')) || (c.off && c.off[k]);
   return !gone && ((c.add && c.add[k]) || onWeekday(g, d));
@@ -67,13 +67,131 @@ function advance(g, n) {
   if (l > weekOf(g.lvl, w).lessons.length) l = weekOf(g.lvl, w).lessons.length; // the level test is one lesson
   return { w, l };
 }
-function nextOffset(g) { // days until the group's next lesson (0 = today, unless already taught)
-  for (let i = 0; i < 7; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) && !(i === 0 && doneOn(g, d))) return i; }
-  return 8;
+/* ---------- 11 Nov 2026 (user): lessons that move ----------
+   Every lesson has a length (IELTS Turbo: 60 or 120 minutes, turboMins in turbo.js; every other course: the group's own length, so it
+   always fits). Every lesson day has a length (lenOn). Lessons wait in a line in course order; each coming lesson day takes the FIRST
+   waiting lesson that fits (lesson <= day + 15 minutes). A skipped short lesson may ride along with the long lesson of a long day:
+   one per day, never two short ones together; the teacher can say no (S.ride[group][date] = 0), then it waits for the next day that fits.
+   Dates are calculated, never stored, so one cancel moves all of them. g.week / g.les stay "the first waiting lesson in course order";
+   courses with different lesson lengths also keep what was taught in S.done[group] = { 'week-lesson': 'YYYY-MM-DD' }. */
+const FIT = 15;
+const varLen = (L) => !!(L && L.turbo);
+const fitsIn = (x, len) => !x.mins || x.mins <= len + FIT;
+const shortIn = (x, len) => !!x.mins && x.mins * 2 <= len + FIT; // two of them would fit: a short lesson on this day
+// The pure core (no S, no dates). seq = the lessons in course order [{ k, mins }], wait = Set of the waiting keys,
+// days = the coming lesson days in order [{ k, len, noRide }], shortHome = the group has days made for its short lessons.
+function lineUp(seq, wait, days, shortHome) {
+  const left = seq.filter((x) => wait.has(x.k)), when = {}, byDay = {};
+  for (const d of days) {
+    if (!left.length) break;
+    const i = left.findIndex((x) => fitsIn(x, d.len)); if (i < 0) continue; // nothing waiting fits this day
+    let main = left[i], ride = null;
+    if (shortHome && shortIn(main, d.len)) { // a skipped short lesson on a long day: the long lesson comes, the short one rides along
+      const j = left.findIndex((x, n) => n > i && fitsIn(x, d.len) && !shortIn(x, d.len));
+      if (j >= 0) { ride = d.noRide ? null : main; main = left[j]; }
+    }
+    [main, ride].forEach((x) => { if (x) { left.splice(left.indexOf(x), 1); when[x.k] = d.k; } });
+    byDay[d.k] = { main, ride };
+  }
+  return { when, byDay, left };
 }
+const SEQ = {};
+const seqOf = (g) => { // every lesson of the group's course, in order (the same for every group of a level)
+  if (SEQ[g.lvl]) return SEQ[g.lvl];
+  const L = lv(g.lvl), out = [];
+  if (L && L.units) L.units.forEach((u) => u.lessons.forEach((x) => out.push({ k: `${u.n}-${x.n}`, w: u.n, l: x.n, mins: varLen(L) ? x.mins || L.minutes || 120 : 0, t: x.subtopic || x.title || '' })));
+  return (SEQ[g.lvl] = out);
+};
+function doneSet(g) { // what was taught; for older data every lesson before the group's current one counts as taught
+  S.done = S.done || {}; const seq = seqOf(g), cur = `${g.week}-${g.les}`; let m = S.done[g.id];
+  if (m) { const f = seq.find((x) => !(x.k in m)); if (f ? f.k !== cur : seq.length && seq[seq.length - 1].k !== cur) m = null; } // changed somewhere else (Edit group, Budget): start again from the current lesson
+  if (!m) { m = {}; for (const x of seq) { if (x.k === cur) break; m[x.k] = ''; } S.done[g.id] = m; }
+  return m;
+}
+function firstWaiting(g) { const m = (S.done || {})[g.id] || {}, seq = seqOf(g), f = seq.find((x) => !(x.k in m)) || seq[seq.length - 1]; if (f) { g.week = f.w; g.les = f.l; } }
+function waitSet(g) {
+  const seq = seqOf(g);
+  if (varLen(lv(g.lvl))) { const m = doneSet(g); return new Set(seq.filter((x) => !(x.k in m)).map((x) => x.k)); }
+  const i = seq.findIndex((x) => x.k === `${g.week}-${g.les}`); return new Set(seq.slice(Math.max(0, i)).map((x) => x.k));
+}
+const lenW = (g, x) => (g.lens && g.lens[x]) || g.len || 80;
+function dayLenW(g, x) { // a weekday's length for the line; when even the longest day is shorter than the course's lessons, the longest days count as full lessons
+  const len = lenW(g, x), L = lv(g.lvl); if (!varLen(L)) return len;
+  const top = Math.max(len, ...g.days.map((y) => lenW(g, y))), full = L.minutes || 120;
+  return top + FIT < full && len >= top ? full : len;
+}
+const dayLen = (g, d) => dayLenW(g, wd(d));
+const shortHome = (g) => { const ms = seqOf(g).map((x) => x.mins).filter(Boolean); if (!ms.length) return false; const s = { mins: Math.min(...ms) }; return g.days.some((x) => fitsIn(s, dayLenW(g, x)) && !shortIn(s, dayLenW(g, x))); };
+function comingDays(g, from, need) { // the lesson days from a date on (through breaks, at most 400 days)
+  const out = [], rd = (S.ride || {})[g.id] || {};
+  for (let i = 0; i < 400 && out.length < need; i++) { const d = addDays(from, i); if (hasLesson(g, d)) { const k = iso(d); out.push({ k, len: dayLen(g, d), noRide: rd[k] === 0 }); } }
+  return out;
+}
+const PJ = { sig: '', m: {} };
+function projWhen(g) { // { 'week-lesson': 'YYYY-MM-DD' }: the date each waiting lesson is now expected
+  if (!g || !planned(g.lvl)) return {};
+  const sig = `${S.rev}|${iso(TODAY)}`; if (PJ.sig !== sig) { PJ.sig = sig; PJ.m = {}; }
+  const td = doneOn(g, TODAY), key = g.id + (td ? '+' : ''); if (PJ.m[key]) return PJ.m[key];
+  const L = lv(g.lvl), wait = waitSet(g);
+  return (PJ.m[key] = lineUp(seqOf(g), wait, comingDays(g, td ? addDays(TODAY, 1) : TODAY, varLen(L) ? Infinity : wait.size), shortHome(g)).when);
+}
+function pickOn(g, k, noRide) { // what a lesson day gives now: { main, ride }, or null when the course is over
+  const seq = seqOf(g), wait = waitSet(g);
+  const day = { k, len: dayLen(g, fromIso(k)), noRide: noRide !== undefined ? noRide : ((S.ride || {})[g.id] || {})[k] === 0 };
+  const r = lineUp(seq, wait, [day], shortHome(g)).byDay[k]; if (r) return r;
+  const f = seq.find((x) => wait.has(x.k)); return f ? { main: f, ride: null } : null; // nothing fits this day (an extra short day): the first waiting lesson
+}
+const oldKeys = (g, t) => { const seq = seqOf(g), i = seq.findIndex((x) => x.k === `${t.w}-${t.l}`); return i < 0 ? [] : seq.slice(i, i + (t.n || 1)).map((x) => x.k); }; // a day taught before 11 Nov
+function markTaught(g, k) { // a lesson day was taught: the plan moves on (by 2 when "we covered two lessons")
+  if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
+  const n = 1 + dblOn(g, fromIso(k)), tg = (S.taught[g.id] = S.taught[g.id] || {});
+  if (!varLen(lv(g.lvl))) { tg[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l; return; }
+  const m = doneSet(g), p = pickOn(g, k); if (!p) { tg[k] = { w: g.week, l: g.les, n, keys: [] }; return; }
+  const keys = [p.main.k, ...(p.ride ? [p.ride.k] : [])];
+  for (let i = 1; i < n; i++) { const x = seqOf(g).find((y) => !(y.k in m) && !keys.includes(y.k)); if (x) keys.push(x.k); }
+  keys.forEach((x) => { m[x] = k; });
+  tg[k] = { w: p.main.w, l: p.main.l, n, keys, ...(p.ride ? { ride: p.ride.k } : {}) }; // undo takes back every lesson in keys
+  firstWaiting(g);
+}
+function unmarkTaught(g, k) {
+  const t = (S.taught[g.id] || {})[k]; if (!t) return;
+  if (!varLen(lv(g.lvl))) { delete S.taught[g.id][k]; const p = advance(g, -(t.n || 1)); g.week = p.w; g.les = p.l; return; }
+  const m = doneSet(g); delete S.taught[g.id][k]; (t.keys || oldKeys(g, t)).forEach((x) => { delete m[x]; }); firstWaiting(g);
+}
+function twoTaught(g, k, on) { // "two lessons covered" changed after the day was taught
+  const t = (S.taught[g.id] || {})[k]; if (!t) return;
+  if (!varLen(lv(g.lvl))) { const p = advance(g, on ? 1 : -1); g.week = p.w; g.les = p.l; t.n = on ? 2 : 1; return; }
+  const m = doneSet(g); t.keys = t.keys || oldKeys(g, t);
+  if (on) { const x = seqOf(g).find((y) => !(y.k in m)); if (x) { m[x.k] = k; t.keys.push(x.k); } }
+  else { const x = t.keys.filter((y) => y !== `${t.w}-${t.l}` && y !== t.ride).pop(); if (x) { delete m[x]; t.keys = t.keys.filter((y) => y !== x); } }
+  t.n = on ? 2 : 1; firstWaiting(g);
+}
+const rideCand = (g, t, k) => { const seq = seqOf(g), m = doneSet(g), i = seq.findIndex((x) => x.k === `${t.w}-${t.l}`), len = dayLen(g, fromIso(k)); return seq.find((y, j) => j < i && !(y.k in m) && shortIn(y, len)) || null; };
+function rideSet(g, k, yes) { // the teacher said yes / no to the missed short lesson riding along
+  S.ride = S.ride || {}; const r = (S.ride[g.id] = S.ride[g.id] || {}), t = (S.taught[g.id] || {})[k];
+  if (yes) delete r[k]; else r[k] = 0;
+  if (!t || !varLen(lv(g.lvl))) return;
+  const m = doneSet(g); t.keys = t.keys || oldKeys(g, t);
+  if (!yes && t.ride) { delete m[t.ride]; t.keys = t.keys.filter((x) => x !== t.ride); delete t.ride; }
+  if (yes && !t.ride) { const x = rideCand(g, t, k); if (x) { m[x.k] = k; t.keys.push(x.k); t.ride = x.k; } }
+  firstWaiting(g);
+}
+function rideBlock(g, k) { // "Also today: the missed lesson ..." (IELTS Turbo); the teacher can say no
+  if (!g || !planned(g.lvl) || !varLen(lv(g.lvl)) || !k) return '';
+  const t = (S.taught[g.id] || {})[k], no = ((S.ride || {})[g.id] || {})[k] === 0; let x = null, on = false;
+  if (t) { if (t.ride) { x = seqOf(g).find((y) => y.k === t.ride); on = true; } else if (no) x = rideCand(g, t, k); }
+  else if (hasLesson(g, fromIso(k)) && !repOn(g, fromIso(k))) { const p = pickOn(g, k); if (p && p.ride) { x = p.ride; on = true; } else if (no) { const q = pickOn(g, k, false); x = q && q.ride; } }
+  if (!x) return '';
+  return `<div class="tp-card2"><div class="h" style="color:#FF9500">${ic('Plus')}${on ? 'Also today' : 'Not today'}</div><p>${on ? 'The missed lesson' : 'The missed lesson waits for the next day that fits:'} <b>${esc(x.t)}</b></p><button class="tp-pill" data-ride="${g.id}|${k}|${on ? 0 : 1}">${on ? 'Not today' : 'Add it to today'}</button></div>`;
+}
+const shortDay = (k) => { const d = fromIso(k); return k === iso(TODAY) ? 'Today' : k === iso(addDays(TODAY, 1)) ? 'Tomorrow' : `${DAYS[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`; };
+const whenOf = (g, w, l) => { const k = g && projWhen(g)[`${w}-${l}`]; return k ? shortDay(k) : ''; }; // '' = taught already, or no lesson day coming
+// 10 Nov (audit T12): the next lesson is found through breaks too (up to 400 days), not only in the coming 7 days
+function nextLesDate(g) { for (let i = 0; i < 400; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) && !(i === 0 && doneOn(g, d))) return d; } return null; }
+function nextOffset(g) { const d = nextLesDate(g); return d ? Math.round((d - TODAY) / 864e5) : 999; } // days until the group's next lesson (0 = today, unless already taught)
 function nextDayLabel(g) {
-  for (let i = 0; i < 7; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) && !(i === 0 && doneOn(g, d))) return i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : DAYS_LONG[wd(d)]; }
-  return g.days.length ? DAYS_LONG[g.days[0]] : 'No days set';
+  const d = nextLesDate(g); if (!d) return g.days.length ? 'No lessons coming' : 'No days set';
+  const i = Math.round((d - TODAY) / 864e5); return i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : i < 7 ? DAYS_LONG[wd(d)] : `${DAYS[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
 }
 const gvg = (g) => (COLORS[g.color] ? `--g1:${COLORS[g.color][0]};--g2:${COLORS[g.color][1]}` : gv(g.lvl)); // a group's own colour, else its level's
 const groupLabel = (g) => `${esc(LVNAME(g.lvl))} · ${esc(g.name)}`;
@@ -81,7 +199,10 @@ const unitTile = (u, i, big) => `<span class="tp-tile${big ? ' big' : ''}" style
 const groupTile = (g) => (COLORS[g.color] ? `<span class="tp-tile" style="--t1:${COLORS[g.color][0]};--t2:${COLORS[g.color][1]}">${ic(g.lvl === 'own' ? 'Shapes' : planned(g.lvl) ? weekOf(g.lvl, g.week).icon || 'BookOpen' : 'GraduationCap')}</span>` : g.lvl === 'own' ? `<span class="tp-tile" style="${gv('own')};--t1:var(--g1);--t2:var(--g2)">${ic('Shapes')}</span>`
   : planned(g.lvl) ? unitTile(weekOf(g.lvl, g.week), g.week - 1) : `<span class="tp-tile" style="--t1:${GRAD[g.lvl][0]};--t2:${GRAD[g.lvl][1]}">${ic('GraduationCap')}</span>`);
 // 7 Nov (user): while a lesson is still going, its group stays on it, even after the attendance was saved (a taught lesson has already moved the plan on)
-const curLes = (g) => { const t = taughtOn(g, TODAY); return t && !lessonEnded(g, TODAY) && hasLesson(g, TODAY) ? { w: t.w, l: t.l } : { w: g.week, l: g.les }; };
+// 11 Nov: for a course with 1-hour and 2-hour lessons, the lesson the next lesson day gives (it may not be the first waiting one)
+const curLes = (g) => { const t = taughtOn(g, TODAY); if (t && !lessonEnded(g, TODAY) && hasLesson(g, TODAY)) return { w: t.w, l: t.l };
+  if (planned(g.lvl) && varLen(lv(g.lvl))) { const d = nextLesDate(g), p = d && pickOn(g, iso(d)); if (p) return { w: p.main.w, l: p.main.l }; }
+  return { w: g.week, l: g.les }; };
 const openLessonAttr = (g) => (g.lvl === 'own' ? `data-push="own" data-g="${g.id}"` : planned(g.lvl) ? `data-push="lesson" data-lvl="${g.lvl}" data-w="${curLes(g).w}" data-l="${curLes(g).l}" data-g="${g.id}"` : `data-push="register" data-g="${g.id}"`);
 function ring(p, size, w, c1, c2, label) {
   const r = (size - w) / 2, L = 2 * Math.PI * r, id = 'rg' + (c1 + c2).replace(/[^a-z0-9]/gi, ''); // the same for the same colours, so redrawing changes nothing
@@ -127,7 +248,7 @@ const wasIn = (s, k, r) => s.id in r.att || (r.saved && (!s.added || iso(new Dat
 const kept = (g, d) => !!(S.rec[g.id] || {})[iso(d)] && (hasLesson(g, d) || !!(S.saved[g.id] || {})[iso(d)]);
 function lessonDay(g, from, dir) { // the group's lesson before (-1) / after (+1) a date, never after today; dates with a record count too
   let d = new Date(from); const born = midnight(new Date(g.created || 0));
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 400; i++) { // T12: also past a long break
     d = addDays(d, dir);
     if (kept(g, d)) return d;
     if (d < born) { if (dir < 0) return null; continue; } // no lessons before the group was added
@@ -158,12 +279,12 @@ function pgHome() {
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
   if (!S.groups.length) return head + `<div class="tp-empty2 welcome">${ic('Users')}<b>Add your first group</b><span>Choose its level, the days and time, and the students. The app then shows each group's next lesson and opens the register with everyone marked here.</span><button class="tp-cta" data-sheet="group">${ic('Plus')} New group</button></div>`;
   const tiles = [...S.groups].sort((a, b) => nextOffset(a) - nextOffset(b) || a.time.localeCompare(b.time)).map((g) => {
-    const p = attPct(g), u = planned(g.lvl) ? weekOf(g.lvl, g.week) : null, done = doneOn(g, TODAY);
+    const p = attPct(g), c = planned(g.lvl) && varLen(lv(g.lvl)) ? curLes(g) : { w: g.week, l: g.les }, u = planned(g.lvl) ? weekOf(g.lvl, c.w) : null, done = doneOn(g, TODAY);
     return `<div class="ht-tile" style="${gvg(g)}"><button class="ht-main" ${openLessonAttr(g)}>
       <div class="ht-top"><span class="ht-ico">${ic(u ? u.icon || 'BookOpen' : g.lvl === 'own' ? 'Shapes' : 'GraduationCap')}</span>${p === null ? '' : ring(p / 100, 40, 4, '#ffffff', '#ffffffcc', p + '%')}</div>
       <b>${esc(g.name)}</b><span class="lv">${esc(LVNAME(g.lvl))} · ${g.students.length} student${g.students.length === 1 ? '' : 's'}</span>
-      <span class="nx">${done ? 'Taught today ✓' : `${nextDayLabel(g)} · ${esc(timeOn(g, addDays(TODAY, Math.min(nextOffset(g), 7))))}`}</span>
-      <span class="ls">${u ? `Week ${g.week} · ${dayWord(g.lvl)} ${g.les}: ${esc(u.lessons[g.les - 1].subtopic)}` : g.lvl === 'own' ? esc(g.book || 'Own book') : 'Plan coming'}</span></button>
+      <span class="nx">${done ? 'Taught today ✓' : `${nextDayLabel(g)} · ${esc(timeOn(g, addDays(TODAY, Math.min(nextOffset(g), 400))))}`}</span>
+      <span class="ls">${u ? `Week ${c.w} · ${dayWord(g.lvl)} ${c.l}: ${esc((u.lessons[c.l - 1] || u.lessons[0]).subtopic)}` : g.lvl === 'own' ? esc(g.book || 'Own book') : 'Plan coming'}</span></button>
       <button class="ht-reg" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')} Register</button></div>`;
   }).join('');
   return head + `<div class="ht-grid">${tiles}<button class="ht-tile add" data-sheet="group">${ic('Plus')}<b>New group</b></button></div>`;
@@ -187,7 +308,7 @@ function pgUnits() {
   const body = !planned(L.id) ? `<div class="tp-empty2">${ic('Hammer')}<b>${esc(LVNAME(L.id))} comes next</b><span>The course is planned one level at a time; the IELTS levels are next.</span></div>`
     : `<div class="tp-sec"><h4>${wkN} weeks</h4></div><div class="un-list">${L.units.map((u, i) => { const grp = here.filter((g) => g.week === u.n).map((g) => g.name), st = state(u);
       const title = kids && !L.weekTitles ? u.lessons.map((l) => l.subtopic.split(' · ')[0]).join(' · ') : u.title, sub = kids ? u.lessons.map((l) => esc(l.subtopic.split(' · ')[1] || '')).filter(Boolean).join(' · ') : u.lessons.map((l) => esc(l.subtopic)).join(' · ');
-      return `<button class="un-row2 ${st}" data-push="week" data-lvl="${L.id}" data-w="${u.n}"><span class="un-ic ${st}">${u.final ? `<span class="tp-tile" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i)}${st === 'done' ? `<i class="un-b ok">${ic('Check')}</i>` : st === 'now' ? `<i class="un-b now">${g0.les}</i>` : ''}</span>
+      return `<button class="un-row2 ${st}" data-push="week" data-lvl="${L.id}" data-w="${u.n}"${g0 ? ` data-g="${g0.id}"` : ''}><span class="un-ic ${st}">${u.final ? `<span class="tp-tile" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i)}${st === 'done' ? `<i class="un-b ok">${ic('Check')}</i>` : st === 'now' ? `<i class="un-b now">${g0.les}</i>` : ''}</span>
         <span class="tx"><span class="k">${u.final ? 'One lesson' : 'Week ' + u.n}${st === 'done' ? ' · done' : st === 'now' ? ` · ${dayWord(L.id)} ${g0.les} next` : ''}</span><b>${esc(title)}${grp.length ? ` <em class="un-here">${esc(grp.join(', '))} ${grp.length > 1 ? 'are' : 'is'} here</em>` : ''}</b><span>${sub}</span>${st === 'now' ? `<span class="un-dots">${u.lessons.map((l) => `<i class="${l.n < g0.les ? 'd' : l.n === g0.les ? 'n' : ''}"></i>`).join('')}</span>` : ''}</span>${ic('ChevronRight')}</button>`; }).join('')}</div>`;
   return `<div class="tp-hdr"><div><div class="tp-eyebrow">${kids ? 'Kids course' : 'Teen course'}</div><div class="tp-lt">Units</div></div><div class="hdr-btns">${lightsHtml('tabs')}</div></div>
     ${aud}<div class="tp-segs" data-noswipe>${chips}</div>
@@ -195,12 +316,13 @@ function pgUnits() {
     ${body}</div>`;
 }
 function scWeek(f) {
-  const L = lv(f.lvl), u = weekOf(f.lvl, f.w), i = f.w - 1;
+  const L = lv(f.lvl), u = weekOf(f.lvl, f.w), i = f.w - 1, g = f.g && gById(f.g), gd = g ? ` data-g="${g.id}"` : '';
+  const when = (l) => { const w = whenOf(g, u.n, l.n); return w ? `${w} · ` : ''; }; // 11 Nov (user): the date each waiting lesson is now expected
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Units</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
-      <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i, true)}<div><div class="tp-eyebrow">${esc(LVNAME(L.id))} · ${u.final ? 'One lesson' : 'Week ' + u.n}</div><div class="tp-lt" style="font-size:28px">${esc(u.title)}</div></div></div>
+      <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, i, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${esc(LVNAME(L.id))} · ${u.final ? 'One lesson' : 'Week ' + u.n}</div><div class="tp-lt" style="font-size:28px">${esc(u.title)}</div></div></div>
       <div class="tp-goal2">${ic('Target')}<div><small>${u.final ? 'When' : L.kids ? 'This week' : 'By the end of the week they can say'}</small>${u.final || L.kids ? esc(goalText(u.goal)) : `“${esc(goalText(u.goal).replace(/^["“”]+|["“”]+$/g, ''))}”`}</div></div>
-      <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${esc(l.skill || l.grammarTopic || l.grammar || (l.kd && l.kd.goal) || '')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
+      <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="${L.id}" data-w="${u.n}" data-l="${l.n}"${gd}><span class="num">${l.n}</span><span class="tx"><b>${esc(l.subtopic)}</b><span>${when(l)}${esc(l.skill || l.grammarTopic || l.grammar || (l.kd && l.kd.goal) || '')}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
       ${u.skill ? `<div class="tp-card2"><div class="h">${ic('MessageCircle')}Speaking</div><p>${esc(u.skill)}</p>${u.writing ? `<div class="h" style="margin-top:10px">${ic('PenLine')}Writing</div><p>${esc(u.writing)}</p>` : ''}${u.eew ? `<div class="h" style="margin-top:10px">${ic('BookA')}Word book</div><p>${esc(u.eew)}</p>` : ''}${u.reading ? `<div class="h" style="margin-top:10px">${ic('BookOpen')}Reader</div><p>${esc(u.reading)}</p>` : ''}${u.mock ? `<div class="h" style="margin-top:10px">${ic('ClipboardCheck')}Mock test</div><p>${esc(u.mock)}</p>` : ''}</div>` : ''}
     </div>`;
 }
@@ -214,7 +336,7 @@ function scLesson(f) {
   const books = l.vocabBook && !hasPack ? `<p class="sub" style="margin-top:8px">Practice: ${l.vocabBook.map((b) => esc(b.book + ', unit ' + b.unit + (b.title ? ' (' + b.title + ')' : ''))).join('; ')}</p>` : '';
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="lesson" data-key="${key}">${ic('Pencil')} Edit</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
-      <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${u.final ? '' : 'Week ' + u.n + ' · '}${dayWord(L.id)} ${l.n} · ${esc(u.title)}</div><div class="tp-lt" style="font-size:26px">${esc(l.subtopic)}</div></div></div>
+      <div class="tp-whead">${u.final ? `<span class="tp-tile big" style="--t1:#F5B300;--t2:#E8770E">${ic('Trophy')}</span>` : unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}${u.final ? '' : 'Week ' + u.n + ' · '}${dayWord(L.id)} ${l.n} · ${esc(u.title)}${whenOf(g, f.w, f.l) ? ' · ' + whenOf(g, f.w, f.l) : ''}</div><div class="tp-lt" style="font-size:26px">${esc(l.subtopic)}</div></div></div>
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       ${l.skill ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic(/^Reading/.test(l.skill) ? 'BookOpenCheck' : /^Listening/.test(l.skill) ? 'Headphones' : 'PenLine')}Skill</div><p class="big">${esc(l.skill)}</p><p class="ex">${esc(l.how)}</p><p class="sub">Source: ${esc(l.source)}</p></div>` : ''}
       ${packBlock(L, u, l)}
@@ -248,10 +370,11 @@ function scLesson(f) {
 // 7 Nov (user): "Take attendance" at the bottom of EVERY group's lesson page (IELTS Turbo had none). When the lesson shown is not the group's current one, a quieter button still opens the register.
 const attAlt = (g) => `<button class="tp-cta ghost" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}Attendance for ${esc(g.name)}</button>`;
 function attMain(g, f, word) { // the main block: Take attendance / Taught ✓, the note under it and "stay on this lesson"; used by the IELTS Turbo lesson page
-  const t = taughtOn(g, TODAY), isTaught = t && t.w === f.w && t.l === f.l, isNext = g.week === f.w && g.les === f.l && !t;
-  return isTaught || isNext ? `<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
+  const t = taughtOn(g, TODAY), c = curLes(g), isTaught = t && t.w === f.w && t.l === f.l, isNext = c.w === f.w && c.l === f.l && !t;
+  const nd = !isTaught && isNext ? nextLesDate(g) : null; // 11 Nov: the missed short lesson that rides along (IELTS Turbo)
+  return isTaught || isNext ? `${rideBlock(g, isTaught ? iso(TODAY) : nd && iso(nd))}<button class="tp-cta ${isTaught ? 'done' : ''}" data-push="register" data-g="${g.id}">${ic('ClipboardCheck')}${isTaught ? 'Taught ✓ · see attendance' : 'Take attendance'}</button>
     <p class="tp-small">${isTaught ? `${esc(g.name)} is now on the next ${word}.` : `When the lesson ends, it counts as taught and ${esc(g.name)} moves to the next ${word}.`}</p>${repeatBlock(g)}`
-    : `<p class="tp-small">${esc(g.name)} is on Week ${g.week} · ${word} ${g.les}.</p>${attAlt(g)}`;
+    : `<p class="tp-small">${esc(g.name)} is on Week ${c.w} · ${word} ${c.l}.</p>${attAlt(g)}`;
 }
 /* ===================== Kids: one day of the kids course (Family and Friends) ===================== */
 function scKids(f) {
@@ -260,7 +383,7 @@ function scKids(f) {
   const isTaught = t && t.w === f.w && t.l === f.l, isNext = g && g.week === f.w && g.les === f.l && !t;
   return `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="lesson" data-key="${key}">${ic('Pencil')} Edit</button></div>
     <div class="tp-inner" style="${gv(L.id)}">
-      <div class="tp-whead">${unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}Week ${u.n} · Day ${l.n}</div><div class="tp-lt" style="font-size:26px">${esc(k.label)}</div></div></div>
+      <div class="tp-whead">${unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">${g ? esc(g.name) + ' · ' : ''}Week ${u.n} · Day ${l.n}${whenOf(g, f.w, f.l) ? ' · ' + whenOf(g, f.w, f.l) : ''}</div><div class="tp-lt" style="font-size:26px">${esc(k.label)}</div></div></div>
       ${ed.notes ? `<div class="tp-card2 note">${ic('StickyNote')}<p>${esc(ed.notes)}</p></div>` : ''}
       <div class="tp-goal2">${ic('Target')}<div>${k.can ? `<small>By the end they can</small>${esc(k.can)}` : `<small>By the end they can say</small>“${esc(k.goal)}”`}</div></div>
       <div class="tp-card2">${k.cb.length ? `<div class="h" style="color:#147EFB">${ic('BookOpen')}Class Book today</div>${chips(k.cb.map(([p, x]) => `p. ${p} · ${x}`))}<div class="h" style="color:#5C6378;margin-top:10px">${ic('ListChecks')}Homework</div>` : `<div class="h" style="color:#5C6378">${ic('ListChecks')}Homework</div>`}<p class="hw">${ic('Square')}${esc(k.wb)}</p>${ed.hw ? `<p class="hw">${ic('Square')}${esc(ed.hw)}</p>` : ''}</div>
@@ -393,20 +516,33 @@ function scRegister(f) {
   const g = gById(f.g); if (!g) return scGone();
   // 10 Nov (audit T6): drawing never deletes or saves. Unsaved ticks on a day that is no longer a lesson day stay where they are
   // (kept() already hides them), so they come back if the day becomes a lesson day again.
-  if (f.date && !hasLesson(g, fromIso(f.date)) && !(S.saved[g.id] || {})[f.date]) f.date = null; // never open on a day without a lesson
+  if (f.date && !hasLesson(g, fromIso(f.date)) && !(S.saved[g.id] || {})[f.date] && !canceledOn(g, f.date)) f.date = null; // never open on a day without a lesson (a canceled one stays, for its Undo)
   if (!f.date) { const d = lastLesson(g); f.date = d ? iso(d) : null; }
   const bar = `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button><button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit group</button></div>`;
   const head = `<div><div class="tp-eyebrow">${esc(timesText(g))}</div><div class="tp-lt" style="font-size:28px">${groupLabel(g)}</div></div>`;
   const add = `<div class="tp-addrow"><input id="tp-newstu" placeholder="Add a student" aria-label="New student's name" autocomplete="off"><button data-addstu="${g.id}" aria-label="Add student">${ic('UserPlus')}</button></div>`;
   if (!f.date) return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}<div class="tp-empty2">${ic('CalendarDays')}<b>No lessons yet</b><span>First lesson: ${nextDayLabel(g)}.</span></div>${add}</div>`;
-  const d = fromIso(f.date), prev = lessonDay(g, d, -1), nxt = lessonDay(g, d, 1);
+  const d = fromIso(f.date), prev = lessonDay(g, d, -1), nxt = lessonDay(g, d, 1), cx = canceledOn(g, f.date);
   return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}
     <div class="rg-nav"><button class="tp-iconbtn" ${prev ? `data-lessonday="${iso(prev)}"` : 'disabled'} aria-label="Previous lesson">${ic('ChevronLeft')}</button>
-      <div><b>${dayName(d)}</b><span>${rec(g, d).saved ? 'taken' : lessonOpen(g, d) ? 'not taken yet' : 'coming up · ' + esc(timeOn(g, d))}</span></div>
+      <div><b>${dayName(d)}</b><span>${cx ? 'canceled' : rec(g, d).saved ? 'taken' : lessonOpen(g, d) ? 'not taken yet' : 'coming up · ' + esc(timeOn(g, d))}</span></div>
       <button class="tp-iconbtn" ${nxt ? `data-lessonday="${iso(nxt)}"` : 'disabled'} aria-label="Next lesson">${ic('ChevronRight')}</button></div>
-    ${hasLesson(g, d) ? '' : `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${DAYS_LONG[wd(d)]} is not a lesson day for this group.</b> Lessons are on ${g.days.map((x) => DAYS[x]).join(', ') || 'no days'}.</p><button class="tp-pill" data-rmreg="${iso(d)}" data-g="${g.id}">${ic('Trash2')} Remove this register</button></div>`}${tapList(g, d)}
-    ${histGrid(g, f.date)}${f.date === iso(TODAY) ? repeatBlock(g) : ''}${add}</div>`;
+    ${cx ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>No lesson on this day.</b> Nothing moves on: the same topic comes next lesson, and every date after it is one lesson day later.</p></div>`
+      : `${hasLesson(g, d) ? '' : `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${DAYS_LONG[wd(d)]} is not a lesson day for this group.</b> Lessons are on ${g.days.map((x) => DAYS[x]).join(', ') || 'no days'}.</p><button class="tp-pill" data-rmreg="${iso(d)}" data-g="${g.id}">${ic('Trash2')} Remove this register</button></div>`}${rideBlock(g, f.date)}${tapList(g, d)}${lateNote(g, f.date)}`}
+    ${calRows(g, f.date)}${histGrid(g, f.date)}${f.date === iso(TODAY) && !cx ? repeatBlock(g) : ''}${add}</div>`;
 }
+// 11 Nov (user): a group can cancel ONE lesson or add one on another day (S.cal, the same record as individual students)
+const canceledOn = (g, k) => !!k && (((S.cal || {})[g.id] || {}).st || {})[k] === 'cancel';
+function calRows(g, k) {
+  const held = (S.saved[g.id] || {})[k] || (S.taught[g.id] || {})[k] || repOn(g, fromIso(k)), cx = canceledOn(g, k);
+  const row = (data, icon, b, sub) => `<button class="tp-lrow" ${data}>${ic(icon)}<span class="tx"><b>${b}</b><span>${sub}</span></span></button>`;
+  return `<div class="tp-list">${cx ? row(`data-gcancel="${g.id}|${k}|undo"`, 'RotateCcw', 'Canceled · Undo', 'The lesson is back on this day')
+    : !held && hasLesson(g, fromIso(k)) ? row(`data-gcancel="${g.id}|${k}"`, 'CalendarX2', 'No lesson on this day', 'The plan waits; the next dates move') : ''}
+    ${row(`data-sheet="soloadd" data-g="${g.id}"`, 'CalendarDays', 'Add a lesson on another day', 'One extra lesson; the usual days stay')}</div>`;
+}
+// 10 Nov (audit T14): a register saved more than a week late does not move the plan; say so and offer to move it
+const lateNote = (g, k) => (planned(g.lvl) && (S.saved[g.id] || {})[k] && !(S.taught[g.id] || {})[k] && !repOn(g, fromIso(k)) && !((S.pend[g.id] || {})[k]) && Math.round((TODAY - fromIso(k)) / 864e5) > 7 && !Object.keys(S.taught[g.id] || {}).some((x) => x > k) /* not when a later lesson was taught */
+  ? `<div class="tp-card2 warn">${ic('Info')}<p><b>The plan did not move.</b> This register was saved more than a week after the lesson, so ${esc(g.name)} is still on Week ${g.week} · ${dayWord(g.lvl)} ${g.les}.</p><button class="tp-pill" data-moveplan="${g.id}|${k}">Move the plan</button></div>` : '');
 
 /* ===================== Books: your PDFs, audio and links per level ===================== */
 function bookMeta(f) {
@@ -1085,8 +1221,24 @@ function onClick(e) {
     g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
     (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; if (lessonEnded(g, dt)) autoTaught(g, d.date); else (S.pend[g.id] = S.pend[g.id] || {})[d.date] = true; save(); // still going: it counts as taught when it ends
     const here = g.students.filter((s) => r.get(s.id) !== 'absent').length, hw = g.students.filter((s) => r.get(s.id) !== 'absent' && r.hwOf(s.id)).length;
-    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework${lessonEnded(g, dt) ? '' : '. Counts as taught when the lesson ends.'}`);
+    const late = planned(g.lvl) && !(S.taught[g.id] || {})[d.date] && !repOn(g, dt) && lessonEnded(g, dt) && Math.round((TODAY - dt) / 864e5) > 7; // T14
+    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework${late ? '. More than a week late, so the plan did not move: tap "Move the plan" to move it.' : lessonEnded(g, dt) ? '' : '. Counts as taught when the lesson ends.'}`);
   }
+  if (d.moveplan) { // T14: a register saved more than a week late moves the plan only when you say so
+    const [gid, k] = d.moveplan.split('|'), g = gById(gid); if (!g) return;
+    autoTaught(g, k, true); save(); draw();
+    return payToast(`${g.name} is now on Week ${g.week} · ${dayWord(g.lvl)} ${g.les}`, () => unmarkTaught(g, k));
+  }
+  if (d.gcancel) { // 11 Nov (user): a group's ONE lesson canceled (or an added lesson taken away), with Undo
+    const [gid, k, u] = d.gcancel.split('|'), g = gById(gid); if (!g) return; const c = calOf(g);
+    if (u) { delete c.st[k]; save(); draw(); return toast(`The lesson is back: ${shortDay(k)}`); }
+    const added = !!c.add[k] && !onWeekday(g, fromIso(k));
+    if (added) delete c.add[k]; else c.st[k] = 'cancel';
+    if (S.pend[g.id]) delete S.pend[g.id][k];
+    save(); if (added && top && top.s === 'register') { const p = lastLesson(g); top.date = p ? iso(p) : null; } draw();
+    return payToast(`No lesson ${shortDay(k) === 'Today' ? 'today' : 'on ' + shortDay(k)}. The plan waits.`, () => { if (added) c.add[k] = true; else delete c.st[k]; });
+  }
+  if (d.ride) { const [gid, k, v] = d.ride.split('|'), g = gById(gid); if (!g) return; rideSet(g, k, v === '1'); save(); draw(); return toast(v === '1' ? 'Added to today' : 'Not today: it waits for the next day that fits'); }
   if (d.lessonday) { top.date = d.lessonday; if (R.screen) R.screen._swap = true; return draw(); }
   if (d.rmreg) {
     const g = gById(d.g); if (!g) return;
@@ -1097,8 +1249,8 @@ function onClick(e) {
   if (d.addstu) { const n = val('tp-newstu'), g = gById(d.addstu); if (!n) return toast('Type the name first'); if (!g) return; const twin = sameName(g.students, n); g.students.push({ id: uid(), name: n, added: Date.now() }); save(); draw(); return toast(twin ? n + ' added. ' + twinNote(n) : n + ' added'); }
   if (d.taught) {
     const g = gById(d.taught), k = iso(TODAY), t = taughtOn(g, TODAY);
-    if (t) { g.week = t.w; g.les = t.l; delete S.taught[g.id][k]; save(); draw(); return toast('Undone'); }
-    const n = 1 + dblOn(g, TODAY); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l; save(); draw();
+    if (t) { unmarkTaught(g, k); save(); draw(); return toast('Undone'); }
+    markTaught(g, k); save(); draw();
     return toast(`Taught. ${g.name} moves to the next lesson.`);
   }
   if (d.owndone) { const g = gById(d.owndone), k = iso(TODAY), m = (S.ownDone[g.id] = S.ownDone[g.id] || {}); if (m[k]) delete m[k]; else m[k] = true; save(); draw(); return toast(m[k] ? 'Taught' : 'Undone'); }
@@ -1194,7 +1346,7 @@ function removeStudent(g, st) {
 // cleaned once its 8-second Undo is over.
 function dropGroupData(g) {
   const id = g.id, P = S.pay, sids = new Set([...g.students, ...(g.left || []), ...(g.gone || [])].map((s) => s.id));
-  ['rec', 'hw', 'saved', 'taught', 'pend', 'rep', 'dbl', 'ownDone', 'cal'].forEach((k) => { if (S[k]) delete S[k][id]; });
+  ['rec', 'hw', 'saved', 'taught', 'pend', 'rep', 'dbl', 'ownDone', 'cal', 'done', 'ride'].forEach((k) => { if (S[k]) delete S[k][id]; });
   delete P.plan[id];
   ['disc', 'dex'].forEach((k) => Object.keys(P[k] || {}).forEach((x) => { if (x.startsWith(id + '|')) delete P[k][x]; }));
   P.dsc = (P.dsc || []).filter((x) => x.gid !== id);
@@ -1212,6 +1364,7 @@ function saveGroup() {
   // 10 Nov (audit T26): an empty fee box no longer takes the fee away without a word: the first Save asks
   if (old && planOf(old) && !(+F.fee > 0) && !(T.sheet.noFee && Date.now() - T.sheet.noFee < 5000)) { T.sheet.noFee = Date.now(); return toast('The fee is empty. Tap Save again to remove the fee from this group.'); }
   const pending = val('f-stu'); if (pending) F.students.push({ id: uid(), name: pending, added: Date.now() });
+  if (old && S.done && `${old.lvl}|${old.week}|${old.les}` !== `${F.lvl}|${+F.week || 1}|${+F.les || 1}`) delete S.done[old.id]; // 11 Nov: a new place in the course starts the list of taught lessons again
   const g = Object.assign(old || { id: uid(), created: Date.now(), gone: [], ci: newCi() }, { name: F.name, lvl: F.lvl, book: F.lvl === 'own' ? F.book || 'Own book' : '', days: F.days, time: (F.times || {})[[...F.days].sort((a, b) => a - b)[0]] || F.time || '15:00', times: Object.fromEntries(F.days.map((d) => [d, (F.times || {})[d] || F.time || '15:00'])), len: +F.len || 80, color: F.color || '', week: +F.week || 1, les: +F.les || 1, solo: !!F.solo });
   if (old && g.lens && !(+F.len === (T.sheet.form.len0 || +F.len))) delete g.lens; // a new length for all days replaces the per-day lengths from Budget
   if (g.lens) Object.keys(g.lens).forEach((d) => { if (!g.days.includes(+d)) delete g.lens[d]; });

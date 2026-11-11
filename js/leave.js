@@ -46,8 +46,8 @@ function repeatBlock(g) {
 function toggleTwo(g) {
   const k = iso(TODAY); S.dbl = S.dbl || {}; const m = (S.dbl[g.id] = S.dbl[g.id] || {}), t = taughtOn(g, TODAY);
   if (repOn(g, TODAY)) return toast('Undo "stay on this lesson" first');
-  if (m[k]) { delete m[k]; if (t) { const p = advance(g, -1); g.week = p.w; g.les = p.l; t.n = 1; } save(); draw(); return toast('Back to one lesson'); }
-  m[k] = 1; if (t) { const p = advance(g, 1); g.week = p.w; g.les = p.l; t.n = 2; }
+  if (m[k]) { delete m[k]; if (t) twoTaught(g, k, false); save(); draw(); return toast('Back to one lesson'); } // twoTaught (app.js) also keeps IELTS Turbo's S.done
+  m[k] = 1; if (t) twoTaught(g, k, true);
   save(); draw(); toast(`${g.name} covers two lessons today`);
 }
 function toggleRepeat(g) {

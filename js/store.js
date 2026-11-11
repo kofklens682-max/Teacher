@@ -38,6 +38,11 @@ function normalize(d) {
   out.pay.dsc = Array.isArray(P.dsc) ? P.dsc.filter((d) => d && d.id && d.gid && Array.isArray(d.months) && d.months.length && +d.v > 0 && (d.kind === 'pct' || d.kind === 'sum')).map((d) => ({ ...d, v: +d.v, sid: d.sid || null })) : []; // 4 Nov: discounts for chosen months (js/discount.js)
   out.pay.fresh1 = +P.fresh1 || 0; // the one fresh start of payments (30 Oct 2026): kept in the data only; nothing acts on it any more (10 Nov)
   out.pay.extras = Array.isArray(P.extras) ? P.extras.filter((x) => x && x.id && x.gid && +x.amount > 0) : []; // extra charges: a book, a trip...
+  // 11 Nov 2026 (lessons that move): S.cal[group] = { st: { date: 'cancel' | 'moved' | 'done' }, add: { date: true }, off: { date: true } } (individual students AND groups);
+  // S.done[group] = { 'week-lesson': 'YYYY-MM-DD' } (IELTS Turbo: lessons taught); S.ride[group] = { date: 0 } (the missed short lesson: "Not today")
+  const okMap = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  out.cal = okMap(out.cal) ? Object.fromEntries(Object.entries(out.cal).filter(([, c]) => okMap(c)).map(([id, c]) => [id, { ...c, st: okMap(c.st) ? c.st : {}, add: okMap(c.add) ? c.add : {}, off: okMap(c.off) ? c.off : {} }])) : {};
+  for (const k of ['done', 'ride']) out[k] = okMap(out[k]) ? Object.fromEntries(Object.entries(out[k]).filter(([, m]) => okMap(m))) : {};
   out.rev = +out.rev || 0;
   if (!out.lsm || typeof out.lsm !== 'object' || Array.isArray(out.lsm)) out.lsm = {}; // lesson record: what both apps last agreed on, per group
   return out;

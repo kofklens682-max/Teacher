@@ -29,13 +29,11 @@ const calSt = (g, k) => calOf(g).st[k] || ((S.saved[g.id] || {})[k] || (S.taught
 // Any day can be marked, also one in the past (a lesson you forgot to mark), and un-marking takes the plan one lesson back.
 function soloTaught(g, k) {
   if (g.lvl === 'own') { (S.ownDone[g.id] = S.ownDone[g.id] || {})[k] = true; return; }
-  if (!planned(g.lvl) || (S.taught[g.id] || {})[k]) return;
-  const n = 1 + dblOn(g, fromIso(k)); (S.taught[g.id] = S.taught[g.id] || {})[k] = { w: g.week, l: g.les, n }; const p = advance(g, n); g.week = p.w; g.les = p.l;
+  markTaught(g, k); // app.js (11 Nov): also keeps IELTS Turbo's list of taught lessons (S.done)
 }
 function soloUntaught(g, k) {
   if (g.lvl === 'own') { if ((S.ownDone[g.id] || {})[k]) delete S.ownDone[g.id][k]; return; }
-  const t = (S.taught[g.id] || {})[k];
-  if (t) { delete S.taught[g.id][k]; const p = advance(g, -(t.n || 1)); g.week = p.w; g.les = p.l; }
+  unmarkTaught(g, k);
 }
 const CST = { done: ['Done', '#34C759', 'Check'], cancel: ['Canceled', '#FF3B30', 'X'], moved: ['Postponed', '#FF9500', 'Clock'] };
 function soloCal(g, ym) { // the month of lesson days, with arrows, "Add a lesson" and the totals (the calendar screen and the group page)
@@ -134,14 +132,15 @@ function sheetSoloAdd(s) {
   const g = gById(s.g); if (!g) return '';
   return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>Add a lesson</b><button class="tp-back strong" data-soloaddgo="${g.id}">Add</button></div>
     <label class="tp-f"><span>Which day?</span><input id="f-soladd" type="date" value="${iso(TODAY)}"></label>
-    <p class="tp-small" style="text-align:left">An extra lesson for ${esc((g.students[0] || g).name)}, outside the usual days (${g.days.map((d) => DAYS[d]).join(', ') || 'none set'}).</p>`;
+    <p class="tp-small" style="text-align:left">An extra lesson for ${esc(g.solo ? (g.students[0] || g).name : g.name)}, outside the usual days (${g.days.map((d) => DAYS[d]).join(', ') || 'none set'}).</p>`;
 }
 SHEETS.soloadd = (s) => sheetSoloAdd(s);
 {
   const _h2 = home2Click;
   home2Click = function (b, d) {
     if (d.soloaddgo) { const g = gById(d.soloaddgo), k = val('f-soladd'); if (!g || !/^\d{4}-\d\d-\d\d$/.test(k)) { toast('Choose a day first'); return true; }
-      const c = calOf(g); c.add[k] = true; delete c.off[k]; const top = T.push[T.push.length - 1]; if (top && top.s === 'register') { top.ym = k.slice(0, 7); if (R.screen) R.screen._swap = true; }
+      const c = calOf(g); c.add[k] = true; delete c.off[k]; if (c.st[k] === 'cancel' || c.st[k] === 'moved') delete c.st[k]; // a lesson added on a canceled day: the lesson is back
+      const top = T.push[T.push.length - 1]; if (top && top.s === 'register') { if (g.solo) top.ym = k.slice(0, 7); else top.date = k; if (R.screen) R.screen._swap = true; } // a group's register opens on the new day
       save(); closeSheetNow(); toast(`Lesson added: ${DAYS_LONG[wd(fromIso(k))]} ${fromIso(k).getDate()} ${MONTHS[fromIso(k).getMonth()]}`); return true; }
     return _h2(b, d);
   };
