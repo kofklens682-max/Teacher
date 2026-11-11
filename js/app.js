@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 7.9.1';
+const VERSION_LABEL = 'Teacher 8.0';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -650,7 +650,6 @@ function sheetSettings(s) {
     <div class="tp-card2"><div class="h">${ic('ShieldCheck')}Your data</div><p>${S.groups.length} group${S.groups.length === 1 ? '' : 's'} · ${n} student${n === 1 ? '' : 's'}. Everything stays on this phone, with a second copy and automatic daily copies.</p></div>
     <button class="tp-lrow" data-backup>${ic('Download')}<span class="tx"><b>Save a backup file</b><span>Send it to yourself in Telegram or Drive</span></span></button>
     <label class="tp-lrow">${ic('Upload')}<span class="tx"><b>Restore from a backup file</b><span>Replaces what is in the app now (a copy is kept first)</span></span><input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>
-    <button class="tp-lrow" data-sheet="homecfg">${ic('Sliders')}<span class="tx"><b>Arrange Home</b><span>Switch the parts of Home on or off and move them</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>
     <button class="tp-lrow" data-sheet="copies">${ic('History')}<span class="tx"><b>Automatic copies</b><span>One a day for two weeks, then one a month</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>
     <p class="tp-small">${VERSION_LABEL} · the course: Beginner to IELTS 7+</p>`;
 }
