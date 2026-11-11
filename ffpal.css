@@ -207,3 +207,19 @@ html .tp-ind{transition:transform var(--t-base) var(--ease-spring),box-shadow va
 .tp-tabs button svg,.tp-tabs button > span{transition:transform var(--t-base) var(--ease-spring),color var(--t-fast) !important}
 html .seg-thumb::before{transition:transform var(--t-base) var(--ease-spring),box-shadow var(--t-base)}
 .tp-seg2.slide button{transition:color var(--t-fast),opacity var(--t-fast),transform var(--t-base) var(--ease-spring) !important}
+
+/* ===== 11 Nov 2026, from the phone: Teacher scrolled and opened pages slowly (Budget was already fine). =====
+   Live blur ("backdrop-filter") makes the phone repaint what is behind it on every frame. In Teacher it sat on the tab bar, on the top
+   bar of every opened page, on the small buttons and on some cards. RULE NOW: in Teacher, live blur is allowed ONLY on a pop-up sheet and
+   on the small message at the bottom (they are on screen for a moment). Everything else is solid or see-through WITHOUT blur.
+   This block is last in the last stylesheet on purpose. Do not add backdrop-filter to anything that stays on screen while a page scrolls. */
+html .tp *:not(.panel):not(.tp-toast), html body .tp-tabs, html body .tp-pushbar, html body .g2-edge {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+html .tp-tabs, html.glass .tp-tabs { background: rgba(255, 255, 255, .93) !important; }
+html.glass .tp-pushbar .tp-back, html.glass .tp-pushbar .tp-pill, html.glass .tp-lights { background-color: rgba(255, 255, 255, .9) !important; }
+/* buttons keep their own shape when they are focused (the old rule made every focused button a 12px rounded square, and its ring went
+   around the invisible tap area: that was the square around a dot). A finger does not need a focus ring at all. */
+.tp-lights .lt:focus, .tp-lights .lt:focus-visible { outline: none !important; border-radius: 50% !important; }
+@media (pointer: coarse) { .tp button:focus-visible, .tp-lights .lt:focus-visible { outline: none !important; } }
+html body .pv, html body .pv *, html body .tp-pv, html body .tp-pv * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }

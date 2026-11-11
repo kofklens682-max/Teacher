@@ -11,7 +11,7 @@
   -webkit-user-select:none;user-select:none;isolation:isolate}
 @media (max-width:520px){.tp{border-radius:22px;height:86vh}}
 :where(.tp) button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
-.tp button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px}
+.tp button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 
 
