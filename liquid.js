@@ -45,7 +45,6 @@
 
   // the lens: the picture bends near the edge of the tab bar (Chrome on Android and computers; other browsers keep plain blur)
   function lens() {
-    return; // 11 Nov 2026: OFF. On the phone this lens (and the blur strips at the screen edges) made every scroll step slow.
     var tabs = document.querySelector('.tp-tabs'); if (!tabs) return;
     var w = Math.round(tabs.offsetWidth), h = Math.round(tabs.offsetHeight), r = Math.min(h / 2, 36), band = 14;
     if (!w || !h) return;
@@ -73,4 +72,17 @@
   }
   setTimeout(lens, 600);
   window.addEventListener('resize', function () { setTimeout(lens, 200); });
+})();
+
+/* 11 Nov 2026 (evening; user: "bring back the glass I liked, the one that bends the picture at the edge"): the lens is ON again,
+   but only while the page stands still. While a finger scrolls or a page slides, the bar gets the class "mv" and uses the plain light
+   blur (the lens re-drawn on every scroll step was what lagged on the phone). The class is on the bar only, so nothing else is restyled. */
+(function () {
+  var bar = null, t = 0, on = false;
+  function get() { return bar || (bar = document.querySelector('.tp-tabs')); }
+  function stop() { on = false; var b = get(); if (b) b.classList.remove('mv'); }
+  function move(ms) { var b = get(); if (!b) return; if (!on) { on = true; b.classList.add('mv'); } clearTimeout(t); t = setTimeout(stop, ms || 260); }
+  document.addEventListener('scroll', function () { move(); }, { capture: true, passive: true });
+  document.addEventListener('touchmove', function () { move(); }, { capture: true, passive: true });
+  document.addEventListener('click', function () { move(650); }, true); // a tap can slide a page, a pop-up or a tab
 })();

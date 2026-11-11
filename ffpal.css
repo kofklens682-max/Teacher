@@ -249,7 +249,6 @@ html body .pv, html body .pv *, html body .tp-pv, html body .tp-pv * { -webkit-b
 .ffup .tx span{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ffup-in{flex:none;font-size:13px;font-weight:700;color:#0E7A36;background:rgba(52,199,89,.14);border-radius:999px;padding:6px 11px;white-space:nowrap}
 .ffup:active{transform:scale(.98)}
-.ffh-when{font-weight:800 !important}
 
 /* ---- 2. The buttons in a pop-up's top bar (Cancel, Back, Close, Save, Done): all the same round pill ---- */
 .tp-sh-h .tp-back{border-radius:999px !important;padding:7px 15px;min-height:36px;box-sizing:border-box;justify-content:center;white-space:nowrap}
@@ -285,7 +284,7 @@ html.glass .tp-pushbar .tp-back,html.glass .tp-pushbar .tp-pill,html.glass .tp-l
   box-shadow:var(--g3-rim),0 6px 16px -8px rgba(20,40,80,.32) !important;border:0 !important}
 html.glass .tp-lights::before{background:none !important;box-shadow:none !important}
 /* the lens edge: a thin ring that catches the light with a little color, like the edge of thick glass */
-html.glass #tp > .tp-tabs::after,html.glass .tp-lights::after,html.glass .tp-pushbar .tp-back::before,html.glass .tp-pushbar .tp-pill::before,html.glass .ffmp-btn::before,html.glass .tp-sh-h .tp-back::before{
+html.glass #tp > .tp-tabs::after{
   content:"";position:absolute;inset:0;border-radius:inherit;padding:1.3px;background:var(--g3-fringe);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.85;z-index:1}
 html.glass .tp-pushbar .tp-back,html.glass .tp-pushbar .tp-pill,html.glass .tp-sh-h .tp-back{position:relative}
@@ -294,3 +293,15 @@ html.glass .ffnav{height:calc(62px + env(safe-area-inset-top,0px)) !important;pl
   background:linear-gradient(to bottom,rgba(243,248,245,.97) 0,rgba(243,248,245,.92) 58%,rgba(243,248,245,0)) !important}
 /* the top bar of an opened page: the same soft fade, and no mask (a mask made the phone draw the bar twice) */
 html.glass .tp-pushbar{-webkit-mask-image:none !important;mask-image:none !important;background:linear-gradient(to bottom,var(--pbg,#F3F8F5) 0,var(--pbg,#F3F8F5) 62%,rgba(243,248,245,0)) !important}
+
+/* ---- 5. The real lens is back on the tab bar (11 Nov, evening): the picture behind bends at the edge of the glass, with a little color.
+   Only while the page stands still; with "mv" (set by liquid.js while something moves) the bar keeps the plain blur from the rule above.
+   The still ring is switched off where the real lens works. Names stay dark and bold (glass.css), so they are easy to read. ---- */
+html.glass.g2-lens body #tp > .tp-tabs:not(.mv){-webkit-backdrop-filter:url(#g2lens-tabs) blur(7px) saturate(1.7) !important;backdrop-filter:url(#g2lens-tabs) blur(7px) saturate(1.7) !important}
+html.glass.g2-lens body #tp > .tp-tabs{background:rgba(255,255,255,.46) !important}
+html.glass.g2-lens #tp > .tp-tabs::after{display:none}
+/* ---- 6. 11 Nov, evening (user): no rainbow edge on the buttons (it stays only as the tab bar's edge on phones without the lens),
+   and the words on the glass buttons and on the tab bar are not extra bold: one calm weight (600). ---- */
+.tp-sh-h .tp-back,.tp-sh-h .tp-back.strong,.tp-pushbar .tp-back,.tp-pushbar .tp-pill,.ffmp-btn b{font-weight:600 !important}
+html.glass .tp-tabs button span{font-weight:600 !important}
+html.glass .tp-tabs button svg{stroke-width:2px !important}
