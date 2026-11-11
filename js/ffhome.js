@@ -42,7 +42,7 @@ pgHomeNew = function () {
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
   const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
   const brk = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
-  const lesson = g && !doneOn(g, TODAY), hero = lesson ? ffHero(g) + ffThen() : secTodayHero();
+  const lesson = g && !doneOn(g, TODAY), hero = lesson ? ffHero(g) + ffThen() : secTodayHero() + ffUpNext();
   const hol = `<button class="tp-dashed h-in" data-sheet="breaks">${ic('CalendarX2')} Holiday or break</button>`; // 10 Nov 2026 (user): the Holiday button is back on Home
   return head + ffMonthStrip() + brk + hero + ffMini() + ffInsights2() + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '') + hol;
 };

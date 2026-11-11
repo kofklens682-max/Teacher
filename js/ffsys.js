@@ -57,12 +57,24 @@ function ffPage(f) {
 
 /* ======================= B+ : Home with widgets (rings and numbers at a glance) ======================= */
 const ffRing = (p, c, inner) => `<span class="ffring" style="--p:${Math.max(0, Math.min(100, Math.round(p)))};--c:${c}"><i>${inner}</i></span>`;
+/* 11 Nov 2026 (user: "the widget does not say that the lesson is in about 1 hour, or in 30 hours and 30 minutes"):
+   how long until a lesson starts. The Home lesson card shows it at the top right; on a day with no lesson left, ffUpNext shows
+   the next lesson of any group with the same countdown. Home is redrawn every minute (clockRefresh), so it counts down by itself. */
+const ffIn = (m) => (m < 60 ? `${Math.max(1, m)} min` : m < 2880 ? `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}` : `${Math.round(m / 1440)} days`);
+function ffUpNext() {
+  const now = nowMin(); let best = null;
+  S.groups.forEach((g) => { if (!g.students.length && !g.solo) return;
+    for (let i = 0; i < 60; i++) { const d = addDays(TODAY, i); if (!hasLesson(g, d)) continue; const m = i * 1440 + startMin(g, d) - now; if (m <= 0) continue; if (!best || m < best.m) best = { g, d, m, i }; break; } });
+  if (!best) return '';
+  const { g, d, m, i } = best, day = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : `${DAYS_LONG[wd(d)]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+  return `<button class="ffup h-in" ${homeOpen(g)}><span class="ffup-ic" style="background:${hc(g)}">${ic('Clock')}</span><span class="tx"><b>Next lesson · ${esc(g.name)}</b><span>${day} · ${esc(timeOn(g, d))} – ${hm(endMin(g, d))}</span></span><span class="ffup-in">in ${ffIn(m)}</span></button>`;
+}
 function ffHero(g) {
   const D = TODAY, now = nowMin(), s = startMin(g, D), e = endMin(g, D), on = s <= now && !lessonEnded(g, D), cl = curLes(g), M = FFSYS[`${String(g.lvl).toLowerCase()}-w${cl.w}-l${cl.l}`];
   const pct = on ? ((now - s) / (e - s)) * 100 : 0, left = on ? e - now : 0, st = g.students.length;
   const unit = M ? M.label : lessonLine(g), book = M && M.book ? M.book.split(' · ')[0] : '';
-  return `<div class="ffh h-in"><div class="ffh-top"><span class="ffh-tag">${on ? '<i class="live"></i>Now' : 'Next lesson'}</span><span class="ffh-when">${on ? 'ends in ' + inMin(left) : esc(timeOn(g, D)) + ' – ' + hm(e)}</span></div>
-    <div class="ffh-main"><div><b class="ffh-name">${esc(g.name)}</b><span class="ffh-sub">Week ${cl.w} · Day ${cl.l}</span></div>${ffRing(pct, '#fff', `<b>${on ? Math.round(pct) + '%' : hm(s)}</b>`)}</div>
+  return `<div class="ffh h-in"><div class="ffh-top"><span class="ffh-tag">${on ? '<i class="live"></i>Now' : 'Next lesson'}</span><span class="ffh-when">${on ? 'ends in ' + inMin(left) : s > now ? 'in ' + ffIn(s - now) : esc(timeOn(g, D)) + ' – ' + hm(e)}</span></div>
+    <div class="ffh-main"><div><b class="ffh-name">${esc(g.name)}</b><span class="ffh-sub">Week ${cl.w} · Day ${cl.l}${!on && s > now ? ' · ' + hm(s) + ' – ' + hm(e) : ''}</span></div>${ffRing(pct, '#fff', `<b>${on ? Math.round(pct) + '%' : hm(s)}</b>`)}</div>
     <div class="ffh-unit">${esc(unit)}</div>
     <div class="ffh-chips"><span>${ic('Users')}${st} students</span>${book ? `<span>${ic('BookOpen')}${esc(book)}</span>` : ''}</div>
     <button class="ffh-go" ${homeOpen(g)}>${ic('BookOpen')}Open lesson</button></div>`;

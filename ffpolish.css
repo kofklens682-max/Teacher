@@ -51,7 +51,7 @@ html .tp-track.settle{transition:transform var(--t-slow) var(--ease)}
 .ffm,.ffh-go,.tp-cta,.tp-pill,.hn-btns button,.un-row2,.tp-lrow{transition:transform .28s var(--ease),opacity .2s,background-color .2s}
 .ffm:active,.ffh-go:active,.tp-cta:active,.hn-btns button:active{transform:scale(.97)}
 .un-row2:active,.tp-lrow:active,.tp-pill:active{opacity:.6}
-@media (prefers-reduced-motion:reduce){.ffsvg .bar,.ffseg i{animation:none}html .tp-push,html .tp-viewport,html .tp-sheet .panel{transition-duration:.01s}}
+/* 11 Nov 2026: the "reduce motion" switch-off was removed. Battery Saver on the phone reports "reduce motion", and then every page and pop-up appeared at once with no slide. The app always moves the same way now. */
 .hn-next .hn-tag{background:none !important;box-shadow:none !important;padding-left:0;letter-spacing:.06em}
 .tp-page:nth-child(3) .tp-lt{font-size:33px}.hdr-btns{gap:6px}
 .at-hero{margin-top:2px}.at-two{margin-top:10px}

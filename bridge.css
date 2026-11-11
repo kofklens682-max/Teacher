@@ -133,7 +133,7 @@
 
 
  
-@media (prefers-reduced-motion: reduce) { .h-in, .ho-bar i { animation: none; } }
+/* 11 Nov 2026: the "reduce motion" switch-off was removed. Battery Saver on the phone reports "reduce motion", and then every page and pop-up appeared at once with no slide. The app always moves the same way now. */
 
 /* ===== Units, Attendance, Books (31 Oct): the same iPhone look as Home option 6 ===== */
 /* level pills: white, the chosen one solid iPhone blue */
@@ -187,7 +187,7 @@
 .bk-body .tp-shelf, .bk-body .tp-media { animation: h-in .55s .05s cubic-bezier(.32,.72,0,1) both; }
 .bk-body .tp-media { border-radius: 20px; }
 .bk-body .tp-media .mi { border-radius: 50%; background: rgba(0,122,255,.1) !important; color: #007AFF; } .bk-body .tp-media a.mi { background: rgba(255,59,48,.1) !important; color: #FF3B30; }
-@media (prefers-reduced-motion: reduce) { .un-hero, .un-list, .at-hero, .at-list .tl-sec, .at-mini, .bk-hero, .bk-body .tp-shelf, .bk-body .tp-media { animation: none; } }
+
 
 /* ===== 31 Oct, round 2: Up next = one lesson big, the others smaller inside the card; capsule buttons like iPhone widgets ===== */
 

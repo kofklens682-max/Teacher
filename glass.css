@@ -37,7 +37,7 @@ html .tp-sheet .panel { background: #F4F5F9 !important; box-shadow: inset 0 1.5p
 html .tp-sheet .panel > .tp-sh-h:first-child { background: rgba(244,245,249,.94) !important; }
 /* while the page scrolls, the bars drop the live blur for a moment (smooth scrolling on phones), as before */
 html.moving .tp-lights, html.moving .h2-quick button { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-@media (prefers-reduced-transparency: reduce) { html .tp-tabs, .tp-lights, .tp-avatar, .tp-pushbar .tp-back, .h2-quick button, html .tp-sheet .panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--card, #fff) !important; } }
+/* 11 Nov 2026: the "reduce motion" switch-off was removed. Battery Saver on the phone reports "reduce motion", and then every page and pop-up appeared at once with no slide. The app always moves the same way now. */
 /* 6 Nov 2026 (user: "there are lags" on the phone): every small glass button had its own live blur (about 8 per screen, and
    the other tabs' pages keep theirs too); on an Android phone each one is redrawn on every frame of a swipe or a slide.
    Behind them is only the plain page colour, so the blur showed nothing: they are now solid frosted white, which looks the
