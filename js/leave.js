@@ -116,7 +116,9 @@ function brkRows(s) {
   return out;
 }
 const privIn = (s) => (s.gids.length ? s.gids.map(gById) : S.groups).filter((g) => g && (isSingle(g) || g.solo) && hasFee(g));
-function publishBreaks() { try { const j = JSON.stringify(S.pauses.map((p) => ({ from: p.from, to: p.to, label: p.label, gids: p.gids }))); if (j !== localStorage.getItem('teacher-breaks')) localStorage.setItem('teacher-breaks', j); } catch (e) { /* Budget just keeps the last list */ } }
+// 11 Nov 2026: one canceled lesson ("No lesson on this day") goes to Budget too, as a one-day break of that group, so Budget's week greys it out
+const oneOffCancels = () => { const out = [], lo = iso(new Date(TODAY.getTime() - 8 * 864e5)); Object.keys(S.cal || {}).forEach((gid) => { const st = (S.cal[gid] || {}).st || {}; Object.keys(st).forEach((k) => { if (st[k] === 'cancel' && k >= lo) out.push({ from: k, to: k, label: 'No lesson', gids: [gid] }); }); }); return out; };
+function publishBreaks() { try { const j = JSON.stringify(S.pauses.map((p) => ({ from: p.from, to: p.to, label: p.label, gids: p.gids })).concat(oneOffCancels())); if (j !== localStorage.getItem('teacher-breaks')) localStorage.setItem('teacher-breaks', j); } catch (e) { /* Budget just keeps the last list */ } }
 function keepBrk() {
   const s = T.sheet; if (!s) return;
   s.dv = s.dv || {}; document.querySelectorAll('[data-brkd]').forEach((el) => { s.dv[el.dataset.brkd] = numVal(el.id); });
@@ -371,3 +373,4 @@ const backCard = (g) => { const L = leftList(g); return L.length ? `<div class="
     return _h(b, d);
   };
 }
+{ let t = 0; const _save = save; save = function () { _save(); clearTimeout(t); t = setTimeout(publishBreaks, 800); }; } // 11 Nov: Budget hears about a canceled lesson within a second, not at the next minute
