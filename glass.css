@@ -120,3 +120,17 @@ html.glass .tp-toast { background: rgba(40, 44, 54, .72) !important; -webkit-bac
 html.glass .ffm, html.glass .ffc2, html.glass .tp-segs, html.glass .tp-card2, html.glass .at-list > * { background: #fff !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .g2-edge { display: none; } html.glass .g2-edge { display: block; }
 .tp-lights .lt.cur { outline: 2px solid rgba(255,255,255,.95); outline-offset: 1px; transform: scale(1.08); } /* 10 Nov: the dot of the file that is open */
+
+/* 11 Nov 2026 (user: "the icons and the names on the bar below are not that visible"): Glass tab bar, easier to read.
+   A little more milk in the glass and more blur right behind it, darker and bolder icons and names, a white halo, and the names stay when the bar gets smaller. */
+html.glass .tp-tabs { background: rgba(255, 255, 255, .46) !important; }
+html.glass.g2-lens .tp-tabs { -webkit-backdrop-filter: url(#g2lens-tabs) blur(7px) saturate(1.7) !important; backdrop-filter: url(#g2lens-tabs) blur(7px) saturate(1.7) !important; }
+html.glass .tp-tabs button { color: #15171C !important; text-shadow: 0 0 3px #fff, 0 0 8px rgba(255, 255, 255, .95); }
+html.glass .tp-tabs button.on { color: #0E7A36 !important; }
+html.glass .tp-tabs button svg { stroke-width: 2.3px; filter: drop-shadow(0 0 2px rgba(255, 255, 255, .9)); }
+html.glass .tp-tabs button span { font-weight: 700; }
+html.glass.g2-down:not(.g2-noshrink) .tp-tabs button span { opacity: 1; }
+/* The soft bottom edge sat ABOVE the tab bar (it lives outside .tp) and blurred the names on the bar: it is switched off. The top edge stays. */
+html.glass .g2-edge.b { display: none !important; }
+/* 11 Nov (user: "make the blur at the top less intense"): a light blur, and a shorter strip */
+html.glass .g2-edge.t { height: 56px; -webkit-backdrop-filter: blur(3px) !important; backdrop-filter: blur(3px) !important; }
