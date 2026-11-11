@@ -38,7 +38,6 @@
   document.addEventListener('scroll', function (ev) {
     var el = ev.target; if (!el || el.nodeType !== 1 || el.closest('.tp-sheet')) return;
     var y = el.scrollTop, was = last.get(el) || 0; last.set(el, y);
-    root.classList.toggle('g2-scrolled', y > 24);
     if (Math.abs(y - was) < 4) return;
     root.classList.toggle('g2-down', y > was && y > 60);
   }, true);
@@ -46,6 +45,7 @@
 
   // the lens: the picture bends near the edge of the tab bar (Chrome on Android and computers; other browsers keep plain blur)
   function lens() {
+    return; // 11 Nov 2026: OFF. On the phone this lens (and the blur strips at the screen edges) made every scroll step slow.
     var tabs = document.querySelector('.tp-tabs'); if (!tabs) return;
     var w = Math.round(tabs.offsetWidth), h = Math.round(tabs.offsetHeight), r = Math.min(h / 2, 36), band = 14;
     if (!w || !h) return;

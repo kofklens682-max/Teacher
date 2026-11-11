@@ -20,7 +20,7 @@ function ffInsBody(tab, g, gs) {
     head = `<div><b>Who paid · all groups</b><span>students, not money</span></div><div class="ffc-big" style="color:#F0A92E">${now.ok}<em>/${now.n}</em></div>`;
     body = ffBars(pp, { color: '#F0A92E', aria: 'Students who paid, by month', h: 112 });
   } else {
-    const L = lv(g.lvl), wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
+    const L = lv(g.lvl) && lv(g.lvl).units ? lv(g.lvl) : { units: [NO_WEEK] }, wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
     head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w} weeks left</span></div><div class="ffc-big" style="color:#3B5BDB">${Math.round((done / total) * 100)}<em>%</em></div>`;
     body = `<div class="ffseg" style="--n:${wks}">${L.units.map((u, i) => `<i class="${i + 1 < cl.w ? 'd' : i + 1 === cl.w ? 'n' : ''}"><b>${i + 1}</b></i>`).join('')}</div>`;
   }

@@ -36,14 +36,16 @@ function dotsGet() {
 const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify({ ...c, v: 2 })); } catch (e) { /* not saved */ } };
 const lightsHtml = (where = 'home') => {
   const c = dotsGet(), inLesson = where === 'inside' || where === 'file', ctx = inLesson ? lightCtx() : {}, ks = ctx.key && PACKS[ctx.key] ? fileKinds(ctx.key).map((x) => x[0]) : [], used = new Set();
+  // 11 Nov 2026 (user): always THREE dots. A dot with nothing to open (the lesson has fewer files) stays in its place, pale, and does nothing.
+  const off = (i) => `<button class="lt ${DOT_CLS[i]} off" disabled aria-label="Nothing here"></button>`;
   const b = c[where].map((a, i) => {
     let act = a, label = ACTIONS[a][1], cur = '', icon = c.style === 'icons' ? ic(ACTIONS[a][0]) : '';
     if (a.startsWith('f:')) { // the file at this place in the lesson; none there: the next file that has no dot yet; no files at all: the list of files
       if (!ks.length) { act = 'files'; label = ACTIONS.files[1]; icon = c.style === 'icons' ? ic(ACTIONS.files[0]) : ''; }
-      else { let k = ks[+a.slice(2) - 1]; if (!k || used.has('k:' + k)) k = ks.find((x) => !used.has('k:' + x)); if (!k) return '';
+      else { let k = ks[+a.slice(2) - 1]; if (!k || used.has('k:' + k)) k = ks.find((x) => !used.has('k:' + x)); if (!k) return off(i);
         act = 'k:' + k; label = (PK_KINDS.find((x) => x[0] === k) || [0, 'File'])[1]; icon = c.style === 'icons' ? numIcon(ks.indexOf(k) + 1) : ''; if (PV.el && PV.ctx && PV.ctx.kind === k) cur = ' cur'; }
     }
-    if (act === 'none' || used.has(act)) return '';
+    if (act === 'none' || used.has(act)) return off(i);
     used.add(act);
     return `<button class="lt ${DOT_CLS[i]}${cur}" data-light="${act}" data-dot="${where}|${i}" aria-label="${label}">${icon}</button>`;
   }).join('');

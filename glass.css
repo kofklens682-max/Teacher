@@ -134,3 +134,13 @@ html.glass.g2-down:not(.g2-noshrink) .tp-tabs button span { opacity: 1; }
 html.glass .g2-edge.b { display: none !important; }
 /* 11 Nov (user: "make the blur at the top less intense"): a light blur, and a shorter strip */
 html.glass .g2-edge.t { height: 56px; -webkit-backdrop-filter: blur(3px) !important; backdrop-filter: blur(3px) !important; }
+
+/* 11 Nov 2026, from the phone (lag: the page followed the finger a second later; the top of every opened page was blurred; a square around a dot).
+   1) The "lens" that bent the picture behind the tab bar and the blur strips at the screen edges made the phone redo the whole
+      picture on every scroll step. They are OFF. The tab bar keeps the normal light glass blur, which is cheap.
+   2) Blur only where it is needed: the tab bar and the pop-ups. Nothing blurs the top of a page any more.
+   3) The dot of the open file: a ROUND white ring (the old outline also went around the dot's invisible tap area, so it looked square). */
+html.glass .g2-edge { display: none !important; }
+html.glass.g2-lens .tp-tabs, html.glass .tp-tabs { -webkit-backdrop-filter: blur(10px) saturate(1.5) !important; backdrop-filter: blur(10px) saturate(1.5) !important; }
+.tp-lights .lt.cur { outline: none !important; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--c), inset 0 .5px 0 rgba(255,255,255,.45); transform: scale(1.06); }
+.tp-lights .lt.off { opacity: .35; pointer-events: none; }

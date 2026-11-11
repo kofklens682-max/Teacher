@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 8.1';
+const VERSION_LABEL = 'Teacher 8.2';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -23,7 +23,10 @@ const LVNAME = (id) => (id === 'own' ? 'Own program' : id === 'I1' ? 'IELTS 5.5-
 const planned = (id) => ['A1', 'A2', 'B1', 'B1+', 'B2', 'I1', 'I2', 'IT'].includes(id) || KIDLV.some((l) => l.id === id);
 const avColor = (s) => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
 const gById = (id) => S.groups.find((g) => g.id === id);
-const weekOf = (lid, n) => { const u = lv(lid).units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
+// 11 Nov 2026 (crash on the phone: "Cannot read properties of undefined (reading 'units')"): a group with its own program, or a level whose
+// books are not in the app, has no course plan. It then gets an empty 3-lesson week instead of an error.
+const NO_WEEK = { n: 1, title: '', lessons: [{ n: 1, title: '' }, { n: 2, title: '' }, { n: 3, title: '' }] };
+const weekOf = (lid, n) => { const L0 = lv(lid); if (!L0 || !L0.units || !L0.units.length) return NO_WEEK; const u = L0.units; return u[Math.min(Math.max(1, Math.floor(+n) || 1), u.length) - 1]; }; // never past the level test
 
 // 6 Nov 2026 (user's screenshot: "Unit 5 · Unit 5 · Unit 5"): the same part written twice is shown once
 function goalText(g) { return [...new Set(String(g || '').split(' · '))].join(' · '); }
@@ -59,6 +62,7 @@ const doneOn = (g, d) => { const k = iso(d); return !!(taughtOn(g, d) || repOn(g
 const inProgress = (g, d) => !doneOn(g, d) && iso(d) === iso(TODAY) && startMin(g, d) <= nowMin() && !lessonEnded(g, d);
 function advance(g, n) {
   let w = g.week, l = g.les + n; const L = lv(g.lvl);
+  if (!L || !L.units || !L.units.length) return { w: Math.max(1, w || 1), l: Math.min(3, Math.max(1, l || 1)) }; // no course plan (own program): nothing to move through
   const per = (k) => (L.turbo && k >= 1 && k <= L.units.length ? L.units[k - 1].lessons.length : 3); // IELTS Turbo weeks have more lessons
   while (l > per(w) && w <= L.units.length) { l -= per(w); w++; }
   while (l < 1) { w--; l += per(w); }
