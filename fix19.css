@@ -26,12 +26,17 @@ html.glass:not(.g2-noshrink) body #tp > .tp-tabs.g2d{transform:translateY(6px) s
 
 /* Payments: an open group keeps its top line on screen; the strip on the right closes it */
 .nx-pg{position:relative}
-html body .nx-pg:has(> .nx-fold.open) > .nx-ch{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 50px);z-index:4;background:var(--nx-card);margin:-14px 0 6px;padding:14px 16px 10px;border-radius:22px 22px 14px 14px;box-shadow:0 8px 14px -12px rgba(20,40,80,.35)}
 .f19-strip{display:none;position:absolute;right:0;top:56px;bottom:46px;width:30px;border:0;background:none;padding:0;z-index:3;cursor:pointer}
 .f19-strip i{display:block;width:5px;height:100%;margin:0 auto;border-radius:5px;background:rgba(120,120,128,.22)}
 .f19-strip:active i{background:rgba(120,120,128,.45)}
 .nx-pg:has(> .nx-fold.open) > .f19-strip{display:block}
 html body .nx-pg:has(> .nx-fold.open) .nx-prow{padding-right:32px}
 
-/* Units / Library: the old level fades away over the new one */
-.f19-ghost{position:absolute;left:0;top:0;width:100%;z-index:6;pointer-events:none;overflow:hidden;will-change:opacity}
+/* closing a long list: the rows go at once, only the card folds (no row-by-row moves) */
+.nx-pg.f19-shut .nx-fold > div > .nx-prow{transition:none !important}
+.f19-strip{top:48px}
+
+/* Home, the Today card: no extra spring. At the first / last card it gives a little under the finger and returns once, no bouncing */
+.nx-hero.bump-up .nx-hcard.cur,.nx-hero.bump-down .nx-hcard.cur{animation:none !important}
+.nx-hero .nx-hcard{transition-timing-function:cubic-bezier(.32,.72,0,1) !important}
+.nx-pg.f19-shut .nx-fold{transition:none !important}

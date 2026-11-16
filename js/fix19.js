@@ -218,34 +218,21 @@ PUSH.owe2 = function () {
     const i = document.getElementById('nx-amt'); if (!i) return; i.value = fmtSum(+b.dataset.f19day); if (T.sheet) T.sheet.amt = +b.dataset.f19day; paint(); }, true);
 }
 
-/* ---------- Payments: an open group can be closed from anywhere in its list ---------- */
+/* ---------- Payments: the grey line on the right of an open group closes it ---------- */
 document.addEventListener('click', (e) => {
-  const strip = e.target.closest && e.target.closest('.f19-strip'), card = e.target.closest && e.target.closest('.nx-pg'); if (!card) return;
-  if (strip) { const more = card.querySelector('.nx-more'); if (more) more.click(); return; }
-  if (!e.target.closest('.nx-more, .nx-pg > .nx-ch, .nx-pg > .nx-pbar')) return;
-  const fold = card.querySelector('.nx-fold'), page = card.closest('.tp-page'); if (!fold || !page || fold.classList.contains('open')) return;
-  const top = card.getBoundingClientRect().top - page.getBoundingClientRect().top; // closed while its top was scrolled away: bring the group back into view
-  if (top < 60) page.scrollTo({ top: Math.max(0, page.scrollTop + top - 70), behavior: 'smooth' });
-});
+  const strip = e.target.closest && e.target.closest('.f19-strip'); if (!strip) return;
+  const card = strip.closest('.nx-pg'), more = card && card.querySelector('.nx-more'), page = card && card.closest('.tp-page'); if (!more) return;
+  e.preventDefault(); e.stopPropagation();
+  if (page) { const top = card.getBoundingClientRect().top - page.getBoundingClientRect().top; if (top < 70) page.scrollTop = Math.max(0, page.scrollTop + top - 76); } // the group's top comes into view at once
+  card.classList.add('f19-shut'); more.click(); setTimeout(() => card.classList.remove('f19-shut'), 500);
+}, true);
 
 /* ---------- Units / Library: the level changes with a fade (user: no sliding over each other, no colour jump) ---------- */
 lvGo = function (tab, i) { // eslint-disable-line no-global-assign
   if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT);
   const page = R.pages[tab], pane = page && page.querySelector('[data-lvpane]'), from = lvIndex(tab);
   if (!pane || i === from || i < 0 || i >= lvList(tab).length) return;
-  let ghost = null;
-  try { // a picture of the page as it is now stays on top and fades away over the new level
-    page.querySelectorAll(':scope > .f19-ghost').forEach((x) => x.remove());
-    ghost = document.createElement('div'); ghost.className = 'f19-ghost'; ghost.inert = true; ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.height = page.scrollHeight + 'px'; ghost.style.background = getComputedStyle(page).backgroundColor;
-    [...page.children].forEach((c) => ghost.appendChild(c.cloneNode(true))); ghost.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
-  } catch (e) { ghost = null; }
-  lvSet(tab, i); draw();
-  if (!ghost || !ghost.animate) return;
-  const stat = getComputedStyle(page).position === 'static'; if (stat) page.style.position = 'relative';
-  page.appendChild(ghost);
-  const a = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in-out', fill: 'forwards' }), bye = () => { ghost.remove(); if (stat) page.style.position = ''; };
-  a.onfinish = bye; a.oncancel = bye; setTimeout(bye, 600);
+  lvSet(tab, i); draw(); // user: "just switch from one page to another, nothing complicated"
 };
 
 /* ---------- Budget: the name to show for a class of one student ---------- */

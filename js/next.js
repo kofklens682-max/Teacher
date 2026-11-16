@@ -414,7 +414,7 @@ document.addEventListener('input', (e) => {
   let st = null;
   // iPhone widget stack (user, 15 Nov): the card slides out, the next one rises from behind; at the first or last card it bounces
   const bounce = (h, dir) => { h.classList.remove('bump-up', 'bump-down'); void h.offsetWidth; h.classList.add(dir > 0 ? 'bump-up' : 'bump-down'); setTimeout(() => h.classList.remove('bump-up', 'bump-down'), 450); };
-  const set = (k) => { const h = document.querySelector('.tp-page .nx-hero'); if (!h) return; const cards = h.querySelectorAll('.nx-hcard'); const want = k; k = Math.max(0, Math.min(cards.length - 1, k)); if (want !== k) bounce(h, want - k); NX.hero = k;
+  const set = (k) => { const h = document.querySelector('.tp-page .nx-hero'); if (!h) return; const cards = h.querySelectorAll('.nx-hcard'); const want = k; k = Math.max(0, Math.min(cards.length - 1, k)); /* no bump */ NX.hero = k;
     cards.forEach((c) => { c.style.setProperty('--off', +c.dataset.hk - k); c.style.removeProperty('--drag'); c.classList.toggle('cur', +c.dataset.hk === k); }); h.querySelectorAll('.nx-pips i').forEach((p, j) => p.classList.toggle('on', j === k)); R.pages[0]._html = null; };
   document.addEventListener('pointerdown', (e) => { const h = e.target.closest && e.target.closest('.nx-hero'); if (!h || h.classList.contains('empty')) return; st = { y0: e.clientY, x0: e.clientX, id: e.pointerId, on: false, h }; }, true);
   document.addEventListener('pointermove', (e) => { if (!st || e.pointerId !== st.id) return; let dy = e.clientY - st.y0;
