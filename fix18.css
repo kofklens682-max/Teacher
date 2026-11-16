@@ -4,7 +4,9 @@
 html body .tp-lights .lt,html body .tp-lights.plain .lt{border-radius:50% !important;width:20px !important;height:20px !important}
 
 /* tab bar lens: only while the page stands still. While it moves (class "mv") a plain soft blur: the lens drew as blue blocks on the phone */
-html.glass.g2-lens body #tp > .tp-tabs.mv{-webkit-backdrop-filter:blur(9px) saturate(1.8) brightness(1.06) !important;backdrop-filter:blur(9px) saturate(1.8) brightness(1.06) !important}
+html.glass.g2-lens body #tp > .tp-tabs.mv{-webkit-backdrop-filter:blur(2.5px) saturate(1.8) brightness(1.06) !important;backdrop-filter:blur(2.5px) saturate(1.8) brightness(1.06) !important}
+/* Settings > Look > "Bend while scrolling" on: the lens also stays while the page moves (the user's own choice) */
+html.glass.g2-lens.g2-live body #tp > .tp-tabs.mv{-webkit-backdrop-filter:url(#g2lens-tabs) blur(2.5px) saturate(1.8) brightness(1.06) !important;backdrop-filter:url(#g2lens-tabs) blur(2.5px) saturate(1.8) brightness(1.06) !important}
 
 /* Home class card: each card is its own layer, so a swipe only moves pictures (it lagged on the phone) */
 .nx-hero{contain:layout paint}
