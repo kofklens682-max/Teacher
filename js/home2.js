@@ -267,13 +267,6 @@ function sheetPayRec(s) {
     <p class="tp-small">${isSingle(g) ? 'Private students pay for each lesson they come to (' + dMoney(rateOf(g)) + ' each). Money paid ahead is kept for the next lessons.' : 'More than one month is fine: it covers the oldest unpaid month first, then the next ones.'} After you save, Budget asks whether to add the money.</p>
     ${hist ? `<div class="tp-sec"><h4>Last payments</h4></div><div class="dr-hl">${hist}</div>` : ''}`;
 }
-function sheetPayPick(s) {
-  const gs = feeGroups(), ym = payState().ym;
-  return `<div class="tp-sh-h"><button class="tp-back" data-closesheet>Cancel</button><b>Who paid?</b><span></span></div>
-    ${gs.map((g) => `<div class="dr-gsec" style="${gvg(g)}"><div class="dr-gh"><span class="dot"></span><div><b>${esc(g.name)}</b></div></div><div class="dr-sl">${g.students.map((st) => { const L = ledger(g, st, ym);
-      return `<button class="dr-stu" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><span class="dr-av st-${PST[L.st][1]}" style="background:${avColor(st.name)}">${esc(st.name[0])}</span><span class="tx"><b>${esc(st.name)}</b><span>${esc(rowText(g, L))}</span></span><span class="dr-pill ${PST[L.st][1]}">${PST[L.st][0]}</span></button>`; }).join('')}</div></div>`).join('')}`;
-}
-
 /* ---------- Extra charges ---------- */
 const X_IDEAS = ['Book', 'Workbook', 'Trip', 'Exam fee', 'Materials'];
 function sheetExtra(s) {
@@ -329,10 +322,11 @@ function pastCard(g, f) { // lessons from before the app: only the days this stu
   const cur = ymOf(TODAY), pm = f.pm || ymAdd(cur, -1), ms = []; for (let i = 0; i < 12; i++) ms.push(ymAdd(cur, -i)); // newest first
   const [y, m] = pm.split('-').map(Number), ds = [];
   for (let d = 1; d <= 31; d++) { const dt = new Date(y, m - 1, d); if (dt.getMonth() !== m - 1) break; if (dt <= TODAY && hasLesson(g, dt)) ds.push(iso(dt)); }
-  const cols = `grid-template-columns:96px 54px repeat(${ds.length},46px)`, saved = S.saved[g.id] || {};
-  const grid = ds.length ? `<div class="gt-wrap"><div class="gt" style="${cols}"><span class="gt-h gt-n"></span><span class="gt-h gt-p"><small>Lessons</small></span>${ds.map((k) => { const d = fromIso(k); return `<span class="gt-h gt-d"><small>${DAYS[wd(d)]}</small><b>${d.getDate()}</b></span>`; }).join('')}
-    ${g.students.map((s, si) => { const came = ds.filter((k) => saved[k] && rec(g, fromIso(k)).get(s.id) !== 'absent').length;
-      return `<span class="gt-n"><i>${si + 1}</i>${esc(s.name)}</span><b class="gt-p">${came}</b>${ds.map((k) => { const on = saved[k] && rec(g, fromIso(k)).get(s.id) !== 'absent'; return `<button class="gc ${on ? 'here' : 'na'}" data-pcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k}">${on ? '✓' : ''}</button>`; }).join('')}`; }).join('')}</div></div>` : `<p class="tp-small">No lesson days in ${ymName(pm)}.</p>`;
+  const saved = S.saved[g.id] || {}; // 12 Nov: the same solid table as the group page (names in one fixed block, the days scroll)
+  const grid = ds.length ? `<div class="rt"><div class="rt-fix fee"><span class="rt-h"></span><span class="rt-h"><small>Lessons</small></span>${g.students.map((s, si) => { const came = ds.filter((k) => saved[k] && rec(g, fromIso(k)).get(s.id) !== 'absent').length;
+      return `<span class="rt-n"><i>${si + 1}</i><span><b>${esc(s.name)}</b></span></span><b class="rt-m">${came}</b>`; }).join('')}</div>
+    <div class="rt-scroll"><div class="rt-days" style="--n:${ds.length}">${ds.map((k) => { const d = fromIso(k); return `<span class="rt-h rt-d"><small>${DAYS[wd(d)]}</small><b>${d.getDate()}</b></span>`; }).join('')}
+    ${g.students.map((s) => ds.map((k) => { const on = saved[k] && rec(g, fromIso(k)).get(s.id) !== 'absent'; return `<button class="gc ${on ? 'here' : 'na'}" data-pcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k}">${on ? '✓' : ''}</button>`; }).join('')).join('')}</div></div></div>` : `<p class="tp-small">No lesson days in ${ymName(pm)}.</p>`;
   return `<div class="tp-card2"><div class="h">${ic('History')}Past lessons</div><p class="sub">For lessons before the app. Only the days this student comes (${g.days.map((d) => DAYS[d]).join(', ') || 'none set'}) can be marked. Tap a day = came.</p>
     <div class="tp-chips2 dr-flt">${ms.map((x) => `<button class="${pm === x ? 'on' : ''}" data-pastm="${x}">${SHORT(x)}${x.slice(0, 4) !== cur.slice(0, 4) ? " " + x.slice(2, 4) : ""}</button>`).join('')}</div>
     ${pm < S.pay.start ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p>${ymName(pm)} is before fees start (${ymName(S.pay.start)}). It is kept for the record and adds no charge.</p></div>` : ''}${grid}</div>`;

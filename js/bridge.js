@@ -276,18 +276,31 @@ function sheetOweGrp(s) {
     <div class="pl-h"><span class="d ok"></span>Paid<em>${paid.length}</em></div>${paid.length ? `<div class="pl-list">${paid.map(paidRow).join('')}</div>` : `<p class="tp-small" style="text-align:left">Nobody yet.</p>`}`;
 }
 
-/* ---------- "Mark who paid" on Home: every group, numbered ---------- */
+/* ---------- "Mark who paid" on Home (12 Nov 2026, user): a button for every class, the biggest class first ----------
+   Under the buttons: first the people who did NOT pay, below them the people who paid. "All" shows every class the same way. */
 function sheetPayPick(s) {
-  const gs = feeGroups(), ym = payState().ym; // T15: the month Home shows
-  return `<div class="tp-sh-h"><span></span><b>Mark who paid${ym === ymOf(TODAY) ? '' : ' · ' + ymName(ym)}</b><button class="tp-back strong" data-closesheet>Done</button></div>${HOW}
-    ${gs.map((g) => `<div class="pl-h"><span class="d" style="background:${grpColor(g)}"></span>${esc(g.name)}<em>${feeStu(g, ym, true).length}</em></div><div class="pl-list">${abc(feeStu(g, ym, true)).map((st, i) => { const L = ledger(g, st, ym), ms = L.rows.filter((r) => r.charge - r.covered > 0);
-      return ms.length ? oweLine(g, st, L, i + 1) : `<div class="pl-row ok"><span class="pl-n">${i + 1}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>Paid</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`; }).join('')}</div>`).join('')}`;
+  const ym = payState().ym, mn = MONTHS[+ym.slice(5) - 1];
+  const gs = feeGroups().map((g) => { const all = abc(feeStu(g, ym, true)).map((st) => ({ g, st, L: ledger(g, st, ym) })).filter((x) => x.L.st !== 'free').map((x, i) => ({ ...x, n: i + 1 })); // A–Z, each keeps its number
+    return { g, all, owe: all.filter((x) => x.L.debt > 0), paid: all.filter((x) => !(x.L.debt > 0)) }; }).sort((a, b) => b.all.length - a.all.length);
+  const pick = s.pg === '' ? null : gs.find((x) => x.g.id === s.pg) || gs[0], show = pick ? [pick] : gs, many = show.length > 1; // opens on the biggest class (half the rows of "All": the pop-up opens faster)
+  const chip = (id, name, n, col) => `<button class="${(pick ? pick.g.id : '') === id ? 'on' : ''}" data-ppg="${id}">${col ? `<i style="background:${col}"></i>` : ''}${esc(name)}<em>${n}</em></button>`;
+  const chips = gs.length > 1 ? `<div class="pp-chips" data-noswipe>${gs.map((x) => chip(x.g.id, x.g.name, x.owe.length, grpColor(x.g))).join('')}${chip('', 'All', gs.reduce((a, x) => a + x.owe.length, 0))}</div>` : '';
+  const gh = (x) => (many ? `<div class="pp-g"><span class="d" style="background:${grpColor(x.g)}"></span>${esc(x.g.name)}</div>` : '');
+  const paidRow = ({ g, st, L, n }) => `<div class="pl-row ok"><span class="pl-n">${n}</span><button class="pl-main" data-sheet="payrec" data-g="${g.id}" data-sid="${st.id}"><b>${esc(st.name)}</b><span>${L.credit > 0 ? 'Paid ahead' : 'Paid'}${L.last ? ' · ' + dDate(L.last.date) : ''}</span></button>${unpayBtn(g, st)}<span class="pl-done">${ic('Check')}</span></div>`;
+  const part = (key) => show.filter((x) => x[key].length).map((x) => `${gh(x)}<div class="pl-list">${x[key].map(key === 'owe' ? ({ g, st, L, n }) => oweLine(g, st, L, n) : paidRow).join('')}</div>`).join('');
+  const nOwe = show.reduce((a, x) => a + x.owe.length, 0), nPaid = show.reduce((a, x) => a + x.paid.length, 0);
+  return `<div class="tp-sh-h"><span></span><b>Who paid · ${mn}</b><button class="tp-back strong" data-closesheet>Done</button></div>
+    ${chips}
+    <div class="pp-body"><div class="pl-h"><span class="d no"></span>Did not pay<em>${nOwe}</em></div>${nOwe ? part('owe') : `<p class="tp-small" style="text-align:left">Everybody has paid for ${mn}.</p>`}
+    <div class="pl-h"><span class="d ok"></span>Paid<em>${nPaid}</em></div>${nPaid ? part('paid') : `<p class="tp-small" style="text-align:left">Nobody yet.</p>`}
+    ${HOW}</div>`;
 }
 
 /* ---------- taps ---------- */
 {
   const _h = home2Click, _f = feesClick;
   const mine = (b, d) => {
+    if (d.ppg !== undefined) { if (!T.sheet || T.sheet.s !== 'paypick' || b.classList.contains('on')) return true; T.sheet.pg = d.ppg; draw(); const pn = R.sheet && R.sheet._panel, bd = pn && pn.querySelector('.pp-body'); if (pn) pn.scrollTop = 0; if (bd && bd.animate) bd.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }); return true; } // 12 Nov: a class button of the Who paid list
     if (d.payundo !== undefined) { const u = undoList.pop(); if (u && u.until > Date.now()) { u.fn(); save(); draw(); if (!showUndo('Undone. Before that: ')) toast('Undone'); } return true; }
     if (d.paym) {
       const [sid, gid, m] = d.paym.split('|'), g = gById(gid), st = g && stuOf(g, sid); if (!st) return true;

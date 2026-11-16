@@ -1,0 +1,254 @@
+/* NEXT — 15 Nov 2026 redesign (draft). iPhone grey background, brighter colours (+5 %), a soft shine. */
+:root{--nx-blue:#0A84FF;--nx-green:#30D158;--nx-red:#FF453A;--nx-orange:#FF9F0A;--nx-l2:rgba(60,60,67,.62);--nx-sep:rgba(60,60,67,.14);--nx-card:#fff;--nx-bg:#F2F2F7}
+html,body{background:var(--nx-bg)}
+.tp-page,.tp-push{background:var(--nx-bg)}
+
+/* ---- the tab bar: like Budget, with the + on the right ---- */
+.tp-tabs{right:92px !important}
+.tp-fab{position:absolute;z-index:31;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:68px;height:68px;border-radius:50%;display:grid;place-items:center;border:0;
+  background:radial-gradient(110% 90% at 30% 10%,#5AB0FF 0%,#0A84FF 50%,#0068D6 100%);
+  box-shadow:inset 1px 1.5px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(0,0,0,.08),inset 0 0 14px rgba(255,255,255,.22),0 12px 28px -6px rgba(10,132,255,.6);transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
+.tp-fab svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round}
+.tp-fab:active{transform:scale(.9)}
+.tp-tabs button span{font-size:10.5px}
+.tp-tabs button.on svg{fill:color-mix(in srgb,currentColor 22%,transparent)}
+
+/* ---- the three dots: macOS red, yellow, green ---- */
+.tp-lights .blue,.dt-sw.blue{--c:#FF453A !important}
+.tp-lights .grn,.dt-sw.grn{--c:#FFC800 !important}
+.tp-lights .org,.dt-sw.org{--c:#30D158 !important}
+
+/* ---- shared pieces ---- */
+.nx-sec{font-size:13px;font-weight:600;color:var(--nx-l2);text-transform:uppercase;letter-spacing:.04em;margin:10px 6px -4px}
+.nx-title{font-size:30px;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:10px}
+.nx-dot{width:14px;height:14px;border-radius:50%;flex:none}
+.nx-sub{font-size:15px;color:var(--nx-l2);margin-top:-8px}
+.nx-list{background:var(--nx-card);border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(20,40,80,.04)}
+.tp-page>.nx-list,.tp-page>#nx-lists>.nx-list,.tp-page>.nx-card,.tp-page>.nx-w2,.tp-page>.nx-course{margin-bottom:12px}
+.nx-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 14px;text-align:left;background:none;border:0;color:inherit;font:inherit;position:relative}
+.nx-row+.nx-row::before{content:"";position:absolute;top:0;right:0;left:58px;border-top:.5px solid var(--nx-sep)}
+.nx-row.still{cursor:default}
+.nx-row:not(.still):active{background:rgba(0,0,0,.04)}
+.nx-tx{flex:1;min-width:0;display:flex;flex-direction:column;padding:10px 0}
+.nx-tx b{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-tx b.red{color:var(--nx-red)}.nx-tx b.blue{color:var(--nx-blue)}
+.nx-tx small{font-size:13px;color:var(--nx-l2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-tx small.paid{color:#1E9E46}.nx-tx small.part{color:#C77700}.nx-tx small.no{color:#E0322A}
+.nx-tx input{border:0;background:none;font:inherit;font-size:16px;font-weight:600;outline:0;padding:2px 0;color:inherit}
+.nx-row>em{font-style:normal;font-size:15px;color:var(--nx-l2);white-space:nowrap}
+.nx-row>em.v{max-width:55%;overflow:hidden;text-overflow:ellipsis}
+.nx-row>em.pos{color:#1E9E46;font-weight:600}
+.nx-chev{display:grid;color:#C7C7CC}.nx-chev svg{width:16px;height:16px;stroke-width:2.6}
+.nx-tile{width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c));box-shadow:0 1px 2px rgba(0,0,0,.14),inset 0 0 0 .5px rgba(255,255,255,.25)}
+.nx-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.3),transparent 55%)}
+.nx-tile svg{width:19px;height:19px;stroke-width:2.2;position:relative;z-index:1}
+.nx-tile.big{width:46px;height:46px;border-radius:13px}.nx-tile.big svg{width:26px;height:26px}
+.nx-empty{padding:16px;color:var(--nx-l2);font-size:15px;text-align:center}
+.nx-note{font-size:13px;color:var(--nx-l2);line-height:1.45}.nx-note.c{text-align:center;margin:6px 0 12px}
+.nx-link{border:0;background:none;color:var(--nx-blue);font:inherit;font-weight:600;padding:0 0 0 4px}
+.nx-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:999px;padding:14px;font:inherit;font-size:16px;font-weight:600;color:#fff;
+  background:radial-gradient(120% 120% at 30% 0%,#4FA6FF,#0A84FF 60%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 18px -8px rgba(10,132,255,.6)}
+.nx-btn svg{width:19px;height:19px}
+.nx-btn.soft{background:rgba(10,132,255,.12);color:var(--nx-blue);box-shadow:none}
+.nx-btn.big{padding:16px;font-size:17px;margin-top:6px}
+.nx-btn[disabled]{opacity:.4}
+.tp-page>.nx-btn{margin:4px 0 14px}
+.nx-mini{border:0;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;font-weight:600;background:rgba(10,132,255,.12);color:var(--nx-blue)}
+.nx-mini.red{background:rgba(255,69,58,.12);color:var(--nx-red)}
+.nx-seg{display:flex;background:rgba(118,118,128,.12);border-radius:11px;padding:2px;gap:2px;margin:2px 0}
+.nx-seg button{flex:1;border:0;background:none;font:inherit;font-size:14px;font-weight:600;padding:8px 0;border-radius:9px;color:#3a3a3c}
+.nx-seg button.on{background:#fff;color:#000;box-shadow:0 1px 4px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.nx-seg.big{margin:0 0 12px}.nx-seg.big button{padding:9px 0;font-size:15px}
+.nx-card{background:var(--nx-card);border-radius:22px;padding:14px 16px;box-shadow:0 1px 2px rgba(20,40,80,.04),0 8px 22px -14px rgba(20,40,80,.16);display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit}
+.nx-ch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.nx-ch b{font-size:13px;font-weight:700;color:var(--nx-l2);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:7px}
+.nx-ch b i{width:10px;height:10px;border-radius:50%}
+.nx-ch b svg{width:15px;height:15px}
+.nx-ch span{font-size:14px;color:var(--nx-l2);font-weight:600}
+.nx-st{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.nx-st.paid{background:rgba(48,209,88,.15);color:#1E9E46}.nx-st.part{background:rgba(255,159,10,.16);color:#C77700}.nx-st.no{background:rgba(255,69,58,.13);color:#E0322A}.nx-st.free{background:#F2F2F7;color:#8E8E93}
+.nx-ask{background:#FFF8E6;border-radius:18px;padding:14px;display:grid;gap:6px}
+.nx-ask b{font-size:15px}.nx-ask p{font-size:14px;color:#6b5a2a;line-height:1.4}
+.nx-ask div{display:flex;gap:8px;margin-top:4px}.nx-ask .nx-btn{padding:10px;font-size:14px}
+.nx-try{font-size:10px;font-weight:800;letter-spacing:.06em;color:#fff;background:linear-gradient(90deg,#FF9F0A,#FF375F);padding:3px 7px;border-radius:6px;text-transform:uppercase;margin-left:6px}
+
+/* ---- avatars: a person symbol, boys cyan, girls pink ---- */
+.nx-av{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;position:relative}
+.nx-av svg{width:31px;height:31px;margin-top:9px;fill:rgba(255,255,255,.96)}
+.nx-av.m{background:linear-gradient(160deg,#4FA6FF,#0A84FF)}
+.nx-av.f{background:linear-gradient(160deg,#FF9AB2,#FF3462)}
+.nx-av::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 1px 1px rgba(255,255,255,.5)}
+.nx-av.xl{width:96px;height:96px}.nx-av.xl svg{width:78px;height:78px;margin-top:22px}
+
+/* ---- Students ---- */
+.nx-search{display:flex;align-items:center;gap:8px;background:rgba(118,118,128,.12);border-radius:12px;padding:9px 12px;margin:0 0 4px;color:var(--nx-l2)}
+.nx-search svg{width:18px;height:18px;flex:none}
+.nx-search input{flex:1;border:0;background:none;font:inherit;font-size:16px;outline:0;color:#000;min-width:0}
+.nx-hits{margin-top:10px}
+#nx-lists>.nx-sec{margin:16px 6px 8px}
+.nx-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nx-tiles div{background:#fff;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.nx-tiles span{font-size:12px;color:var(--nx-l2);font-weight:600}
+.nx-tiles b{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.nx-tiles small{font-size:12px;color:var(--nx-l2)}
+.nx-phead{display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 0 6px}
+.nx-phead h2{font-size:28px;font-weight:800;letter-spacing:-.025em;margin-top:12px}
+.nx-phead p{font-size:15px;color:var(--nx-l2);margin-top:2px}
+.nx-pacts{display:flex;gap:10px;justify-content:center;margin-top:14px}
+.nx-pacts a,.nx-pacts button{width:82px;background:#fff;border:0;border-radius:16px;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:4px;font:inherit;font-size:12px;font-weight:600;color:var(--nx-blue);text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.nx-pacts svg{width:22px;height:22px}
+.nx-months{display:grid;grid-template-columns:repeat(6,1fr);text-align:center;gap:4px}
+.nx-months div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--nx-l2)}
+.nx-months div.off{opacity:.45}
+.nx-owe{font-size:14px;font-weight:600;color:#E0322A;margin:10px 0}.nx-ok{font-size:14px;font-weight:600;color:#1E9E46;margin:10px 0}
+.nx-card .nx-btn{margin-top:6px;padding:11px}
+.nx-ltab>div{display:grid;grid-template-columns:1fr auto 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:.5px solid var(--nx-sep);font-size:14px}
+.nx-ltab>div b{text-align:right}.nx-ltab>div.tot{border:0;font-weight:700}
+
+/* ---- Payments ---- */
+.nx-mon{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.nx-mon b{font-size:20px;font-weight:700}
+.nx-mon button{width:36px;height:36px;border-radius:50%;border:0;background:#fff;display:grid;place-items:center;color:var(--nx-blue);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.nx-mon button svg{width:20px;height:20px}
+.nx-sum{display:flex;align-items:center;gap:16px}
+.nx-sum .dr-donut .c b{font-size:24px;font-weight:800}.nx-sum .dr-donut .c span{font-size:11px;color:var(--nx-l2)}
+.nx-sum .big{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.nx-leg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--nx-l2);margin-top:6px}
+.nx-leg span{display:flex;align-items:center;gap:5px}.nx-leg i{width:8px;height:8px;border-radius:50%}
+.nx-leg.c{justify-content:center;margin:4px 0 14px}
+.nx-pg{padding:14px 0 6px}.nx-pg .nx-ch{padding:0 16px}
+.nx-pbar{display:flex;gap:2px;height:7px;border-radius:4px;overflow:hidden;margin:0 16px 6px}
+.nx-pbar i{flex:1}
+.nx-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--nx-blue);padding:12px 0 8px;border-top:.5px solid var(--nx-sep)}
+.nx-more svg{width:16px;height:16px}
+.nx-yr{display:grid;grid-template-columns:78px repeat(12,1fr);gap:3px;align-items:center;padding:4px 0}
+.nx-yr .n{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-yr.h b{font-size:10px;font-weight:700;color:var(--nx-l2);text-align:center}
+.nx-yr i{width:13px;height:13px;border-radius:50%;justify-self:center}.nx-yr i.e{background:#E5E5EA}
+/* the Pay pop-up */
+.nx-payh{display:flex;align-items:center;gap:12px;margin:2px 0 6px}
+.nx-payh b{font-size:19px;font-weight:700;display:block}.nx-payh span{font-size:14px;color:var(--nx-l2)}
+.nx-lab{font-size:13px;font-weight:600;color:var(--nx-l2);text-transform:uppercase;letter-spacing:.04em;margin:6px 2px 0}
+.nx-chips{display:flex;gap:8px;flex-wrap:wrap}
+.nx-chips button{border:0;border-radius:14px;padding:8px 12px;background:rgba(118,118,128,.12);font:inherit;font-size:14px;font-weight:600;color:#1c1c1e;display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.nx-chips button em{font-style:normal;font-size:12px;font-weight:500;opacity:.75}
+.nx-chips button.on{background:var(--nx-blue);color:#fff}
+.nx-amt{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:8px 0 0}
+.nx-amt input{width:100%;max-width:240px;border:0;background:none;text-align:right;font:inherit;font-size:38px;font-weight:700;letter-spacing:-.03em;outline:0;font-variant-numeric:tabular-nums}
+.nx-amt span{font-size:18px;font-weight:600;color:var(--nx-l2)}
+
+/* ---- Home ---- */
+.nx-hero{position:relative;height:200px;margin:0 0 6px;touch-action:none}
+.nx-hcard{position:absolute;inset:0;border:0;border-radius:28px;padding:18px 18px 16px;color:#fff;text-align:left;font:inherit;display:flex;flex-direction:column;gap:2px;overflow:hidden;
+  background:radial-gradient(130% 120% at 0% 0%,color-mix(in srgb,var(--c) 62%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 82%,#000));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 14px 30px -14px color-mix(in srgb,var(--c) 70%,transparent);
+  transform:translateY(calc(var(--off) * 106% + var(--drag,0px))) scale(calc(1 - min(1, max(var(--off), -1 * var(--off))) * .06));
+  opacity:calc(1 - min(1, max(var(--off), -1 * var(--off))));transition:transform .5s cubic-bezier(.2,.85,.2,1),opacity .4s}
+.nx-hero.drag .nx-hcard{transition:none;opacity:1}
+.nx-hcard::before{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-80px;top:-110px;background:rgba(255,255,255,.13)}
+.nx-hcard.done{--c:#8E8E93}
+.nx-hcard .k{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.92}
+.nx-hcard .t{font-size:27px;font-weight:800;letter-spacing:-.025em;margin-top:4px}
+.nx-hcard .s{font-size:15px;opacity:.93;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nx-hcard .f{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between}
+.nx-hcard .cd{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:flex-start}
+.nx-hcard .cd svg{width:18px;height:18px}
+.nx-hcard .cd small{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.85}
+.nx-hcard .go{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.22);border-radius:999px;padding:8px 13px;font-size:14px;font-weight:600;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.nx-hcard .go svg{width:16px;height:16px}
+.nx-pips{position:absolute;right:-9px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px}
+.nx-pips i{width:5px;height:5px;border-radius:3px;background:#C7C7CC;transition:.3s}.nx-pips i.on{height:16px;background:#8E8E93}
+.nx-hint{font-size:12px;color:rgba(60,60,67,.35);text-align:center;margin:2px 0 12px}
+.nx-hero.empty{height:auto;background:#fff;border-radius:24px;padding:24px;text-align:center;display:grid;gap:4px}.nx-hero.empty span{color:var(--nx-l2)}
+.nx-w2{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+.nx-w2 .nx-card{padding:14px}
+.nx-wpay .r{display:flex;align-items:center;gap:12px}
+.nx-wpay .ffrg{width:64px;height:64px;display:block}.nx-wpay .ffrg svg{width:64px;height:64px}
+.nx-wpay .big,.nx-wowe .big{font-size:30px;font-weight:800;letter-spacing:-.03em;display:block;line-height:1}
+.nx-wpay .big small{font-size:16px;color:var(--nx-l2)}
+.nx-wpay .r span{font-size:12px;color:var(--nx-l2)}
+.nx-gl{display:flex;flex-direction:column;gap:3px;margin-top:10px;font-size:12px;color:var(--nx-l2)}
+.nx-gl span{display:flex;align-items:center;gap:6px}.nx-gl i{width:8px;height:8px;border-radius:50%}.nx-gl b{margin-left:auto;color:#000}
+.nx-wowe .big.red{color:var(--nx-red);margin-bottom:8px}
+.nx-wowe .nm{display:flex;justify-content:space-between;font-size:13px;font-weight:600;padding:3px 0;border-top:.5px solid var(--nx-sep)}
+.nx-wowe .nm em{font-style:normal;color:#E0322A;font-size:12px}.nx-wowe .nm.more{color:var(--nx-l2);font-weight:500}
+.nx-course{margin-top:12px}
+.nx-pop{display:flex;gap:12px;align-items:center;background:#fff;border-radius:18px;padding:12px;margin-bottom:10px}
+.nx-pop b{display:block;font-size:16px}.nx-pop span{font-size:14px;color:var(--nx-l2)}
+
+/* ---- Settings ---- */
+.nx-row.prof{min-height:72px}.nx-row.prof .tp-avatar{width:52px;height:52px;background:linear-gradient(160deg,#9aa4b5,#6b7486)}
+.nx-row.prof b{font-size:19px}
+.nx-seg button{text-align:center;justify-content:center}
+.nx-tx small.paid,.nx-tx small.part,.nx-tx small.no,.nx-tx small.free{background:none;padding:0;border-radius:0}
+/* Teacher is BLUE (user, 15 Nov): the whole accent palette, not green */
+:root,html[data-pal]{--pa:#0A84FF;--pa2:#4FA6FF;--pasoft:rgba(10,132,255,.13);--pbg:#F2F2F7;--pbg2:#ECEEF4;--pglow:rgba(10,132,255,.12);--pglow2:rgba(94,92,230,.1);--ph1:#4FA6FF;--ph2:#0A84FF;--ph3:#0068D6;--phsh:rgba(10,110,230,.42);--pgo:#0A6FE0;--pw-paid:#30D158;--pw-owe:#FF453A;--pw-came:#30D158;--pw-week:#0A84FF;--pbar:rgba(250,252,255,.5);--ptabon:#0A84FF}
+html.glass .tp-tabs button.on{color:#0A6FE0 !important}
+.tp-ind{background:rgba(10,132,255,.12)}
+/* the three dots: colour only, no icons (user, 15 Nov) */
+.tp-lights .lt svg{display:none !important}
+.tp-lights .lt{width:20px !important;height:20px !important;background:radial-gradient(120% 120% at 30% 20%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 70%) !important}
+/* course progress: one style for every group button, the chosen one gets a ring */
+.nx-course .ffc-chips button{background:color-mix(in srgb,var(--gc,#0A84FF) 15%,#fff) !important;color:#1c1c1e !important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gc,#0A84FF) 25%,transparent) !important}
+.nx-course .ffc-chips button.on{background:color-mix(in srgb,var(--gc,#0A84FF) 15%,#fff) !important;box-shadow:inset 0 0 0 2px var(--gc,#0A84FF) !important}
+.nx-course .ffc-chips button.on i{box-shadow:none}
+/* Students: group cards (15 Nov late) */
+.nx-gcards{display:grid;gap:12px;margin-bottom:12px}
+.nx-gcard{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:#fff;border-radius:22px;padding:14px 14px 14px 20px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(20,40,80,.04),0 10px 24px -16px color-mix(in srgb,var(--c) 60%,transparent)}
+.nx-gcard .band{position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c))}
+.nx-gcard::after{content:"";position:absolute;right:-50px;top:-60px;width:150px;height:150px;border-radius:50%;background:color-mix(in srgb,var(--c) 8%,transparent);pointer-events:none}
+.nx-gcard .gl{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;position:relative;z-index:1}
+.nx-gcard .gl>b{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.nx-gcard .gl>small{font-size:13px;color:var(--nx-l2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-gcard .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.nx-gcard .meta span{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:color-mix(in srgb,var(--c) 75%,#000);background:color-mix(in srgb,var(--c) 11%,#fff);border-radius:8px;padding:3px 7px}
+.nx-gcard .meta svg{width:13px;height:13px}
+.cbar{display:block;height:5px;border-radius:3px;background:color-mix(in srgb,var(--c) 15%,#fff);overflow:hidden;margin-top:8px;max-width:220px}
+.cbar i{display:block;height:100%;border-radius:3px;background:var(--c)}
+.nx-gcard .faces{display:flex;margin-top:8px;align-items:center}
+.nx-gcard .faces .nx-av{width:26px;height:26px;margin-right:-7px;box-shadow:0 0 0 2px #fff}
+.nx-gcard .faces .nx-av svg{width:20px;height:20px;margin-top:6px}
+.nx-gcard .faces em{font-style:normal;font-size:12px;font-weight:700;color:var(--nx-l2);margin-left:12px}
+.nx-gcard .gr{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;z-index:1}
+.nx-gcard .gr .dr-donut .c b{font-size:16px;font-weight:800}.nx-gcard .gr .dr-donut .c span{font-size:11px;color:var(--nx-l2)}
+.nx-gcard .gr>small{font-size:11px;font-weight:700;color:var(--nx-l2);text-transform:uppercase;letter-spacing:.04em}
+.nx-mdots{display:flex;gap:3px;margin-top:4px}.nx-mdots i{width:8px;height:8px;border-radius:50%}
+/* the group page header */
+.nx-ghero{border-radius:26px;padding:18px;color:#fff;background:radial-gradient(130% 120% at 0% 0%,color-mix(in srgb,var(--c) 62%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 82%,#000));box-shadow:0 14px 30px -14px color-mix(in srgb,var(--c) 70%,transparent);display:flex;flex-direction:column;gap:2px}
+.nx-ghero>b{font-size:28px;font-weight:800;letter-spacing:-.025em}.nx-ghero>span{font-size:14px;opacity:.9}
+.nx-ghero .row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.nx-ghero .row div{background:rgba(255,255,255,.18);border-radius:14px;padding:8px 10px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.3)}
+.nx-ghero .row small{display:block;font-size:11px;font-weight:600;opacity:.85}.nx-ghero .row b{font-size:15px;font-weight:700}
+.nx-ghero .cbar{background:rgba(255,255,255,.28);max-width:none;margin-top:12px}.nx-ghero .cbar i{background:#fff}
+.nx-ghero .cl{font-size:12px;opacity:.9;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nx-more2{margin-top:8px}.nx-more2 summary{font-size:14px;font-weight:600;color:var(--nx-blue);cursor:pointer;padding:6px 0}
+#nx-tall{width:100%}
+/* ---- opening animations (user, 15 Nov): rings draw in, bars grow, cards rise in, a little one after another.
+   They play when a tab is opened (class nx-play, set on each tab tap) and when a new screen slides in. Not on quiet redraws (.nin). ---- */
+@keyframes nxRing{from{stroke-dasharray:0 1000}}
+@keyframes nxGrowX{from{transform:scaleX(0)}}
+@keyframes nxGrowY{from{transform:scaleY(0)}}
+@keyframes nxRise{from{opacity:0;transform:translateY(14px)}}
+:is(.nx-play,.tp-push) :is(.nx-ring circle:last-child,.dr-donut svg circle+circle,.cring .fg,.ffrg circle.ffr-p){animation:nxRing 1s cubic-bezier(.25,.8,.25,1) both}
+:is(.nx-play,.tp-push) :is(.cbar i,.nx-hcard .bar i){transform-origin:left;animation:nxGrowX .9s cubic-bezier(.25,.8,.25,1) .15s both}
+:is(.nx-play,.tp-push) .nx-pbar{transform-origin:left;animation:nxGrowX .8s cubic-bezier(.25,.8,.25,1) both}
+:is(.nx-play,.tp-push) .nx-col i{transform-origin:bottom;animation:nxGrowY .8s cubic-bezier(.25,.8,.25,1) both}
+:is(.nx-play,.tp-push) :is(.nx-card,.nx-gcard,.nx-list,.nx-hero,.nx-w2,.nx-ghero,.nx-phead,.nx-tiles,.nx-course,.nx-sum){animation:nxRise .55s cubic-bezier(.2,.8,.2,1) both}
+:is(.nx-play,.tp-push) :is(.nx-gcard,.nx-card,.nx-list):nth-child(2){animation-delay:.05s}
+:is(.nx-play,.tp-push) :is(.nx-gcard,.nx-card,.nx-list):nth-child(3){animation-delay:.1s}
+:is(.nx-play,.tp-push) :is(.nx-gcard,.nx-card,.nx-list):nth-child(4){animation-delay:.15s}
+:is(.nx-play,.tp-push) :is(.nx-gcard,.nx-card,.nx-list):nth-child(n+5){animation-delay:.2s}
+.nin,.nin *{animation:none !important}
+/* the class card stays inside its own box: the other cards never cover the widgets or the buttons above (bug: the T button opened a lesson) */
+.nx-hero{overflow:hidden;border-radius:28px}
+.nx-hcard:not(.cur){pointer-events:none}
+/* the class card: iPhone widget stack (15 Nov) */
+.nx-hcard{transform:translateY(calc(var(--off) * 100% + var(--drag,0px))) scale(calc(1 - min(1, max(var(--off), -1 * var(--off))) * .1));
+  opacity:calc(1 - min(1, max(var(--off), -1 * var(--off))) * .35);transition:transform .55s cubic-bezier(.32,.72,0,1),opacity .45s ease}
+.nx-hero.drag .nx-hcard{transition:none;opacity:1}
+.nx-hero.bump-up .nx-hcard.cur{animation:nxBumpUp .45s cubic-bezier(.32,.72,0,1)}
+.nx-hero.bump-down .nx-hcard.cur{animation:nxBumpDown .45s cubic-bezier(.32,.72,0,1)}
+@keyframes nxBumpUp{40%{transform:translateY(-14px)}}
+@keyframes nxBumpDown{40%{transform:translateY(14px)}}

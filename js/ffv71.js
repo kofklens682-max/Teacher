@@ -15,7 +15,7 @@ function ffThen() {
   // 10 Nov 2026 (user): the month button and the paid counts are on Home only; Attendance does not repeat them
   const _c = home2Click;
   home2Click = function (b, d) {
-    if (d.ffmon) { const P = payState(); if (P.ym !== d.ffmon) { P.ym = d.ffmon; draw(); } return true; }
+    if (d.ffmon) { const P = payState(), m = b.closest('.ffmp'), same = P.ym === d.ffmon; if (m) m.classList.remove('open'); if (!same) { P.ym = d.ffmon; setTimeout(draw, m ? 300 : 0); } return true; } // 12 Nov: the list folds up first, then Home shows the new month
     return _c(b, d);
   };
 }

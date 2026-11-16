@@ -147,7 +147,7 @@ SHEETS.soloadd = (s) => sheetSoloAdd(s);
 }
 
 /* ---------- money: 1.000.000 (a dot every three digits) in every money box, also while typing ---------- */
-const dotMoney = (v) => { const n = String(v).replace(/\D/g, ''); return n ? (+n).toLocaleString('en-US').replace(/,/g, '.') : ''; };
+const dotMoney = (v) => { const n = String(v).replace(/\D/g, ''); return n ? (+n).toLocaleString('en-US').replace(/,/g, ' ') : ''; };
 const MONEY_IN = 'input[inputmode="numeric"]';
 const fmtMoneyInputs = () => root && root.querySelectorAll(MONEY_IN).forEach((el) => { if (el !== document.activeElement && el.value) el.value = dotMoney(el.value); });
 document.addEventListener('input', (e) => {

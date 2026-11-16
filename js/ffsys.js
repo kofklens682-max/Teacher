@@ -79,3 +79,50 @@ function ffHero(g) {
     <div class="ffh-chips"><span>${ic('Users')}${st} students</span>${book ? `<span>${ic('BookOpen')}${esc(book)}</span>` : ''}</div>
     <button class="ffh-go" ${homeOpen(g)}>${ic('BookOpen')}Open lesson</button></div>`;
 }
+
+/* ======================= 12 Nov 2026 (user): today's lessons are a STACK of cards, like the iPhone widget stack =======================
+   "When the first class is over I move on to the next group; to take the first class's attendance I had to go to Attendance."
+   Now every lesson of today is a card in one stack on Home. The card on show is the lesson that is going (or next).
+   Swipe UP on the card = the earlier class, swipe DOWN = the later one (his words). A class that is over has "Take attendance" on its card.
+   All cards lie in one grid cell (so the stack has one height and nothing jumps); only "--i" (which card is on show) changes. */
+function ffTodayList() { const D = TODAY; return S.groups.filter((g) => (g.students.length || g.solo) && (hasLesson(g, D) || kept(g, D))).sort((a, b) => startMin(a, D) - startMin(b, D)); }
+function ffSideCard(g) { // a lesson of today that is not the one going: over (take its attendance) or later today
+  const D = TODAY, now = nowMin(), s = startMin(g, D), e = endMin(g, D), over = lessonEnded(g, D), cl = curLes(g), saved = rec(g, D).saved, st = g.students.length;
+  const reg = `data-push="register" data-g="${g.id}" data-date="${iso(D)}"`;
+  return `<div class="ffh ${over ? 'past' : 'later'}"><div class="ffh-top"><span class="ffh-tag">${over ? 'Earlier today' : 'Later today'}</span><span class="ffh-when">${over ? hm(s) + ' – ' + hm(e) : 'in ' + ffIn(s - now)}</span></div>
+    <div class="ffh-main"><div><b class="ffh-name">${esc(g.name)}</b><span class="ffh-sub">Week ${cl.w} · Day ${cl.l}${over ? '' : ' · ' + hm(s) + ' – ' + hm(e)}</span></div>${ffRing(over ? 100 : 0, '#fff', `<b>${over ? (saved ? '✓' : '!') : hm(s)}</b>`)}</div>
+    <div class="ffh-unit">${over ? (saved ? `Attendance saved · ${regCount(g, D)} of ${st} here` : 'Attendance not taken yet') : esc(lessonLine(g))}</div>
+    <div class="ffh-chips"><span>${ic('Users')}${st} students</span></div>
+    ${over ? `<button class="ffh-go" ${reg}>${ic('ClipboardCheck')}${saved ? 'Open attendance' : 'Take attendance'}</button>` : `<button class="ffh-go" ${homeOpen(g)}>${ic('BookOpen')}Open lesson</button>`}</div>`;
+}
+function ffStack() {
+  const L = ffTodayList(); if (!L.length) return '';
+  const cur = ffNextGroup(), live = cur && !doneOn(cur, TODAY) ? L.indexOf(cur) : -1, def = live >= 0 ? live : L.length - 1, key = iso(TODAY) + '|' + (cur ? cur.id : '') + '|' + L.length;
+  if (!T.ffst || T.ffst.key !== key) T.ffst = { key, i: def }; // a new lesson started (or the day changed): back to the lesson that is going
+  const i = T.ffst.i = Math.max(0, Math.min(L.length - 1, T.ffst.i));
+  if (L.length === 1) return `<div class="ffst one h-in">${live === 0 ? ffHero(L[0]) : ffSideCard(L[0])}</div>`;
+  return `<div class="ffst h-in" data-ffst="${L.length}" style="--i:${i}"><div class="ffst-vp">${L.map((g, k) => `<div class="ffst-c" style="--k:${k}"${k === i ? '' : ' inert'}>${k === live ? ffHero(g) : ffSideCard(g)}</div>`).join('')}</div>
+    <div class="ffst-dots" aria-hidden="true">${L.map((g, k) => `<i${k === i ? ' class="on"' : ''}></i>`).reverse().join('')}</div></div>`;
+}
+{ // the finger: the cards follow it; let go = the nearest card glides into place
+  let st = null, sup = 0;
+  const show = (el, i) => { el.style.setProperty('--i', i); [...el.querySelectorAll('.ffst-c')].forEach((c, k) => { if (k === i) c.removeAttribute('inert'); else c.setAttribute('inert', ''); }); const ds = [...el.querySelectorAll('.ffst-dots i')].reverse(); ds.forEach((d, k) => { if (k === i) d.className = 'on'; else d.removeAttribute('class'); }); };
+  document.addEventListener('pointerdown', (e) => { const el = e.target.closest && e.target.closest('[data-ffst]'); if (!el || e.button > 0) return; st = { el, id: e.pointerId, x0: e.clientX, y0: e.clientY, n: +el.dataset.ffst, i0: T.ffst ? T.ffst.i : 0, on: false, h: el.querySelector('.ffst-c').offsetHeight + 30, pts: [] }; }, true);
+  document.addEventListener('pointermove', (e) => {
+    if (!st || e.pointerId !== st.id) return; const dx = e.clientX - st.x0, dy = e.clientY - st.y0;
+    if (!st.on) { if (Math.abs(dy) < 8) return; if (Math.abs(dy) < Math.abs(dx) * 1.2) { st = null; return; } st.on = true; st.el.classList.add('drag'); try { st.el.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
+    let f = st.i0 + dy / st.h; if (f < 0) f = f / 3; if (f > st.n - 1) f = st.n - 1 + (f - (st.n - 1)) / 3; // past the first or last card: it only gives a little
+    st.f = f; st.pts.push([e.timeStamp, e.clientY]); if (st.pts.length > 5) st.pts.shift();
+    st.el.style.setProperty('--i', f.toFixed(4));
+  }, true);
+  const end = (e) => {
+    if (!st || e.pointerId !== st.id) return; const s0 = st; st = null; if (!s0.on) return;
+    s0.el.classList.remove('drag'); sup = Date.now();
+    const a = s0.pts[0], b = s0.pts[s0.pts.length - 1], v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0; // finger speed, px per ms
+    let to = Math.round(s0.f); if (Math.abs(v) > 0.35 && to === s0.i0) to = s0.i0 + (v > 0 ? 1 : -1); // a quick flick moves one card
+    to = Math.max(0, Math.min(s0.n - 1, to));
+    if (T.ffst) T.ffst.i = to; show(s0.el, to);
+  };
+  document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true);
+  document.addEventListener('click', (e) => { if (Date.now() - sup < 350 && e.target.closest && e.target.closest('[data-ffst]')) { e.stopPropagation(); e.preventDefault(); } }, true);
+}

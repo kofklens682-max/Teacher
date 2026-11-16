@@ -1,0 +1,6 @@
+/* NEXT (16 Nov): bounce only where it is needed (user: "it shouldn't bounce every time").
+   Kept: pulling a page past its top or bottom (bounce.js), the class card stack, and pop-ups rising with a soft spring.
+   Removed: the spring on every pressed button, row and card. A press now only dims a little, like iPhone. */
+:root{--spring:cubic-bezier(.3,1.5,.5,1);--spring-soft:cubic-bezier(.3,1.25,.5,1)}
+:is(.nx-row:not(.still),.nx-btn,.nx-mini,.nx-more,.nx-pname,.tp-lrow,.un-row2):active{opacity:.6}
+.tp-sheet.show .panel{transition:transform .6s var(--spring-soft) !important}

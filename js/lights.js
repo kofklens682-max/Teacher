@@ -8,9 +8,9 @@ const BUDGET_URL = 'https://kofklens682-max.github.io/Budget/';
 const PV = { el: null, ctx: null, doc: null, zoom: 1, lib: null, seq: 0, thumbs: {} };
 
 const DOT_KEY = 'teacher-dots';
-const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['ClipboardCheck', 'Attendance of this group'], atttab: ['ClipboardCheck', 'Attendance tab'], budget: ['Wallet', 'Budget app'],
+const ACTIONS = { files: ['FileText', 'Lesson files (choose a group)'], att: ['ClipboardCheck', 'Attendance of this group'], atttab: ['Wallet', 'Payments tab'], budget: ['Wallet', 'Budget app'],
   plan: ['BookOpen', 'Lesson plan of this group'], students: ['Users', 'Students of this group'], nextfile: ['ChevronRight', 'Next file of the lesson'], prevfile: ['ChevronLeft', 'Previous file of the lesson'],
-  group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Books tab'],
+  group: ['Plus', 'New group'], pay: ['Wallet', 'Mark who paid'], extra: ['Package', 'Extra charge'], units: ['BookOpen', 'Units tab'], home: ['House', 'Home tab'], books: ['Library', 'Library tab'],
   settings: ['UserRound', 'Profile and settings'], arrange: ['Sliders', 'Arrange Home'], share: ['Share2', 'Share this file'], top: ['ArrowUp', 'Scroll to the top'], close: ['X', 'Close / go back'] };
 // 4 Nov 2026 (user): a dot means a JOB, not one file name. Each level calls its files differently (kids: Vocabulary and speaking /
 // Grammar explained; teens: Reading / Lesson), so a dot opens the first file of its job that the lesson has.
@@ -24,9 +24,9 @@ for (let n = 1; n <= 6; n++) ACTIONS['f:' + n] = ['FileText', 'File ' + n + ' of
 const DOT_CHOICES = { home: ['files', 'atttab', 'budget', 'units', 'books', 'pay', 'extra', 'group', 'settings', 'none'], inside: ['f:1', 'f:2', 'f:3', 'f:4', 'f:5', 'f:6', 'files', 'nextfile', 'att', 'plan', 'students', 'budget', 'none'], file: ['f:1', 'f:2', 'f:3', 'f:4', 'f:5', 'f:6', 'nextfile', 'prevfile', 'files', 'att', 'share', 'top', 'close', 'none'] };
 DOT_CHOICES.tabs = DOT_CHOICES.home;
 const numIcon = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="17.5" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor" stroke="none" font-family="-apple-system,Roboto,Arial,sans-serif">${n}</text></svg>`;
-const DOT_DEFAULT = { blurAmt: 30, style: 'icons', budget: 'app', home: ['files', 'atttab', 'budget'], tabs: ['files', 'atttab', 'budget'], inside: ['f:1', 'f:2', 'f:3'], file: ['f:1', 'f:2', 'f:3'] };
-const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Attendance and Books'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
-const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Blue', 'Green', 'Orange'];
+const DOT_DEFAULT = { blurAmt: 30, style: 'icons', budget: 'app', home: ['pay', 'files', 'budget'], tabs: ['pay', 'files', 'budget'], inside: ['f:1', 'f:2', 'f:3'], file: ['f:1', 'f:2', 'f:3'] };
+const DOT_WHERE = [['home', 'On Home'], ['tabs', 'On Units, Students, Payments and Library'], ['inside', 'Inside a lesson or a group'], ['file', 'Inside a file']];
+const DOT_CLS = ['blue', 'grn', 'org'], DOT_NAMES = ['Red', 'Yellow', 'Green']; // NEXT 15 Nov: macOS colours (classes kept)
 function dotsGet() {
   let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
   const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
@@ -128,7 +128,7 @@ function lightGo(what) {
       if (inViewer) { pvClose(); T.push.push(sc); return draw(true); } // the file's own history step now belongs to that screen
       return pushScreen(sc);
     }
-    case 'atttab': return tabGo(2);
+    case 'atttab': return tabGo(4);
     case 'units': return tabGo(1);
     case 'home': return tabGo(0);
     case 'books': return tabGo(3);

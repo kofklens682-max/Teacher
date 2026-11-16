@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 8.6';
+const VERSION_LABEL = 'Teacher 9.0';
 const GRAD = { A1: ['#34C759', '#0FA37F'], A2: ['#32ADE6', '#147EFB'], B1: ['#5E7BFF', '#3D5AFE'], 'B1+': ['#8B6CFF', '#5B3DF5'], B2: ['#C46BF5', '#8E3BD9'], I1: ['#FF6B9A', '#E0457B'], I2: ['#FF8A4C', '#E5484D'], IT: ['#FF5A5F', '#C2185B'], K2: ['#FF9F0A', '#FF6B9A'], K3: ['#14B8A6', '#0F766E'], K4: ['#38BDF8', '#0369A1'], K5: ['#C46BF5', '#8E3BD9'], own: ['#F5B300', '#E8770E'] };
 const TOPIC = ['#34C759', '#0FA37F', '#FF9F0A', '#FF6B9A', '#32ADE6', '#147EFB', '#5E7BFF', '#3D5AFE', '#FF8A4C', '#E5484D', '#8B6CFF', '#5B3DF5', '#14B8A6', '#0F766E', '#38BDF8', '#0369A1', '#F5B300', '#E8770E'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -450,22 +450,19 @@ const matsBlock = (key) => {
 const scGone = () => `<div class="tp-pushbar"><button class="tp-back" data-pop>${ic('ChevronLeft')} Back</button></div><div class="tp-inner"><div class="tp-empty2">${ic('Info')}<b>This group was removed</b></div></div>`;
 const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : 'https://' + u.replace(/^[a-z]+:/i, ''));
 
-/* ===================== Attendance: everyone is here; P / L / A on every name (31 Oct) ===================== */
-const MK = [['here', 'P'], ['absent', 'A']]; // 1 Nov (user): only Present / Absent; "late" is no longer offered
-const mkIdx = (a) => (a === 'absent' ? 1 : 0);
-function stuRow(g, d, s, r) {
-  const a = r.get(s.id) === 'absent' ? 'absent' : 'here', i = mkIdx(a);
-  return `<div class="tl-st ${a}" data-sid="${s.id}"><button class="tl-main" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}"><span class="tp-av" style="background:${avColor(s.name)}">${esc(s.name[0].toUpperCase())}</span><span class="nm">${esc(s.name)}</span></button>
-    <div class="tp-seg2 slide pla" data-noswipe style="--n:2"><span class="seg-thumb" style="--i:${i}"></span>${MK.map(([k, t], j) => `<button class="${j === i ? 'on' : ''}" data-mark="${s.id}|${k}" aria-label="${esc(s.name)}: ${k}">${t}</button>`).join('')}</div></div>`;
-}
-function saveLabel(g, d) { const r = rec(g, d), here = g.students.filter((s) => r.get(s.id) !== 'absent').length; return `${r.saved ? 'Saved ✓ · ' : 'Save · '}${here} of ${g.students.length} here`; }
-function tapList(g, d) {
-  if (!g.students.length) return `<div class="tp-empty2">${ic('UserPlus')}<b>No students yet</b><span>Add them below or in Edit group.</span></div>`;
-  const r = rec(g, d), open = lessonOpen(g, d);
-  return `<div class="tl-lockable${open ? '' : ' locked'}" data-lock="${g.id}" data-dates="${iso(d)}" data-open="${open ? 1 : 0}"><p class="lock-note">${ic('Clock')} The register opens ${whenLabel(g, d)}</p>
-    <div class="tl-grid" data-g="${g.id}" data-date="${iso(d)}">${g.students.map((s) => stuRow(g, d, s, r)).join('')}</div>
-    <p class="jr-key">P = here, A = absent: tap the switch. Tap a name to open the student's profile.</p>
-    <button class="tp-cta save-day ${r.saved ? 'done' : ''}" data-saveday="${g.id}" data-date="${iso(d)}">${saveLabel(g, d)}</button></div>`;
+/* ===================== Attendance: ONE list (12 Nov 2026) =====================
+   The group page had two lists of the same students (the switches, then the table). Now there is one table: the names have
+   their own column that never moves, the lesson days scroll beside it. A tap on a square marks here / absent and saves at once.
+   There is no Save button: the first tap on a day takes that day's register (everyone here, the tapped student absent),
+   or "Everyone is here" takes it with nobody absent. */
+const regCount = (g, d) => { const r = rec(g, d); return g.students.filter((s) => r.get(s.id) !== 'absent').length; };
+const regStatus = (g, d) => (canceledOn(g, iso(d)) ? 'canceled' : rec(g, d).saved ? `saved ✓ · ${regCount(g, d)} of ${g.students.length} here` : lessonOpen(g, d) ? 'not taken yet' : 'coming up · ' + timeOn(g, d));
+function takeRegister(g, k) { // what the Save button did: everyone not marked is here, the day counts as taken, the plan moves when the lesson has ended
+  const dt = fromIso(k), r = rec(g, dt, true);
+  g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
+  (S.saved[g.id] = S.saved[g.id] || {})[k] = true; if (lessonEnded(g, dt)) autoTaught(g, k); else (S.pend[g.id] = S.pend[g.id] || {})[k] = true; save(); // still going: it counts as taught when it ends
+  const late = planned(g.lvl) && !(S.taught[g.id] || {})[k] && !repOn(g, dt) && lessonEnded(g, dt) && Math.round((TODAY - dt) / 864e5) > 7; // T14
+  draw(); return toast(`Saved: ${regCount(g, dt)} of ${g.students.length} here${late ? '. More than a week late, so the plan did not move: tap "Move the plan" to move it.' : lessonEnded(g, dt) ? '' : '. Counts as taught when the lesson ends.'}`);
 }
 function nextLessonText(g) { const n = lessonDay(g, TODAY, 1); return n ? ` · next ${DAYS[wd(n)]} ${n.getDate()} ${MONTHS[n.getMonth()].slice(0, 3)}` : ''; }
 function pgAtt() {
@@ -484,8 +481,6 @@ function pgAtt() {
       <div class="hn-btns"><button data-push="register" data-g="${next.id}" data-date="${k}">${ic('ClipboardCheck')}Mark now</button><button ${openLessonAttr(next)}>${ic('BookOpen')}Open lesson</button></div></div>`
     : list.length ? doneCard(list, D) : '';
   const pill = (g) => { const r = rec(g, D), n = g.students.length; if (r.saved) return `<span class="at-pill ok">${g.students.filter((s) => r.get(s.id) !== 'absent').length} of ${n} came</span>`; return lessonOpen(g, D) ? '<span class="at-pill wait">Not marked</span>' : `<span class="at-pill gray">opens ${esc(timeOn(g, D))}</span>`; };
-  const rows = list.map((g) => { const open = !!T.open[g.id];
-    return `<div class="tl-sec${open ? ' open' : ''}" data-gsec="${g.id}" style="--c:${hc(g)}"><div class="tl-h"><button class="tl-hb" data-opengrp="${g.id}" aria-expanded="${open}"><span class="at-dot"></span><span class="tx"><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${esc(timeOn(g, D))} · ${stu(g.students.length)}</span></span>${pill(g)}<span class="tl-chev">${ic('ChevronDown')}</span></button><button class="at-edit" data-push="group" data-g="${g.id}" aria-label="${esc(g.name)}: students, program and edit">${ic('Users')}</button></div><div class="tl-body"><div class="tl-in">${tapList(g, D)}</div></div></div>`; }).join('');
   // this month, every group: how many came, how many registers were taken
   const ym = iso(TODAY).slice(0, 7); let here = 0, total = 0, taken = 0;
   S.groups.forEach((g) => savedDates(g).filter((x) => x.startsWith(ym)).forEach((x) => { taken++; const r = rec(g, fromIso(x)); g.students.forEach((s) => { if (!wasIn(s, x, r)) return; total++; if (r.get(s.id) !== 'absent') here++; }); }));
@@ -498,23 +493,31 @@ function pgAtt() {
     ${others.length ? `<div class="tp-sec"><h4>${list.length ? 'Other groups' : 'Groups'}</h4><span>${others.length}</span></div><div class="at-list">${others.map((g) => row(g, true)).join('')}</div>` : ''}`;
 }
 const GSYM = { here: '✓', late: 'L', absent: '✕' };
-function tableDates(g) { // the last lessons taken, then the lessons still to come (today included)
+function tableDates(g, cur) { // the last lessons taken, then the lessons still to come (today included), and the day being looked at
   const past = savedDates(g).filter((k) => k < iso(TODAY)).slice(-3), now = [];
   for (let i = 0; i < 60 && now.length < 5; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) || (i === 0 && kept(g, d))) now.push(iso(d)); }
-  return [...new Set([...past, ...now])].sort();
+  return [...new Set([...past, ...now, ...(cur ? [cur] : [])])].sort();
 }
 const gridPct = (g, ds, sid) => { let n = 0, h = 0; ds.forEach((k) => { const r = rec(g, fromIso(k)); if (!(sid in r.att)) return; n++; if (r.get(sid) !== 'absent') h++; }); return n ? Math.round((h / n) * 100) : null; };
-function histGrid(g, cur) { // the register as a table: names down, lesson dates across; tap a square to change it
-  const ds = tableDates(g);
+function histGrid(g, cur) { // names down (their own fixed block), lesson dates across (the only part that scrolls); tap a square to change it
+  const ds = tableDates(g, cur);
   if (!ds.length) return '';
+  if (!g.students.length) return `<div class="tp-empty2">${ic('UserPlus')}<b>No students yet</b><span>Add them below or in Edit group.</span></div>`;
   const fee = hasFee(g), ym = payState().ym; // 30 Oct (user): who paid is a column of this table, not a second long list
-  const cols = `grid-template-columns:96px 46px${fee ? ' 46px' : ''} repeat(${ds.length},46px)`, open = ds.map((k) => (lessonOpen(g, fromIso(k)) ? 1 : 0)).join('');
+  const open = ds.map((k) => (lessonOpen(g, fromIso(k)) ? 1 : 0)).join('');
   const paidCell = (s) => { const L = ledger(g, s, ym), st = L.st, ok = st !== 'unpaid' && st !== 'part';
-    return `<button class="gt-m ${ok ? 'ok' : st === 'part' ? 'part' : 'no'}" data-sheet="${ok ? 'stu' : 'payrec'}" data-g="${g.id}" data-sid="${s.id}" aria-label="${esc(s.name)}: ${PST[st][0]} for ${SHORT(ym)}">${ok ? '✓' : st === 'part' ? '½' : '✕'}</button>`; };
-  return `<div class="tp-card2"><div class="h">${ic('Table2')}Attendance table · ${g.students.length} student${g.students.length === 1 ? '' : 's'}</div><div class="gt-wrap" data-gtwrap data-cur="${cur}"><div class="gt" data-g="${g.id}" data-lock="${g.id}" data-dates="${ds.join(',')}" data-open="${open}" style="${cols}">
-    <span class="gt-h gt-n"></span><span class="gt-h gt-p"><small>Here</small></span>${fee ? `<span class="gt-h gt-m"><small>Paid</small><small>${SHORT(ym)}</small></span>` : ''}${ds.map((k) => { const d = fromIso(k); return `<button class="gt-h gt-d${k === iso(TODAY) ? ' today' : ''}${k === cur ? ' cur' : ''}" data-lessonday="${k}"><small>${DAYS[wd(d)]}</small><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()].slice(0, 3)}</small></button>`; }).join('')}
-    ${g.students.map((s, si) => { const pc = gridPct(g, ds, s.id); return `<button class="gt-n" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}" title="${esc(s.name)}"><i>${si + 1}</i>${esc(s.name)}</button><b class="gt-p" data-gpct="${s.id}">${pc === null ? '' : pc + '%'}</b>${fee ? paidCell(s) : ''}${ds.map((k) => { const r = rec(g, fromIso(k)), o = lessonOpen(g, fromIso(k)); if (!(s.id in r.att)) return `<button class="gc na${o ? '' : ' soon'}" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k}"></button>`; const a = r.get(s.id); return `<button class="gc ${a}${a !== 'absent' && !r.hwOf(s.id) ? ' nohw' : ''}" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k} ${a}">${GSYM[a]}</button>`; }).join('')}`; }).join('')}
-  </div></div><p class="sub">✓ here · L late · ✕ absent · a dot = homework not done. Tap a square to change it.${fee ? ` Paid: who has paid for ${MONTHS[+ym.slice(5) - 1]}; tap ✕ to mark a payment, tap a name or ✓ to open the student.` : ''} A lesson that hasn't started yet stays closed. Tap a date to open that lesson.</p></div>`;
+    return `<button class="rt-m ${ok ? 'ok' : st === 'part' ? 'part' : 'no'}" data-sheet="${ok ? 'stu' : 'payrec'}" data-g="${g.id}" data-sid="${s.id}" aria-label="${esc(s.name)}: ${PST[st][0]} for ${SHORT(ym)}">${ok ? '✓' : st === 'part' ? '½' : '✕'}</button>`; };
+  const cell = (s, k) => { const r = rec(g, fromIso(k)), o = lessonOpen(g, fromIso(k)), c = k === cur ? ' cur' : '';
+    if (!(s.id in r.att)) return `<button class="gc na${o ? '' : ' soon'}${c}" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k}"></button>`;
+    const a = r.get(s.id); return `<button class="gc ${a}${a !== 'absent' && !r.hwOf(s.id) ? ' nohw' : ''}${c}" data-gcell="${s.id}" data-gdate="${k}" aria-label="${esc(s.name)} ${k} ${a}">${GSYM[a]}</button>`; };
+  const left = `<div class="rt-fix${fee ? ' fee' : ''}"><span class="rt-h"></span>${fee ? `<span class="rt-h"><small>Paid</small><small>${SHORT(ym)}</small></span>` : ''}
+    ${g.students.map((s, si) => { const pc = gridPct(g, ds, s.id); return `<button class="rt-n" data-sheet="stu" data-g="${g.id}" data-sid="${s.id}" title="${esc(s.name)}"><i>${si + 1}</i><span><b>${esc(s.name)}</b><small data-gpct="${s.id}">${pc === null ? '' : pc + '%'}</small></span></button>${fee ? paidCell(s) : ''}`; }).join('')}</div>`;
+  const right = `<div class="rt-scroll" data-gtwrap data-cur="${cur}"><div class="rt-days" style="--n:${ds.length}">
+    ${ds.map((k) => { const d = fromIso(k); return `<button class="rt-h rt-d${k === iso(TODAY) ? ' today' : ''}${k === cur ? ' cur' : ''}" data-lessonday="${k}"><small>${DAYS[wd(d)]}</small><b>${d.getDate()}</b><small>${MONTHS[d.getMonth()].slice(0, 3)}</small></button>`; }).join('')}
+    ${g.students.map((s) => ds.map((k) => cell(s, k)).join('')).join('')}</div></div>`;
+  return `<div class="tp-card2 rt-card"><div class="h">${ic('Table2')}Attendance · ${g.students.length} student${g.students.length === 1 ? '' : 's'}</div>
+    <div class="rt" data-g="${g.id}" data-lock="${g.id}" data-dates="${ds.join(',')}" data-open="${open}">${left}${right}</div>
+    <p class="sub">Tap a square: ✓ here, ✕ absent. It saves by itself.${fee ? ` Paid: tap ✕ to mark a payment.` : ''} Tap a name to open the student, a date to open that lesson. A lesson that hasn't started yet stays closed.</p></div>`;
 }
 function scRegister(f) {
   const g = gById(f.g); if (!g) return scGone();
@@ -529,11 +532,11 @@ function scRegister(f) {
   const d = fromIso(f.date), prev = lessonDay(g, d, -1), nxt = lessonDay(g, d, 1), cx = canceledOn(g, f.date);
   return `${bar}<div class="tp-inner" style="${gvg(g)}">${head}
     <div class="rg-nav"><button class="tp-iconbtn" ${prev ? `data-lessonday="${iso(prev)}"` : 'disabled'} aria-label="Previous lesson">${ic('ChevronLeft')}</button>
-      <div><b>${dayName(d)}</b><span>${cx ? 'canceled' : rec(g, d).saved ? 'taken' : lessonOpen(g, d) ? 'not taken yet' : 'coming up · ' + esc(timeOn(g, d))}</span></div>
+      <div><b>${dayName(d)}</b><span data-regst>${esc(regStatus(g, d))}</span></div>
       <button class="tp-iconbtn" ${nxt ? `data-lessonday="${iso(nxt)}"` : 'disabled'} aria-label="Next lesson">${ic('ChevronRight')}</button></div>
     ${cx ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>No lesson on this day.</b> Nothing moves on: the same topic comes next lesson, and every date after it is one lesson day later.</p></div>`
-      : `${hasLesson(g, d) ? '' : `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${DAYS_LONG[wd(d)]} is not a lesson day for this group.</b> Lessons are on ${g.days.map((x) => DAYS[x]).join(', ') || 'no days'}.</p><button class="tp-pill" data-rmreg="${iso(d)}" data-g="${g.id}">${ic('Trash2')} Remove this register</button></div>`}${rideBlock(g, f.date)}${tapList(g, d)}${lateNote(g, f.date)}`}
-    ${calRows(g, f.date)}${histGrid(g, f.date)}${f.date === iso(TODAY) && !cx ? repeatBlock(g) : ''}${add}</div>`;
+      : `${hasLesson(g, d) ? '' : `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${DAYS_LONG[wd(d)]} is not a lesson day for this group.</b> Lessons are on ${g.days.map((x) => DAYS[x]).join(', ') || 'no days'}.</p><button class="tp-pill" data-rmreg="${iso(d)}" data-g="${g.id}">${ic('Trash2')} Remove this register</button></div>`}${rideBlock(g, f.date)}${g.students.length && hasLesson(g, d) && lessonOpen(g, d) && !rec(g, d).saved ? `<button class="tp-cta rt-all" data-saveday="${g.id}" data-date="${f.date}">${ic('Check')}Everyone is here</button>` : ''}`}
+    ${histGrid(g, f.date)}${cx ? '' : lateNote(g, f.date)}${calRows(g, f.date)}${f.date === iso(TODAY) && !cx ? repeatBlock(g) : ''}${add}</div>`;
 }
 // 11 Nov (user): a group can cancel ONE lesson or add one on another day (S.cal, the same record as individual students)
 const canceledOn = (g, k) => !!k && (((S.cal || {})[g.id] || {}).st || {})[k] === 'cancel';
@@ -665,7 +668,7 @@ function sheetCopies(s) {
       : list.map((c) => `<button class="tp-lrow" data-usecopy="${esc(c.key)}">${ic('History')}<span class="tx"><b>${esc(new Date(c.at).toLocaleString('en-GB', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))}</b><span>${c.groups} groups · ${c.students} students${c.why === 'before' ? ' · before ' + esc(c.note || 'a restore') : ''}</span></span></button>`).join('')}
     <p class="tp-small">Tap a copy to bring it back. What is in the app now is kept as a copy first.</p>`;
 }
-const PAGES = [() => pgHomeNew(), pgUnits, pgAtt, pgBooks];
+const PAGES = [() => pgHomeNew(), pgUnits, () => pgStudents(), pgBooks, () => pgPayments()]; // NEXT (15 Nov): 5 tabs; Books stays page 3 for the level pager
 const PUSH = { group: (f) => scGroup(f), pay: (f) => scPay(f), week: (f) => (f.lvl === 'IT' ? turboWeek(f) : scWeek(f)), lesson: (f) => (f.lvl === 'IT' ? turboLesson(f) : scLesson(f)), own: scOwn, register: scRegister, big: scBig };
 const SHEETS = { pkfiles: (s) => sheetPkFiles(s), pkgroups: (s) => sheetPkGroups(s), owegrp: (s) => sheetOweGrp(s), paypick: (s) => sheetPayPick(s), extra: (s) => sheetExtra(s), extradet: (s) => sheetExtraDet(s), xpay: (s) => sheetXPay(s), homecfg: (s) => sheetHomeCfg(s), payrec: (s) => sheetPayRec(s), gdisc: (s) => sheetGDisc(s), group: sheetGroup, lesson: sheetLesson, media: sheetMedia, book: sheetBook, settings: sheetSettings, copies: sheetCopies };
 
@@ -677,17 +680,19 @@ const SHEETS = { pkfiles: (s) => sheetPkFiles(s), pkgroups: (s) => sheetPkGroups
    - a sheet slides up, follows the finger when pulled down (from anywhere, when its content is at the top), and closes
      with a pull, a flick, a tap outside, Cancel or the phone's Back button. */
 let root, R = null;
-const TABS = [['House', 'Home'], ['BookOpen', 'Units'], ['ClipboardCheck', 'Attendance'], ['Library', 'Books']];
+const TABS = [['House', 'Home'], ['BookOpen', 'Units'], ['Users', 'Students'], ['Library', 'Library'], ['Wallet', 'Payments']];
+const TAB_ORDER = [0, 1, 2, 4, 3]; // the bar, left to right: Home, Units, Students, Payments, Library
+const tabPos = (i) => TAB_ORDER.indexOf(i);
 function frame() {
   root.innerHTML = `<div class="tp-viewport"><div class="tp-track">${PAGES.map(() => '<section class="tp-page"></section>').join('')}</div></div>
     <div class="tp-screens"></div>
-    <nav class="tp-tabs"><span class="tp-ind"></span>${TABS.map((t, i) => `<button data-tab="${i}">${ic(t[0])}<span>${t[1]}</span></button>`).join('')}</nav>
+    <nav class="tp-tabs"><span class="tp-ind"></span>${TAB_ORDER.map((i) => `<button data-tab="${i}">${ic(TABS[i][0])}<span>${TABS[i][1]}</span></button>`).join('')}</nav><button class="tp-fab" data-sheet="quick" aria-label="Add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <div class="tp-sheets"></div>`;
   R = { vp: root.querySelector('.tp-viewport'), track: root.querySelector('.tp-track'), pages: [...root.querySelectorAll('.tp-page')],
     screens: root.querySelector('.tp-screens'), tabs: root.querySelector('.tp-tabs'), ind: root.querySelector('.tp-ind'), sheets: root.querySelector('.tp-sheets'),
     screen: null, sheet: null, anim: -1 };
   root.addEventListener('pointerdown', (e) => { R.lastDown = e.timeStamp; }, true); // which touch a click belongs to (T51)
-  bindSwipe(); bindTabSlide(); bindSegSlide();
+  /* NEXT (user, 15 Nov): no finger swipe between tabs */ bindTabSlide(); bindSegSlide();
 }
 // Chip strips: remember their sideways scroll across a redraw, then glide the chosen chip into view if it is hidden.
 function stripsOf(el) { return [...el.querySelectorAll('.tp-segs')].map((s) => s.scrollLeft); }
@@ -746,7 +751,7 @@ function safe(fn, arg) {
 function fixTables() { // each attendance table opens scrolled to the lesson being looked at
   root.querySelectorAll('[data-gtwrap]').forEach((w) => {
     if (w._cur === w.dataset.cur) return; w._cur = w.dataset.cur;
-    const h = w.querySelector('.gt-d.cur'); if (h) w.scrollLeft = Math.max(0, h.offsetLeft - 96 - 46 - 8);
+    const h = w.querySelector('.rt-d.cur'); if (h) w.scrollLeft = Math.max(0, h.offsetLeft - h.offsetWidth * 1.5); // one and a half earlier days stay in view
   });
 }
 function checkLocks() { // a register opens by itself when its lesson starts
@@ -943,10 +948,10 @@ function bindSegSlide() {
 // ---------- the tab bar and the pages' position ----------
 function syncTabs() {
   if (!R.sliding) {
-    R.track.style.transform = `translateX(${-T.tab * 25}%)`;
-    R.ind.style.transform = `translateX(${T.tab * 100}%)`;
+    R.track.style.transform = `translateX(${-T.tab * (100 / PAGES.length)}%)`;
+    R.ind.style.transform = `translateX(${tabPos(T.tab) * 100}%)`;
   }
-  R.tabs.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === T.tab));
+  R.tabs.querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.tab === T.tab));
 }
 // The phone's Back button closes the sheet or the screen on top, like in other apps.
 function stepIn() { try { history.pushState({ tp: ((history.state && history.state.tp) || 0) + 1 }, ''); } catch (e) { /* fine without */ } }
@@ -964,14 +969,18 @@ function closeTop() {
 function openSheet(sh) { const replacing = !!T.sheet; T.sheet = sh; if (!replacing) stepIn(); draw(!replacing); }
 function closeSheetNow() { if (T.sheet) goBack(); }
 function pushScreen(sc) { T.push.push(sc); stepIn(); draw(true); }
-function goTab(i) {
+// 12 Nov 2026 (user): a TAP on a tab goes straight to that page with a short fade, like iPhone apps. It used to slide past the
+// pages in between (Home -> Books flew over Units and Attendance: that was the lag). A finger swipe still slides (slide = true).
+function goTab(i, slide) {
   if (i === T.tab && !T.push.length) { R.pages[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (i !== 3 && player) stopAudio(); // leaving Books stops the recording (T23)
   const hadPush = T.push.length; T.tab = i; T.push = [];
   if (hadPush) unwind();
-  R.track.classList.add('settle');
+  R.track.classList.toggle('settle', !!slide);
   draw();
-  lightsPlay(R.pages[i]);
+  const pg = R.pages[i];
+  // NEXT (user, 15 Nov): a tab switches at once, with no effect; only new screens slide in
+  lightsPlay(pg);
 }
 function paintSwipe(s) { if (s.dx === undefined || s.lv) return; tabFx(T.tab - s.dx / s.W); R.track.style.transform = `translateX(calc(${-T.tab * 25}% + ${s.dx}px))`; R.ind.style.transform = `translateX(${(T.tab - s.dx / s.W) * 100}%)`; }
 function bindSwipe() {
@@ -1023,21 +1032,21 @@ function bindSwipe() {
     tr.style.transitionDuration = ms + 'ms'; tr.classList.add('settle', 'glide');
     clearTimeout(tr._t); tr._t = setTimeout(() => { tr.style.transitionDuration = ''; tr.classList.remove('glide'); }, ms + 40);
     vp._moved = s.t0;
-    if (i !== T.tab) return goTab(i);
+    if (i !== T.tab) return goTab(i, true);
     syncTabs();
   };
   vp.addEventListener('pointerup', end); vp.addEventListener('pointercancel', end);
 }
 function bindTabSlide() {
   const bar = R.tabs, ind = R.ind; let st = null;
-  bar.addEventListener('pointerdown', (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, t0: e.timeStamp, over: T.tab }; });
+  bar.addEventListener('pointerdown', (e) => { st = { x0: e.clientX, on: false, id: e.pointerId, t0: e.timeStamp, over: tabPos(T.tab) }; });
   bar.addEventListener('pointermove', (e) => {
     if (!st || e.pointerId !== st.id) return;
     if (!st.on) { if (Math.abs(e.clientX - st.x0) < 8) return; st.on = true; R.sliding = true; bar.classList.add('sliding'); try { bar.setPointerCapture(e.pointerId); } catch (_) { /* ok */ } }
-    const r = bar.getBoundingClientRect(), w = (r.width - 10) / 4, x = Math.max(0, Math.min(w * 3, e.clientX - r.left - 5 - w / 2));
+    const N = TAB_ORDER.length, r = bar.getBoundingClientRect(), w = (r.width - 10) / N, x = Math.max(0, Math.min(w * (N - 1), e.clientX - r.left - 5 - w / 2));
     ind.style.transform = `translateX(${x}px)`; st.over = Math.round(x / w); bar.querySelectorAll('button').forEach((b, k) => b.classList.toggle('on', k === st.over));
   });
-  const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = s.t0; R.track.classList.add('settle'); if (s.over !== T.tab || T.push.length) goTab(s.over); else syncTabs(); } };
+  const up = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; bar.classList.remove('sliding'); R.sliding = false; if (s.on) { bar._slid = s.t0; const to = TAB_ORDER[s.over]; if (to !== T.tab || T.push.length) goTab(to); else syncTabs(); } };
   bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
 }
 // ---------- level pager (Units and Books) ----------
@@ -1160,17 +1169,6 @@ function keepForm() {
   if (root.querySelector('#f-fee')) F.fee = +String(val('f-fee')).replace(/\D/g, '') || '';
 }
 
-// ---------- attendance taps: updated in place (no redraw), saved at once ----------
-function tapCtx(b) { const grid = b.closest('.tl-grid'); if (!grid) return null; const c = { g: gById(grid.dataset.g), d: fromIso(grid.dataset.date), grid };
-  if (!hasLesson(c.g, c.d) && !(S.saved[c.g.id] || {})[iso(c.d)]) { toast('This is not a lesson day for this group'); return null; } // no stray registers on days without a lesson
-  return c; }
-function refreshRow(grid, g, d, sid) {
-  const s = g.students.find((x) => x.id === sid), row = grid.querySelector(`.tl-st[data-sid="${sid}"]`); if (!s || !row) return;
-  const r = rec(g, d), a = r.get(sid) === 'absent' ? 'absent' : 'here'; // changed in place, so the colour glides
-  row.className = 'tl-st ' + a; const sg = row.querySelector('.pla'); if (sg) { const i = mkIdx(a); sg.querySelector('.seg-thumb').style.setProperty('--i', i); sg.querySelectorAll('button').forEach((x, k) => x.classList.toggle('on', k === i)); }
-  const btn = grid.parentElement.querySelector(`[data-saveday="${g.id}"]`); if (btn) btn.textContent = saveLabel(g, d);
-}
-
 function onClick(e) {
   const b = e.target.closest('button,a,label'); if (!b || !root.contains(b)) return;
   if (b.tagName === 'A' || b.tagName === 'LABEL') return;
@@ -1202,30 +1200,23 @@ function onClick(e) {
   if (d.kshow) { T.open['tr-' + d.kshow] = !T.open['tr-' + d.kshow]; return draw(); }
   if (d.attday) { if (d.attday === T.attDay) return; T.attDay = d.attday; R.anim = 2; return draw(); } // a new day: the cards slide in again
   if (d.bookseg) { if (d.bookseg === T.bookSeg) return; T.bookSeg = d.bookseg; R.anim = 3; return draw(); }
-  if (d.tap !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.att[d.tap] = NEXT[r.get(d.tap)]; save(); return refreshRow(c.grid, c.g, c.d, d.tap); }
-  if (d.gcell !== undefined) {
-    const gt = b.closest('.gt'), g = gById(gt.dataset.g), dt = fromIso(d.gdate);
-    if (!hasLesson(g, dt) && !(S.saved[g.id] || {})[d.gdate]) return;
+  if (d.gcell !== undefined) { // a square of the attendance table: saved at once, changed in place (no redraw)
+    const gt = b.closest('.rt'), g = gById(gt.dataset.g), k = d.gdate, dt = fromIso(k), sid = d.gcell, was = !!(S.saved[g.id] || {})[k];
+    if (!hasLesson(g, dt) && !was) return;
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
     const r = rec(g, dt, true);
-    r.att[d.gcell] = d.gcell in r.att ? NEXT[r.get(d.gcell)] : 'here'; save();
-    const a = r.get(d.gcell); b.className = 'gc ' + a + (a !== 'absent' && !r.hwOf(d.gcell) ? ' nohw' : ''); b.textContent = GSYM[a];
-    const pc = gridPct(g, tableDates(g), d.gcell), pe = gt.querySelector(`[data-gpct="${d.gcell}"]`); if (pe) pe.textContent = pc === null ? '' : pc + '%';
-    const grid = root.querySelector(`.tl-grid[data-g="${g.id}"][data-date="${d.gdate}"]`); if (grid) refreshRow(grid, g, dt, d.gcell);
+    if (!was) { r.att[sid] = sid in r.att ? NEXT[r.get(sid)] : 'absent'; return takeRegister(g, k); } // the first tap on a day takes its register: everyone is here, this student is absent
+    r.att[sid] = sid in r.att ? NEXT[r.get(sid)] : 'here'; save();
+    const a = r.get(sid); b.className = 'gc ' + a + (a !== 'absent' && !r.hwOf(sid) ? ' nohw' : '') + (b.classList.contains('cur') ? ' cur' : ''); b.textContent = GSYM[a];
+    const pc = gridPct(g, gt.dataset.dates.split(','), sid), pe = gt.querySelector(`[data-gpct="${sid}"]`); if (pe) pe.textContent = pc === null ? '' : pc + '%';
+    const st = top && top.date === k && R.screen && R.screen.querySelector('[data-regst]'); if (st) st.textContent = regStatus(g, dt);
     return;
   }
-  if (d.mark) { const [sid, m] = d.mark.split('|'), c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) { refreshRow(c.grid, c.g, c.d, sid); return notOpenToast(c.g, c.d); } const r = rec(c.g, c.d, true); r.att[sid] = m; save(); return refreshRow(c.grid, c.g, c.d, sid); }
-  if (d.taphw !== undefined) { const c = tapCtx(b); if (!c) return; if (!lessonOpen(c.g, c.d)) return notOpenToast(c.g, c.d); const r = rec(c.g, c.d, true); r.hw[d.taphw] = !r.hwOf(d.taphw); save(); return refreshRow(c.grid, c.g, c.d, d.taphw); }
-  if (d.saveday) {
+  if (d.saveday) { // "Everyone is here"
     const g = gById(d.saveday), dt = fromIso(d.date);
     if (!hasLesson(g, dt) && !(S.saved[g.id] || {})[d.date]) return toast('This is not a lesson day for this group');
     if (!lessonOpen(g, dt)) return notOpenToast(g, dt);
-    const r = rec(g, dt, true);
-    g.students.forEach((s) => { if (!(s.id in r.att)) r.att[s.id] = 'here'; if (!(s.id in r.hw)) r.hw[s.id] = true; });
-    (S.saved[g.id] = S.saved[g.id] || {})[d.date] = true; if (lessonEnded(g, dt)) autoTaught(g, d.date); else (S.pend[g.id] = S.pend[g.id] || {})[d.date] = true; save(); // still going: it counts as taught when it ends
-    const here = g.students.filter((s) => r.get(s.id) !== 'absent').length, hw = g.students.filter((s) => r.get(s.id) !== 'absent' && r.hwOf(s.id)).length;
-    const late = planned(g.lvl) && !(S.taught[g.id] || {})[d.date] && !repOn(g, dt) && lessonEnded(g, dt) && Math.round((TODAY - dt) / 864e5) > 7; // T14
-    draw(); return toast(`Saved: ${here} of ${g.students.length} here, ${hw} did the homework${late ? '. More than a week late, so the plan did not move: tap "Move the plan" to move it.' : lessonEnded(g, dt) ? '' : '. Counts as taught when the lesson ends.'}`);
+    return takeRegister(g, d.date);
   }
   if (d.moveplan) { // T14: a register saved more than a week late moves the plan only when you say so
     const [gid, k] = d.moveplan.split('|'), g = gById(gid); if (!g) return;
@@ -1516,6 +1507,7 @@ async function start() {
   draw(); lightsPlay(R.pages[T.tab]);
   root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('keydown', onKey);
   const took = await startSecond(hadQuick); if (took) draw();
+  if (window.quickBad && typeof f17Damaged === 'function') f17Damaged(took);
   makeCopy('day');
   setTimeout(prewarm, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* the browser decides */ }

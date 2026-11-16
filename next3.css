@@ -1,0 +1,19 @@
+/* NEXT part 3 — the lock screen (passcode + fingerprint) */
+.nx-lock{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(242,242,247,.86);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);animation:nxlin .25s ease both}
+.nx-lock.out{animation:nxlout .25s ease both}
+@keyframes nxlin{from{opacity:0}}@keyframes nxlout{to{opacity:0}}
+.nx-lock .in{display:flex;flex-direction:column;align-items:center;gap:6px;width:280px}
+.nx-lock .lk{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;color:#fff;background:radial-gradient(120% 120% at 30% 0%,#4FA6FF,#0A84FF 60%);box-shadow:0 10px 24px -10px rgba(10,132,255,.7);margin-bottom:6px}
+.nx-lock .lk svg{width:30px;height:30px}
+.nx-lock b{font-size:22px;font-weight:700}.nx-lock #nxl-s{font-size:14px;color:rgba(60,60,67,.62);min-height:18px;text-align:center}
+.nx-lock .dots{display:flex;gap:16px;margin:16px 0 22px}
+.nx-lock .dots i{width:14px;height:14px;border-radius:50%;border:1.6px solid #1c1c1e}.nx-lock .dots i.on{background:#1c1c1e}
+.nx-lock .dots.shake{animation:nxshake .4s}
+@keyframes nxshake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.nx-lock .pad{display:grid;grid-template-columns:repeat(3,76px);gap:14px 22px}
+.nx-lock .pad button{width:76px;height:76px;border-radius:50%;border:0;font:inherit;font-size:30px;font-weight:400;color:#1c1c1e;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.nx-lock .pad button:active{background:rgba(0,0,0,.12)}
+.nx-lock .pad button.g{background:none;box-shadow:none;display:grid;place-items:center;color:#0A84FF}
+.nx-lock .pad button.g svg{width:30px;height:30px}
+.nx-lock .pad button.hide{visibility:hidden}
+.nx-lock .cx{border:0;background:none;font:inherit;font-size:16px;color:#0A84FF;margin-top:14px}

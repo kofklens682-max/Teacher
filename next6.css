@@ -1,0 +1,165 @@
+/* NEXT, last round (16 Nov): iPhone icons in the tab bar, the lesson page, the individual students' calendar,
+   the iPhone date/time picker and the file viewer. */
+
+/* ---------- icons: filled tab icon when the tab is chosen ---------- */
+.sf-f{display:none}
+.tp-tabs button.on .sf-f{display:inline}
+.tp-tabs button.on .sf-o{display:none}
+.tp-tabs button.on svg{fill:none !important}
+
+/* ---------- the lesson page ---------- */
+.lp{gap:14px}
+.lp .tp-card2{border-radius:22px;padding:14px 16px;background:#fff;box-shadow:0 1px 2px rgba(20,40,80,.04),0 8px 22px -14px rgba(20,40,80,.16)}
+.lp .tp-card2>.h{font-size:14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:7px}
+.lp .tp-card2>.h svg{width:19px;height:19px;flex:none}
+.lp .tp-card2:has(.pk-row){padding:6px 16px 8px}
+.lp .tp-card2:has(.pk-row)>.h{padding-top:8px}
+.lp .pk-row{position:relative;display:flex;align-items:center;gap:12px;padding:10px 0;min-height:60px;border-top:0 !important}
+.lp .pk-row+.pk-row::before{content:"";position:absolute;top:0;left:48px;right:0;border-top:.5px solid var(--nx-sep)}
+.lp-fic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(160deg,#4FA6FF,#0A84FF);color:#fff;flex:none;box-shadow:0 2px 6px -2px rgba(10,132,255,.5)}
+.lp-fic svg{width:19px;height:19px;stroke-width:2}
+.lp .pk-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.lp .pk-t b{font-size:16px;font-weight:600;line-height:1.25}
+.lp .pk-t span{font-size:13px;color:var(--nx-l2);margin-top:2px;line-height:1.3}
+html body .lp .pk-row a.lp-open{position:static !important;order:3;background:none !important;box-shadow:none !important;border:0 !important;padding:0 !important;min-width:0;width:16px;height:auto;color:#C4C4C7 !important;flex:none}
+.lp .pk-row a.lp-open::before{display:none !important}
+.lp .pk-row a.lp-open::after{content:"";position:absolute;inset:0;z-index:0;border-radius:12px}
+.lp .pk-row a.lp-open:active::after{background:rgba(0,0,0,.04)}
+.lp .pk-row a.lp-open svg{width:15px;height:15px}
+html body .lp .pk-row .lp-share{position:relative;z-index:1;order:2;width:36px;height:36px;padding:0 !important;border-radius:50% !important;display:grid !important;place-items:center;background:rgba(10,132,255,.1) !important;box-shadow:none !important;border:0 !important;color:#0A84FF !important;flex:none}
+.lp .pk-row .lp-share svg{width:18px;height:18px;margin:0}
+html body .lp .lp-all{width:100%;background:none !important;color:#0A84FF !important;box-shadow:none !important;border:0 !important;border-top:.5px solid var(--nx-sep) !important;border-radius:0 !important;font-size:15px;font-weight:600;padding:12px 0 6px !important;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:6px}
+.lp .lp-all svg{width:17px;height:17px}
+.lp .tp-small{text-align:left;margin:0 6px}
+
+.lp-card{background:var(--nx-card,#fff);border-radius:22px;overflow:hidden;box-shadow:0 1px 2px rgba(20,40,80,.04),0 8px 22px -14px rgba(20,40,80,.16)}
+.lp-stat,.lp-row{display:flex;align-items:center;gap:12px;padding:11px 16px;min-height:58px;width:100%;text-align:left;border:0;background:none;font:inherit;color:inherit;position:relative}
+.lp-row:active{background:rgba(0,0,0,.04)}
+.lp-card>*+*::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--nx-sep)}
+.lp-ic{width:30px;height:30px;border-radius:8px;background:var(--c);color:#fff;display:grid;place-items:center;flex:none}
+.lp-ic svg{width:17px;height:17px;stroke-width:2.3}
+.lp-card .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.lp-card .tx b{font-size:16px;font-weight:600}
+.lp-card .tx small{font-size:13px;color:var(--nx-l2);margin-top:1px;line-height:1.35}
+.lp-card .lp-row>svg{width:15px;height:15px;color:#C4C4C7;flex:none}
+.lp-sw{width:51px;height:31px;border-radius:99px;background:#E9E9EB;position:relative;flex:none;transition:background .25s}
+.lp-sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);transition:transform .3s cubic-bezier(.3,1.3,.5,1)}
+.lp-sw.on{background:#30D158}.lp-sw.on::after{transform:translateX(20px)}
+.lp-seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;position:relative}
+.lp-seg3 button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px 10px;border-radius:14px;border:0;background:#F2F2F7;font:inherit;font-size:14px;font-weight:600;color:#1C1C1E;transition:background .2s,color .2s}
+.lp-seg3 button svg{width:22px;height:22px;color:var(--c);stroke-width:2.4}
+.lp-seg3 button.on{background:var(--c);color:#fff}
+.lp-seg3 button.on svg{color:#fff}
+.nx-foot{font-size:13px;color:var(--nx-l2);margin:-6px 6px 0;line-height:1.4}
+
+/* ---------- individual students: the iPhone month calendar ---------- */
+.ic-cal{display:block}
+.ic-h{display:flex;align-items:center;justify-content:space-between;margin:0 -4px 4px 2px}
+.ic-h b{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.ic-h b span{color:var(--nx-l2);font-weight:600}
+.ic-h>div{display:flex}
+.ic-h button{width:36px;height:36px;border:0;background:none;color:#0A84FF;display:grid;place-items:center;border-radius:50%;padding:0}
+.ic-h button:active{background:rgba(10,132,255,.1)}
+.ic-h button svg{width:20px;height:20px}
+.ic-w,.ic-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}
+.ic-w span{font-size:12px;font-weight:600;color:rgba(60,60,67,.42);padding:4px 0 6px}
+.ic-g{row-gap:5px}
+.ic-d{width:100%;max-width:40px;aspect-ratio:1;margin:0 auto;border:0;border-radius:50%;background:none;font:inherit;display:grid;place-items:center;position:relative;color:#1C1C1E;padding:0;transition:transform .15s}
+.ic-d:active{transform:scale(.9)}
+.ic-d b{font-size:16px;font-weight:500}
+.ic-d.off{color:rgba(60,60,67,.32)}
+.ic-d.done{background:#30D158;color:#fff}
+.ic-d.done b,.ic-d.cancel b,.ic-d.moved b{font-weight:700}
+.ic-d.cancel{background:rgba(255,69,58,.14);color:#FF453A}
+.ic-d.cancel b{text-decoration:line-through}
+.ic-d.moved{background:rgba(255,159,10,.17);color:#C46A00}
+.ic-d.miss{box-shadow:inset 0 0 0 1.6px #C7C7CC}
+.ic-d.soon{box-shadow:inset 0 0 0 1.6px rgba(10,132,255,.42);color:#0A84FF}
+.ic-d.today::after{content:"";position:absolute;bottom:3px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#0A84FF}
+.ic-d.done.today::after{background:#fff}
+.ic-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:13px;color:var(--nx-l2)}
+.ic-leg span{display:flex;align-items:center;gap:6px}
+.ic-leg i{width:9px;height:9px;border-radius:50%}
+.ic-leg i.ring{box-shadow:inset 0 0 0 1.6px #C7C7CC}
+.nx-card .ic-cal+.nx-note{margin-top:10px}
+.nx-card .ic-cal+.nx-months{margin-top:12px}
+
+/* ---------- iPhone date / time picker ---------- */
+input.dp-hide{position:absolute !important;opacity:0 !important;pointer-events:none !important;width:1px !important;height:1px !important;min-height:0 !important;padding:0 !important;border:0 !important;overflow:hidden}
+.dp-btn{appearance:none;-webkit-appearance:none;border:0;background:rgba(118,118,128,.12);color:#1C1C1E;font:inherit;font-size:17px;font-weight:500;padding:7px 13px;border-radius:9px;min-height:38px;width:max-content;max-width:100%;justify-self:start;align-self:flex-start;cursor:pointer;transition:background .2s}
+.dp-btn:active{background:rgba(118,118,128,.22)}
+.dp-btn.empty{color:rgba(60,60,67,.55)}
+.dp-wrap{position:fixed;inset:0;z-index:2000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .32s}
+.dp-wrap.show{background:rgba(0,0,0,.22)}
+.dp-card{width:min(380px,calc(100% - 20px));margin-bottom:calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border-radius:28px;padding:14px 14px 10px;box-shadow:0 24px 60px -14px rgba(0,0,0,.4),inset 0 0 0 .5px rgba(255,255,255,.7);transform:translateY(115%);transition:transform .46s cubic-bezier(.32,.72,0,1)}
+.dp-wrap.show .dp-card{transform:none}
+.dp-h{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 6px 8px}
+.dp-h b{font-size:17px;font-weight:600;color:#1C1C1E}
+.dp-h span{display:flex}
+.dp-h button,.dp-g button,.dp-foot button{-webkit-tap-highlight-color:transparent}
+.dp-h button{width:38px;height:38px;border:0;background:none;color:#0A84FF;display:grid;place-items:center;border-radius:50%;padding:0}
+.dp-h svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.dp-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px;text-align:center}
+.dp-g span{font-size:12px;font-weight:600;color:rgba(60,60,67,.32);padding:4px 0}
+.dp-g button{width:100%;max-width:44px;aspect-ratio:1;margin:0 auto;border:0;background:none;border-radius:50%;font:inherit;font-size:19px;color:#1C1C1E;padding:0;transition:background .18s,color .18s}
+.dp-g button.today{color:#0A84FF;font-weight:600}
+.dp-g button.on{background:#0A84FF;color:#fff;font-weight:600}
+.dp-g button:disabled{color:rgba(60,60,67,.22)}
+.dp-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 2px;border-top:.5px solid rgba(60,60,67,.14);margin-top:6px}
+.dp-foot button{border:0;background:none;color:#0A84FF;font:inherit;font-size:17px;padding:8px 6px}
+.dp-foot button.strong{font-weight:600}
+.dp-foot button:disabled{color:rgba(60,60,67,.3)}
+.dp-title{text-align:center;font-size:15px;font-weight:600;color:rgba(60,60,67,.6);padding:2px 0 6px}
+.dp-whs{display:flex;justify-content:center;align-items:center;gap:4px;position:relative;height:216px;-webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
+.dp-whs::before{content:"";position:absolute;left:4px;right:4px;top:90px;height:36px;border-radius:10px;background:rgba(118,118,128,.13);pointer-events:none}
+.dp-wh{height:216px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;padding:90px 0;box-sizing:border-box;flex:1;max-width:150px;overscroll-behavior:contain;position:relative}
+.dp-wh::-webkit-scrollbar{display:none}
+.dp-wh div{height:36px;line-height:36px;text-align:center;font-size:21px;scroll-snap-align:center;color:rgba(60,60,67,.5);cursor:pointer;transition:color .15s}
+.dp-wh div.on{color:#1C1C1E;font-weight:500}
+.dp-colon{font-size:22px;font-weight:600;color:#1C1C1E}
+
+/* ---------- the file viewer, iPhone style (no glass/blur in the viewer: PDF safety rules) ---------- */
+.pv{background:#F2F2F7}
+.pv-bar{gap:6px;padding:46px 8px 8px;background:#F9F9F9;box-shadow:0 .5px 0 rgba(60,60,67,.22)}
+html body .pv .pv-x.pv-done{width:auto;height:36px;border-radius:10px;background:none !important;box-shadow:none !important;color:#0A84FF;font-size:17px;font-weight:600;padding:0 8px;border:0}
+.pv-ttl{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.pv-ttl .pv-t{flex:none;max-width:100%;font-size:15px;font-weight:600}
+.pv-ttl small{font-size:12px;color:rgba(60,60,67,.6);font-weight:500;min-height:14px}
+.pv-share{width:38px;height:36px;border:0;background:none;color:#0A84FF;display:grid;place-items:center;padding:0;flex:none;border-radius:10px}
+.pv-share:active{background:rgba(10,132,255,.1)}
+.pv-share svg{width:21px;height:21px}
+.pv-pill{position:absolute;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(28,28,30,.74);color:#fff;font-size:13px;font-weight:600;padding:6px 13px;border-radius:99px;opacity:0;transition:opacity .35s;pointer-events:none;z-index:2;white-space:nowrap}
+.pv-pill.on{opacity:1}
+/* the group form's Time row: label on the left, the time pill on the right */
+.nx-gft{cursor:default}
+.nx-gft .dp-btn{margin-left:auto;font-size:16px;min-height:34px;padding:5px 12px}
+
+/* 16 Nov (user): the tab indicator was white on the white glass bar (invisible) -> a clear blue tint */
+html body .tp-tabs .tp-ind{background:linear-gradient(180deg,rgba(10,132,255,.24),rgba(10,132,255,.15)) !important;box-shadow:inset 0 0 0 .8px rgba(10,132,255,.25),inset 0 1px 0 rgba(255,255,255,.75),0 4px 12px -4px rgba(10,132,255,.4) !important}
+html body .tp-tabs.press .tp-ind,html body .tp-tabs.sliding .tp-ind{background:linear-gradient(180deg,rgba(10,132,255,.32),rgba(10,132,255,.2)) !important}
+/* 16 Nov (user): bolder text where it was thin (the Home card countdown) */
+.nx-hcard .cd{font-weight:700;letter-spacing:-.02em}
+
+/* 16 Nov (user): the "Owe 2+ months" card keeps its text at the top, whatever the number of names (a button centres its content by default) */
+.nx-wowe{display:flex !important;flex-direction:column;justify-content:flex-start;align-items:stretch;text-align:left}
+.nx-wowe .nm{width:100%}
+/* 16 Nov (user): the group chips in Course progress slide sideways only, never up and down */
+.nx-course .ffc-chips{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding-top:3px;padding-bottom:3px}
+
+/* the account pop-up (acct.js) */
+.ac-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:6px 10px 4px}
+.ac-hero svg{width:46px;height:46px;padding:10px;border-radius:14px;background:linear-gradient(160deg,#5DE07F,#30D158);color:#fff;box-sizing:content-box;stroke-width:2}
+.ac-hero p{font-size:15px;color:var(--nx-l2);line-height:1.4;margin:0;max-width:300px}
+.ac-err{color:#FF453A;font-size:14px;min-height:18px;margin:2px 4px}
+.ac-code{font:700 23px/1.5 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.05em;text-align:center;background:#fff;border-radius:18px;padding:16px 10px;user-select:all;-webkit-user-select:all;word-break:break-all;box-shadow:0 1px 2px rgba(20,40,80,.05)}
+.ac-ask{font-style:normal;font-size:13px;font-weight:600;color:#0A84FF;white-space:nowrap}
+
+/* 16 Nov (user): Payments "Show all" bounces, and the rest of the group slides open smoothly (and closes the same way) */
+.nx-fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.32,.72,0,1)}
+.nx-fold>div{overflow:hidden;min-height:0}
+.nx-fold.open{grid-template-rows:1fr}
+.nx-fold>div>.nx-prow{opacity:0;transform:translateY(-8px);transition:opacity .3s,transform .45s cubic-bezier(.3,1.3,.5,1)}
+.nx-fold.open>div>.nx-prow{opacity:1;transform:none}
+.nx-fold.open>div>.nx-prow:nth-child(2){transition-delay:.04s}.nx-fold.open>div>.nx-prow:nth-child(3){transition-delay:.08s}.nx-fold.open>div>.nx-prow:nth-child(4){transition-delay:.12s}.nx-fold.open>div>.nx-prow:nth-child(n+5){transition-delay:.16s}
+.nx-more.bump{animation:nxBump .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes nxBump{0%{transform:scale(1)}30%{transform:scale(.9)}65%{transform:scale(1.05)}100%{transform:scale(1)}}

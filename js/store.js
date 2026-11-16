@@ -99,7 +99,7 @@ window.addEventListener('pagehide', () => { if (next) writeSecond(); });
 
 // ---------- start ----------
 function loadQuick() {
-  try { const raw = localStorage.getItem(KEY); if (raw) { S = normalize(JSON.parse(raw)); topRev = S.rev; return true; } } catch (e) { /* damaged: the second copy decides */ }
+  try { const raw = localStorage.getItem(KEY); if (raw) { S = normalize(JSON.parse(raw)); topRev = S.rev; return true; } } catch (e) { window.quickBad = true; /* damaged: the second copy decides */ }
   return false;
 }
 // Resolves true when the second copy was newer and has been taken.

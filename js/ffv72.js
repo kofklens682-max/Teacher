@@ -54,7 +54,7 @@ function ffMonthStrip() {
   for (let m = cur, i = 0; m >= from && i < 18; m = ymAdd(m, -1), i++) list.push(m);
   const sc = statusCounts(sel);
   return `<div class="ffmp h-in" data-noswipe><div class="ffmp-bar"><button class="ffmp-btn" data-ffmonopen aria-haspopup="true">${ic('CalendarDays')}<b>${esc(ymName(sel))}</b>${ic('ChevronDown')}</button>
-    <span class="ffmp-sum">${sc.n ? `<i class="ok"></i>${sc.ok} paid<i class="no"></i>${sc.n - sc.ok} not paid` : 'no fees yet'}</span></div>
+    <span class="ffmp-sum">${sc.n ? `<i class="ok"></i>${sc.ok} of ${sc.n} paid` : 'no fees yet'}</span></div>
     <div class="ffmp-menu" role="menu"><div>${list.map((m) => `<button class="${m === sel ? 'on' : ''}" data-ffmon="${m}"><span>${esc(ymName(m))}</span>${m === sel ? ic('Check') : ''}</button>`).join('')}</div></div></div>`;
 }
 {

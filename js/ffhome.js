@@ -21,7 +21,7 @@ function ffInsBody(tab, g, gs) {
     body = ffBars(pp, { color: '#F0A92E', aria: 'Students who paid, by month', h: 112 });
   } else {
     const L = lv(g.lvl) && lv(g.lvl).units ? lv(g.lvl) : { units: [NO_WEEK] }, wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
-    head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w} weeks left</span></div><div class="ffc-big" style="color:#3B5BDB">${Math.round((done / total) * 100)}<em>%</em></div>`;
+    head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w > 1 ? (wks - cl.w) + ' weeks left' : wks - cl.w === 1 ? '1 week left' : done >= total ? 'course finished' : 'last week'}</span></div><div class="ffc-big" style="color:#3B5BDB">${Math.round((done / total) * 100)}<em>%</em></div>`;
     body = `<div class="ffseg" style="--n:${wks}">${L.units.map((u, i) => `<i class="${i + 1 < cl.w ? 'd' : i + 1 === cl.w ? 'n' : ''}"><b>${i + 1}</b></i>`).join('')}</div>`;
   }
   return `${chips}<div class="ffc-h">${head}</div>${body}`;
@@ -42,7 +42,7 @@ pgHomeNew = function () {
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button>${lightsHtml('home')}</div></div>`;
   const now = iso(TODAY), cur = S.pauses.filter((p) => p.from <= now && p.to >= now);
   const brk = cur.map((p) => `<div class="tp-card2 warn h-in">${ic('CalendarX2')}<p><b>${esc(p.label || 'Break')}</b> · no lessons until ${dDate(p.to)}${p.gids.length ? ' (' + esc(brkWho(p)) + ')' : ''}</p></div>`).join('');
-  const lesson = g && !doneOn(g, TODAY), hero = lesson ? ffHero(g) + ffThen() : secTodayHero() + ffUpNext();
+  const lesson = g && !doneOn(g, TODAY), stack = ffStack(), hero = stack ? stack + (lesson ? ffThen() : ffUpNext()) : secTodayHero() + ffUpNext(); // 12 Nov: today's lessons are a stack of cards (ffsys.js)
   const hol = `<button class="tp-dashed h-in" data-sheet="breaks">${ic('CalendarX2')} Holiday or break</button>`; // 10 Nov 2026 (user): the Holiday button is back on Home
   return head + ffMonthStrip() + brk + hero + ffMini() + ffInsights2() + (typeof SECS.tomorrow === 'function' ? SECS.tomorrow() : '') + hol;
 };
