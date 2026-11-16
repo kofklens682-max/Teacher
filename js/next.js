@@ -418,7 +418,7 @@ document.addEventListener('input', (e) => {
     cards.forEach((c) => { c.style.setProperty('--off', +c.dataset.hk - k); c.style.removeProperty('--drag'); c.classList.toggle('cur', +c.dataset.hk === k); }); h.querySelectorAll('.nx-pips i').forEach((p, j) => p.classList.toggle('on', j === k)); R.pages[0]._html = null; };
   document.addEventListener('pointerdown', (e) => { const h = e.target.closest && e.target.closest('.nx-hero'); if (!h || h.classList.contains('empty')) return; st = { y0: e.clientY, x0: e.clientX, id: e.pointerId, on: false, h }; }, true);
   document.addEventListener('pointermove', (e) => { if (!st || e.pointerId !== st.id) return; let dy = e.clientY - st.y0;
-    const n = st.h.querySelectorAll('.nx-hcard').length; if ((NX.hero === 0 && dy > 0) || (NX.hero === n - 1 && dy < 0)) dy /= 3; // pulling past the end: it gives a little, like iPhone
+    const cs = [...st.h.querySelectorAll('.nx-hcard')], n = cs.length, at = Math.max(0, cs.findIndex((c) => c.classList.contains('cur'))); if (at !== NX.hero) NX.hero = at; if ((at === 0 && dy > 0) || (at === n - 1 && dy < 0)) dy /= 3; // pulling past the end: it gives a little, like iPhone
     if (!st.on) { if (Math.abs(dy) < 8) return; if (Math.abs(e.clientX - st.x0) > Math.abs(dy)) { st = null; return; } st.on = true; st.h.classList.add('drag'); }
     st.h.querySelectorAll('.nx-hcard').forEach((c) => c.style.setProperty('--drag', dy + 'px')); }, true);
   const end = (e) => { if (!st || e.pointerId !== st.id) return; const s = st; st = null; s.h.classList.remove('drag'); if (!s.on) return; const dy = e.clientY - s.y0; NX.sup = Date.now(); set(NX.hero + (dy < -40 ? 1 : dy > 40 ? -1 : 0)); };

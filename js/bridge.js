@@ -82,7 +82,7 @@ function publishRoster() {
     const cur = ymOf(TODAY), to = ymAdd(cur, FUTURE), near = ymAdd(cur, 3), groups = [], charges = {}, cov = {}, paid = {}, st = {}, mem = {}, seen = new Set();
     S.groups.forEach((g) => {
       const p = planOf(g) || {};
-      groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: f18Roster(g).map((s) => ({ id: s.id, name: s.name, ...(s.until ? { left: 1 } : {}) })),
+      groups.push({ id: g.id, name: typeof f19Label === 'function' ? f19Label(g) : g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: f18Roster(g).map((s) => ({ id: s.id, name: s.name, ...(s.until ? { left: 1 } : {}) })),
         // 30 Oct (user): the lessons too; Budget paints them into its schedule and they can be changed only here
         slots: slotsOf(g) });
       if (!hasFee(g)) return;
@@ -92,7 +92,7 @@ function publishRoster() {
         for (let m = first; m <= to; m = ymAdd(m, 1)) o[m] = chargeOf(g, s, m);
         rows.forEach((x) => { if (YM.test(x.m || '')) pd[x.m] = (pd[x.m] || 0) + +x.amount; });
         // everything ledger() reads for this student: today's month, the first month, the kind of fee, the charges, the payments
-        const sig = JSON.stringify([cur, first, isSingle(g), o, rows.map((x) => [x.id, x.m || '', +x.amount, x.date])]);
+        const sig = JSON.stringify([cur, first, isSingle(g), (S.pay.smode || {})[s.id] || '', o, rows.map((x) => [x.id, x.m || '', +x.amount, x.date])]);
         let k = rosterMemo.get(s.id);
         if (!k || k.sig !== sig) {
           const t = {}, c = {};

@@ -1,0 +1,37 @@
+/* fix19 (the "last changes" round). Loaded last. */
+
+/* the tab bar gets smaller with a class on the bar itself (before: a class on <html> restyled the whole app) */
+html.glass:not(.g2-noshrink) body #tp > .tp-tabs.g2d{transform:translateY(6px) scale(.86) !important}
+
+/* which months are owed: small red squares under the name */
+.f19-ms{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.f19-ms i{font-style:normal;font-size:11px;line-height:1;font-weight:700;letter-spacing:.01em;color:#FF3B30;background:rgba(255,59,48,.12);border-radius:7px;padding:4px 7px}
+
+/* Owe 2+ months page */
+.f19-sec{display:flex;align-items:center;gap:8px}
+.f19-sec i{width:9px;height:9px;border-radius:50%;flex:none}
+.f19-sec span{margin-left:auto;font-weight:600;color:#8E8E93}
+.nx-row small.no{color:#FF3B30}
+
+/* lesson days: paid or not */
+.f19-days{display:flex;flex-wrap:wrap;gap:6px}
+.f19-days > *{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:58px;padding:7px 8px;border-radius:12px;border:0;font:inherit;background:rgba(120,120,128,.1);color:#1C1C1E}
+.f19-days b{font-size:13px;font-weight:600;white-space:nowrap}
+.f19-days small{font-size:10px;font-weight:700;color:#8E8E93;white-space:nowrap}
+.f19-days .paid{background:rgba(52,199,89,.14)}.f19-days .paid small{color:#248A3D}
+.f19-days .no small,.f19-days .part small{color:#FF3B30}
+.f19-days.pay{margin:0 0 12px}
+.f19-days.pay .will{background:rgba(10,132,255,.14)}.f19-days.pay .will small{color:#0A84FF}
+.ic-d.f19-pd small{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);font-size:8px;line-height:1;font-weight:800;color:#248A3D;background:#fff;border-radius:6px;padding:2px 4px;box-shadow:0 0 0 .5px rgba(0,0,0,.12)}
+
+/* Payments: an open group keeps its top line on screen; the strip on the right closes it */
+.nx-pg{position:relative}
+html body .nx-pg:has(> .nx-fold.open) > .nx-ch{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 50px);z-index:4;background:var(--nx-card);margin:-14px 0 6px;padding:14px 16px 10px;border-radius:22px 22px 14px 14px;box-shadow:0 8px 14px -12px rgba(20,40,80,.35)}
+.f19-strip{display:none;position:absolute;right:0;top:56px;bottom:46px;width:30px;border:0;background:none;padding:0;z-index:3;cursor:pointer}
+.f19-strip i{display:block;width:5px;height:100%;margin:0 auto;border-radius:5px;background:rgba(120,120,128,.22)}
+.f19-strip:active i{background:rgba(120,120,128,.45)}
+.nx-pg:has(> .nx-fold.open) > .f19-strip{display:block}
+html body .nx-pg:has(> .nx-fold.open) .nx-prow{padding-right:32px}
+
+/* Units / Library: the old level fades away over the new one */
+.f19-ghost{position:absolute;left:0;top:0;width:100%;z-index:6;pointer-events:none;overflow:hidden;will-change:opacity}

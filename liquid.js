@@ -34,14 +34,18 @@
   // soft edges (top and bottom) instead of bars
   ['t', 'b'].forEach(function (k) { var e = document.createElement('div'); e.className = 'g2-edge ' + k; document.body.appendChild(e); });
   // scroll: show the top edge once the page moved; shrink the tab bar while going down
-  var last = new WeakMap();
+  // fix19: before, every 4px change of direction put a class on <html> (the whole app was restyled and the bar re-animated): the page
+  // answered late at the start of a scroll and on small moves. Now: one class on the bar itself, and only after 28px in one direction.
+  var last = new WeakMap(), bar0 = null, down = false;
+  function setDown(v) { if (v === down) return; down = v; bar0 = bar0 || document.querySelector('.tp-tabs'); if (bar0) bar0.classList.toggle('g2d', v && (!window.tabShrinkOn || window.tabShrinkOn())); }
   document.addEventListener('scroll', function (ev) {
-    var el = ev.target; if (!el || el.nodeType !== 1 || el.closest('.tp-sheet')) return;
-    var y = el.scrollTop, was = last.get(el) || 0; last.set(el, y);
-    if (Math.abs(y - was) < 4) return;
-    root.classList.toggle('g2-down', y > was && y > 60);
-  }, true);
-  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.tp-tabs')) root.classList.remove('g2-down', 'g2-scrolled'); }, true);
+    var el = ev.target; if (!el || el.nodeType !== 1 || !el.classList.contains('tp-page')) return;
+    var y = el.scrollTop, a = last.get(el); if (a === undefined) a = y;
+    if (down) { if (y > a) a = y; else if (a - y > 28 || y <= 60) { setDown(false); a = y; } }
+    else if (y < a) a = y; else if (y - a > 28 && y > 60) { setDown(true); a = y; }
+    last.set(el, a);
+  }, { capture: true, passive: true });
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.tp-tabs')) setDown(false); }, true);
 
   // the lens: the picture bends near the edge of the tab bar (Chrome on Android and computers; other browsers keep plain blur)
   function lens() {
