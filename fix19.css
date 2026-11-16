@@ -39,4 +39,7 @@ html body .nx-pg:has(> .nx-fold.open) .nx-prow{padding-right:32px}
 /* Home, the Today card: no extra spring. At the first / last card it gives a little under the finger and returns once, no bouncing */
 .nx-hero.bump-up .nx-hcard.cur,.nx-hero.bump-down .nx-hcard.cur{animation:none !important}
 .nx-hero .nx-hcard{transition-timing-function:cubic-bezier(.32,.72,0,1) !important}
-.nx-pg.f19-shut .nx-fold{transition:none !important}
+/* closing by the grey line: one smooth fold of the whole list */
+.nx-pg.f19-shut .nx-fold{transition:grid-template-rows .38s cubic-bezier(.32,.72,0,1) !important}
+/* a level switch draws the page as it is: the cards do not play their entrance again */
+.f19-still *{animation:none !important}

@@ -223,7 +223,7 @@ document.addEventListener('click', (e) => {
   const strip = e.target.closest && e.target.closest('.f19-strip'); if (!strip) return;
   const card = strip.closest('.nx-pg'), more = card && card.querySelector('.nx-more'), page = card && card.closest('.tp-page'); if (!more) return;
   e.preventDefault(); e.stopPropagation();
-  if (page) { const top = card.getBoundingClientRect().top - page.getBoundingClientRect().top; if (top < 70) page.scrollTop = Math.max(0, page.scrollTop + top - 76); } // the group's top comes into view at once
+  if (page) { const top = card.getBoundingClientRect().top - page.getBoundingClientRect().top; if (top < 70) page.scrollTo({ top: Math.max(0, page.scrollTop + top - 76), behavior: 'smooth' }); } // the list folds up while the page glides to the group's top
   card.classList.add('f19-shut'); more.click(); setTimeout(() => card.classList.remove('f19-shut'), 500);
 }, true);
 
@@ -232,8 +232,14 @@ lvGo = function (tab, i) { // eslint-disable-line no-global-assign
   if (R.lvEnd) R.lvEnd(); clearTimeout(R.lvBackT);
   const page = R.pages[tab], pane = page && page.querySelector('[data-lvpane]'), from = lvIndex(tab);
   if (!pane || i === from || i < 0 || i >= lvList(tab).length) return;
-  lvSet(tab, i); draw(); // user: "just switch from one page to another, nothing complicated"
+  // Only THIS page is drawn again. Before, draw() also rebuilt Home, Students, Payments and Library a quarter of a second later,
+  // and then built the neighbour levels for the old slide: that was the one hitch after the tap.
+  lvSet(tab, i); page.classList.add('f19-still'); renderPage(tab);
+  if (typeof fixTables === 'function') fixTables();
+  clearTimeout(page._f19); page._f19 = setTimeout(() => page.classList.remove('f19-still'), 500);
 };
+
+lvIdle = function () {}; // eslint-disable-line no-global-assign  (levels no longer slide: nothing to build ahead)
 
 /* ---------- Budget: the name to show for a class of one student ---------- */
 function f19Label(g) {
