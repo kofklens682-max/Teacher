@@ -1,0 +1,36 @@
+/* 17 Nov (Fable): fixes after the user's first phone test of Teacher 9.0. Loaded last. */
+
+/* the three dots are always round (an old saved "plain" look gave square corners) */
+html body .tp-lights .lt,html body .tp-lights.plain .lt{border-radius:50% !important;width:20px !important;height:20px !important}
+
+/* tab bar lens: only while the page stands still. While it moves (class "mv") a plain soft blur: the lens drew as blue blocks on the phone */
+html.glass.g2-lens body #tp > .tp-tabs.mv{-webkit-backdrop-filter:blur(9px) saturate(1.8) brightness(1.06) !important;backdrop-filter:blur(9px) saturate(1.8) brightness(1.06) !important}
+
+/* Home class card: each card is its own layer, so a swipe only moves pictures (it lagged on the phone) */
+.nx-hero{contain:layout paint}
+.nx-hcard{will-change:transform,opacity;backface-visibility:hidden}
+.nx-hcard.past{--c:#8E8E93}
+.nx-hcard.past .cd{font-size:17px;font-weight:600;flex-direction:row;align-items:center;gap:6px}
+.nx-hcard.past .cd svg{width:18px;height:18px}
+
+/* Home "Paid" card: the small line never breaks in the middle of a phrase */
+.nx-wpay .r span{display:block;font-size:12.5px;line-height:1.3;white-space:normal;text-wrap:balance}
+
+/* Students tab: iPhone search field (36 high), individual students as rows, a quiet Archived link */
+.nx-search.f18{height:36px;padding:0 10px;border-radius:10px;gap:6px;margin:0 0 6px}
+.nx-search.f18 > span{display:flex}
+.nx-search.f18 svg{width:16px;height:16px}
+.nx-search.f18 input{font-size:16px;height:36px;padding:0}
+.f18-foot{display:grid;gap:6px;margin-top:14px}
+.f18-arch{display:flex;align-items:center;justify-content:center;gap:6px;height:40px;border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:#8E8E93}
+.f18-arch svg{width:17px;height:17px}
+
+/* Payments: the group's top line is a button; the list opens and closes in one smooth move (no row-by-row effect: 25 rows stuttered) */
+.nx-pg > .nx-ch,.nx-pg > .nx-pbar{cursor:pointer}
+html body .nx-fold{transition:grid-template-rows .42s cubic-bezier(.32,.72,0,1)}
+html body .nx-fold > div{transition:opacity .3s ease;opacity:0}
+html body .nx-fold.open > div{opacity:1}
+html body .nx-fold > div > .nx-prow,html body .nx-fold.open > div > .nx-prow{opacity:1 !important;transform:none !important;transition:none !important}
+
+/* pop-ups: the bar with Cancel / Save is solid, so nothing shows through it */
+html.glass body .tp-sheet .panel > .tp-sh-h{background:inherit !important}

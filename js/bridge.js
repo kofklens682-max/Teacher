@@ -73,17 +73,21 @@ function ledger(g, s, ym) {
 let rosterT = 0;
 const rosterMemo = new Map(); // student id -> { sig, t, c }
 function rosterSoon() { clearTimeout(rosterT); rosterT = setTimeout(() => idle(() => publishRoster()), 1000); }
+// 17 Nov (user: "a student who stopped coming but did not pay for October is not in Budget"): the list for Budget also has the
+// students who left in the last months or who still owe; "mem" says who counts in each month, exactly as the Payments tab lists them.
+const f18Roster = (g) => g.students.concat((g.left || []).filter((s) => { try { return (s.until && s.until >= ymAdd(ymOf(TODAY), -3)) || (hasFee(g) && ledger(g, s, ymOf(TODAY)).debt > 0); } catch (e) { return false; } }));
 function publishRoster() {
   clearTimeout(rosterT); rosterT = 0;
   try {
-    const cur = ymOf(TODAY), to = ymAdd(cur, FUTURE), near = ymAdd(cur, 3), groups = [], charges = {}, cov = {}, paid = {}, st = {}, seen = new Set();
+    const cur = ymOf(TODAY), to = ymAdd(cur, FUTURE), near = ymAdd(cur, 3), groups = [], charges = {}, cov = {}, paid = {}, st = {}, mem = {}, seen = new Set();
     S.groups.forEach((g) => {
       const p = planOf(g) || {};
-      groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: g.students.map((s) => ({ id: s.id, name: s.name })),
+      groups.push({ id: g.id, name: g.name, color: grpColor(g), kind: p.kind === 'single' ? 'single' : 'group', fee: p.kind === 'single' ? 0 : p.fee || 0, rate: p.kind === 'single' ? p.rate || 0 : 0, students: f18Roster(g).map((s) => ({ id: s.id, name: s.name, ...(s.until ? { left: 1 } : {}) })),
         // 30 Oct (user): the lessons too; Budget paints them into its schedule and they can be changed only here
         slots: slotsOf(g) });
       if (!hasFee(g)) return;
-      g.students.forEach((s) => {
+      { const mm = mem[g.id] = {}; for (let m = [S.pay.start, ymAdd(cur, -12)].sort().pop(); m <= near; m = ymAdd(m, 1)) mm[m] = feeStu(g, m, true).map((s) => s.id); }
+      f18Roster(g).forEach((s) => {
         const o = charges[s.id] = {}, pd = paid[s.id] = {}, first = firstMonth(g, s), rows = payRows(s.id);
         for (let m = first; m <= to; m = ymAdd(m, 1)) o[m] = chargeOf(g, s, m);
         rows.forEach((x) => { if (YM.test(x.m || '')) pd[x.m] = (pd[x.m] || 0) + +x.amount; });
@@ -103,7 +107,7 @@ function publishRoster() {
     // st = Teacher's own answer for each month (paid / part / unpaid / free, as on Home: a month counts as paid only when
     // nothing is owed up to it); cov = how much of each month is covered; paid = the money marked for each month.
     // Budget shows these, so both apps always say the same thing.
-    const json = JSON.stringify({ v: 2, at: Date.now(), start: S.pay.start, groups, charges, cov, paid, st });
+    const json = JSON.stringify({ v: 2, at: Date.now(), start: S.pay.start, groups, charges, cov, paid, st, mem });
     if (json !== localStorage.getItem(RS_KEY)) localStorage.setItem(RS_KEY, json);
   } catch (e) { /* the app still works; Budget keeps the last list */ }
 }

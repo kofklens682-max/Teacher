@@ -10,8 +10,7 @@
   const root = document.documentElement;
   // 1) never switch the lens off while moving
   const bar = () => document.querySelector('.tp-tabs');
-  const watch = () => { const b = bar(); if (!b) return setTimeout(watch, 300); new MutationObserver(() => { if (b.classList.contains('mv')) b.classList.remove('mv'); }).observe(b, { attributes: true, attributeFilter: ['class'] }); };
-  watch(); // (only the bar is watched, nothing else)
+  // 17 Nov: the lens is OFF again while the page moves (class "mv", set in liquid.js). On the phone the always-on lens drew as blue blocks.
   // 3) the drop: the bend grows when you press, then springs back
   let raf = 0;
   function wobble(peak) {

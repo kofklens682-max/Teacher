@@ -31,7 +31,7 @@ function dotsGet() {
   let v = {}; try { v = JSON.parse(localStorage.getItem(DOT_KEY) || '{}') || {}; } catch (e) { /* standard */ }
   const ok = (a, d) => (Array.isArray(a) && a.length === 3 && a.every((x) => ACTIONS[x]) ? a : d);
   if (v.v !== 2) { v.inside = null; v.file = null; } // once: the dots inside a lesson and inside a file become "the first three files" (they can be changed again)
-  return { blurAmt: v.blur === false ? 0 : Number.isFinite(v.blurAmt) ? Math.max(0, Math.min(100, v.blurAmt)) : DOT_DEFAULT.blurAmt, style: v.style === 'plain' ? 'plain' : 'icons', budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
+  return { blurAmt: v.blur === false ? 0 : Number.isFinite(v.blurAmt) ? Math.max(0, Math.min(100, v.blurAmt)) : DOT_DEFAULT.blurAmt, style: 'icons' /* 17 Nov: one look only; the old 'plain' look drew square dots */, budget: v.budget === 'web' ? 'web' : 'app', home: ok(v.home, DOT_DEFAULT.home), tabs: ok(v.tabs, DOT_DEFAULT.tabs), inside: ok(v.inside, DOT_DEFAULT.inside), file: ok(v.file, DOT_DEFAULT.file) };
 }
 const dotsSet = (c) => { try { localStorage.setItem(DOT_KEY, JSON.stringify({ ...c, v: 2 })); } catch (e) { /* not saved */ } };
 const lightsHtml = (where = 'home') => {
