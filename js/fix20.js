@@ -169,3 +169,22 @@
   // a tap anywhere else puts an armed button back
   document.addEventListener('pointerdown', (e) => { if (!e.target.closest || e.target.closest('.f20-arm')) return; document.querySelectorAll('.f20-arm').forEach(disarm); }, true);
 })();
+
+/* 17 Nov 2026 (found in the audit, live too): the small glass title bar ("Home") stayed on after changing tab from a scrolled page,
+   because ffhome.js hid it only on a CLICK on the tab bar, and the tab bar also switches by press-and-slide (no click). Now every tab
+   change sets the bar from the page you land on: its title, shown only if that page is scrolled down. */
+(function () {
+  if (typeof goTab !== 'function') return;
+  const _go = goTab;
+  goTab = function () {
+    const r = _go.apply(this, arguments);
+    try {
+      const bar = document.querySelector('.ffnav'), pg = R.pages[T.tab]; if (!bar || !pg) return r;
+      const t = pg.querySelector('.tp-lt'), want = !!t && pg.scrollTop > 52 && !T.sheet && !T.push.length;
+      if (t && bar.firstChild && bar.firstChild.textContent !== t.textContent) bar.firstChild.textContent = t.textContent;
+      bar.classList.toggle('on', want);
+      pg.dispatchEvent(new Event('scroll')); // ffhome.js re-reads the new page too, so its own "is it on" note stays right
+    } catch (e) { /* the bar stays as it was */ }
+    return r;
+  };
+})();

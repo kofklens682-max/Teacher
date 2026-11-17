@@ -38,11 +38,30 @@ html .f20-on small{font-size:11.5px;color:var(--nx-l2);white-space:nowrap;overfl
 html .f20-owe .f20-on small:not(.f20-more){color:#E0322A;font-weight:600}
 html .f20-owe .f20-on small.ok{color:#1E9E46}
 html .f20-on .f20-more{color:var(--nx-l2) !important;font-weight:500 !important}
-html .f20-bday{background:linear-gradient(160deg,#FFF1F4,#FFE3EA) !important}
-html .f20-bday .nx-ch b,html .f20-bday .big{color:#FF375F !important}
+html .f20-bday{--bc:#FF375F;background:linear-gradient(160deg,color-mix(in srgb,var(--bc) 7%,#fff),color-mix(in srgb,var(--bc) 15%,#fff)) !important}
+html .f20-bday .nx-ch b,html .f20-bday .big{color:color-mix(in srgb,var(--bc) 88%,#000) !important}
 html .f20-bday .big.f20-today{font-size:22px !important}
-html .f20-bday.on{background:linear-gradient(160deg,#FF6F8E,#FF375F) !important}
+html .f20-bday.on{background:radial-gradient(130% 120% at 0% 0%,color-mix(in srgb,var(--bc) 62%,#fff),var(--bc) 55%,color-mix(in srgb,var(--bc) 82%,#000)) !important}
 html .f20-bday.on .nx-ch b,html .f20-bday.on .big,html .f20-bday.on .f20-on b,html .f20-bday.on .f20-on small{color:#fff !important}
 html .f20-none{font-size:12px;color:var(--nx-l2);margin-top:6px;line-height:1.25}
-html .f20-left{font-style:normal;font-size:13px;font-weight:600;color:#FF375F}
-html .f20-left.on{color:#fff;background:#FF375F;border-radius:999px;padding:3px 9px}
+html .f20-left{font-style:normal;font-size:13px;font-weight:600;color:var(--bc,#FF375F)}
+html .f20-left.on{color:#fff;background:var(--bc,#FF375F);border-radius:999px;padding:3px 9px}
+
+/* Settings > Look > Widget colors (js/wcolors.js) */
+.wc-prev{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 6px}
+.wc-prev .nx-card{padding:12px;min-height:96px}
+.wc-p1 svg{width:58px;height:58px;margin-top:6px}
+.wc-list{padding:4px 0}
+.wc-row{padding:10px 14px}
+.wc-row+.wc-row{border-top:.5px solid var(--nx-sep,rgba(60,60,67,.14))}
+.wc-name{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
+.wc-name i{width:10px;height:10px;border-radius:50%;flex:none}
+.wc-name b{font-weight:600}
+.wc-strip{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:3px 2px 4px;margin:0 -2px}
+.wc-strip::-webkit-scrollbar{display:none}
+.wc-dot{flex:none;width:32px;height:32px;border-radius:50%;border:0;padding:0;background:radial-gradient(circle at 32% 28%,color-mix(in srgb,var(--c) 45%,#fff) 0,var(--c) 52%,color-mix(in srgb,var(--c) 78%,#000) 100%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 3px 8px -3px color-mix(in srgb,var(--c) 70%,transparent);position:relative}
+.wc-dot:first-child::after{content:"A";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.wc-dot.on{box-shadow:0 0 0 2.5px #fff,0 0 0 4.5px var(--c),0 3px 8px -3px var(--c)}
+.wc-tile{background:conic-gradient(#FF375F,#FF9F0A,#FFD60A,#30D158,#64D2FF,#5E5CE6,#BF5AF2,#FF375F) !important;color:#fff}
+.wc-sep{flex:none;width:1px;align-self:stretch;margin:4px 2px;background:var(--nx-sep,rgba(60,60,67,.18))}
+.wc-p1r{display:flex;align-items:center;gap:10px}.wc-p1r .big{font-size:26px;font-weight:800;letter-spacing:-.03em}.wc-p1r .big small{font-size:14px;color:var(--nx-l2)}
