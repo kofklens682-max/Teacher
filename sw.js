@@ -1,6 +1,6 @@
 // Offline support. Bump VERSION whenever the app files change so phones pick up the update:
 // the new worker installs, takes over, and the open app reloads into the new version.
-const VERSION = 'teacher-v106';
+const VERSION = 'teacher-v107';
 const SHELL = [
   './',
   './index.html',
@@ -67,6 +67,11 @@ const SHELL = [
   './js/segdrag.js',
   './js/fix19.js',
   './js/updatenow.js',
+  './fix20.css',
+  './birthday.css',
+  './js/fix20.js',
+  './js/library2.js',
+  './js/birthday.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -95,7 +100,7 @@ self.addEventListener('activate', (e) => {
       // the old slide-deck pictures and voices are not used any more: keep only the lesson files (IELTS Turbo files keep their names when rebuilt: fetch them again)
       // 10 Nov 2026: this used to delete everything outside media/packs on EVERY update, so the week icons (media/wk), the file reader (media/pdfjs)
       // and the kids pictures (media/k) needed internet again after each update. Now only folders the app no longer uses are removed.
-      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !/\/media\/(packs|pdfjs|wk|k)\//.test(r.url) || r.url.includes('/media/packs/turbo/')).map((r) => c.delete(r))))))
+      .then(() => caches.open(MEDIA).then((c) => c.keys().then((ks) => Promise.all(ks.filter((r) => !/\/media\/(packs|pdfjs|wk|k|covers)\//.test(r.url) || r.url.includes('/media/packs/turbo/')).map((r) => c.delete(r))))))
       .then(() => self.clients.claim())
   );
 });

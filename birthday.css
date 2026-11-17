@@ -1,0 +1,48 @@
+/* 17 Nov 2026: Home, right column (option B): a smaller Owe 2+ tile and the Birthday tile under it (js/birthday.js) */
+html .nx-w2 .f20-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+html .nx-w2 .f20-col>.nx-card{flex:1;padding:12px 13px;display:flex !important;flex-direction:column;justify-content:space-between;align-items:stretch;text-align:left;min-height:0}
+html .nx-w2 .f20-col .nx-ch b{font-size:11.5px;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:clip;gap:4px}
+html .nx-w2 .f20-col .nx-ch b svg{width:14px;height:14px;flex:none}
+/* the number with "days" under it (a narrow column), so the name and the date fit beside it */
+html .f20-orow .big.f20-num{display:flex;flex-direction:column;align-items:center}
+html .f20-orow .big.f20-num small{margin:1px 0 0;font-size:11px}
+/* on the day: "Today" on its own line, the name under it */
+html .f20-orow.f20-col2{flex-direction:column;align-items:flex-start;gap:3px}
+html .f20-orow.f20-col2 .f20-on{flex-direction:row;gap:6px;align-items:baseline;max-width:100%}
+html .f20-orow.f20-col2 .f20-on small:not(.f20-more){display:none}
+html .f20-orow.f20-col2 .f20-on .f20-more{flex:none}
+
+/* 17 Nov (user): "no name half written and half hidden; keep it tight; use the free space so every word is visible" */
+html .f20-on b,html .f20-on small{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;overflow-wrap:normal;word-break:keep-all}
+html .f20-orow.f20-s12 .f20-on b{font-size:12px}
+html .f20-orow.f20-s11 .f20-on b{font-size:11px}
+/* a long name: its own line across the tile, the number and the date under it */
+html .f20-orow.f20-stack{flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:2px}
+html .f20-orow.f20-stack .f20-on{display:contents}
+html .f20-orow.f20-stack .f20-on b{order:-1;flex:0 0 100%;line-height:1.15}
+html .f20-orow.f20-stack .big{font-size:24px !important}
+html .f20-orow.f20-stack .big.f20-num{flex-direction:row;align-items:baseline;gap:2px}
+html .f20-orow.f20-col2 .f20-on{flex-wrap:wrap;row-gap:0}
+html .nx-w2 .f20-col>.nx-card{justify-content:flex-start}
+html .nx-w2 .f20-col .f20-orow{margin:auto 0}
+html .nx-w2 .nx-card{padding:12px}
+html .nx-w2 .f20-col>.nx-card{padding:11px 12px}
+/* the class card: 176 px holds its longest content (two-line subtitle + countdown, measured 173 px); 200 px left an empty band */
+html .nx-hero{height:176px}
+html .f20-orow{display:flex;align-items:center;gap:10px;margin-top:6px;min-width:0}
+html .f20-orow .big{font-size:30px !important;margin:0 !important;flex:none;line-height:1;display:block}
+html .f20-orow .big small{font-size:12px;font-weight:700;margin-left:2px;letter-spacing:0}
+html .f20-on{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+html .f20-on b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html .f20-on small{font-size:11.5px;color:var(--nx-l2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html .f20-owe .f20-on small:not(.f20-more){color:#E0322A;font-weight:600}
+html .f20-owe .f20-on small.ok{color:#1E9E46}
+html .f20-on .f20-more{color:var(--nx-l2) !important;font-weight:500 !important}
+html .f20-bday{background:linear-gradient(160deg,#FFF1F4,#FFE3EA) !important}
+html .f20-bday .nx-ch b,html .f20-bday .big{color:#FF375F !important}
+html .f20-bday .big.f20-today{font-size:22px !important}
+html .f20-bday.on{background:linear-gradient(160deg,#FF6F8E,#FF375F) !important}
+html .f20-bday.on .nx-ch b,html .f20-bday.on .big,html .f20-bday.on .f20-on b,html .f20-bday.on .f20-on small{color:#fff !important}
+html .f20-none{font-size:12px;color:var(--nx-l2);margin-top:6px;line-height:1.25}
+html .f20-left{font-style:normal;font-size:13px;font-weight:600;color:#FF375F}
+html .f20-left.on{color:#fff;background:#FF375F;border-radius:999px;padding:3px 9px}

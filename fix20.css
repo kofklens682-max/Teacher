@@ -1,0 +1,36 @@
+/* 17 Nov 2026: page open / close without the full-app repaint + iPhone zoom and sheet sink (see js/fix20.js) */
+
+/* the viewport no longer moves; only the page you see does (it is its own layer already) */
+html .tp-viewport.under,html .tp-viewport{transform:none !important;transition:none !important}
+html .tp-viewport::after{display:none !important}
+html .tp-viewport .tp-page.f20-cur{transition:transform var(--t-slow,.45s) var(--ease,cubic-bezier(.32,.72,0,1)),border-radius .3s ease}
+html .tp-viewport.under .tp-page.f20-cur{transform:translate3d(-30%,0,0)}
+/* a zoom keeps the page still (it only darkens), as on the iPhone */
+html .tp-viewport.under.f20-zv .tp-page.f20-cur{transform:none}
+html .tp-push.under.f20-zb{transform:none !important}
+
+/* the darkening behind the top screen: a separate layer, only its opacity moves */
+.f20-shade{position:absolute;inset:0;z-index:15;background:#000;opacity:0;pointer-events:none;transition:opacity var(--t-slow,.45s) var(--ease,cubic-bezier(.32,.72,0,1));will-change:opacity}
+.f20-shade.on{opacity:.12}
+
+/* zoom: the moving screen is drawn by the animation, not by the slide */
+html .tp-push.f20-zin,html .tp-push.f20-out{transition:none !important;will-change:transform,opacity;transform-origin:0 0;border-radius:30px;box-shadow:0 18px 50px -12px rgba(20,30,60,.35) !important}
+html .tp-push.f20-out{z-index:16;pointer-events:none}
+.f20-hide{visibility:hidden !important}
+
+/* a sheet is open: the page behind sinks back a little */
+html .tp-viewport .tp-page.f20-cur.f20-sink,html .tp-push.f20-sink{transform:translate3d(0,10px,0) scale(.94) !important;border-radius:16px;transform-origin:50% 0}
+html .tp-push{transition:transform var(--t-slow,.45s) var(--ease,cubic-bezier(.32,.72,0,1)),border-radius .3s ease}
+/* a zoomed screen arrives whole: its cards do not rise one by one on top of the zoom */
+html .tp-push.f20-z :is(.nx-card,.nx-gcard,.nx-list,.nx-hero,.nx-w2,.nx-ghero,.nx-phead,.nx-tiles,.nx-course,.nx-sum,.nx-wg){animation:none !important}
+/* "Not paid?" on a paid tick, and Remove on the student's payments */
+html .nx-tick.done.f20-un.f20-arm{min-width:128px;gap:6px;background:#FF453A;color:#fff;border:0}
+html .nx-tick.done.f20-un.f20-arm span{max-width:100px;opacity:1}
+html .nx-tick.done.f20-un.f20-arm svg{display:none}
+html .nx-mini.red.f20-rm.f20-arm{background:#FF453A;color:#fff}
+.f20-pay .nx-tx b{font-size:15px}
+/* Library: a real cover picture (library2.js) hides the drawn title, circle and bottom bar */
+.bk[style*="media/covers/"]>span,.bk[style*="media/covers/"]::before,.bk[style*="media/covers/"]::after{display:none !important}
+.bk[style*="media/covers/"]{padding:0}
+.lb-book small+small{margin-top:-4px}
+.lb-sh small{white-space:nowrap;flex:none}
