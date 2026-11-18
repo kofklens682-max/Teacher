@@ -26,7 +26,7 @@ function classesOf(st) {
 }
 const soloGroups = () => S.groups.filter((g) => g.solo);
 const workGroups = () => S.groups.filter((g) => !g.solo).sort(byName);
-const gColor = (g) => (typeof hc === 'function' ? hc(g) : '#0A84FF');
+const gColor = (g) => (typeof hc === 'function' ? hc(g) : '#007AFF');
 const fmtSum = (n) => Math.round(n).toLocaleString('en-US').replace(/,/g, ' ');
 const round5 = (n) => Math.floor(n / 5000) * 5000; // user, 15 Nov: always round DOWN (17 000 → 15 000, 153 000 → 150 000)
 
@@ -41,7 +41,7 @@ function nxSt(g, st, ym) {
   if (c.covered > 0 && left > 0) return { k: 'part', t: `${fmtSum(c.covered)} of ${fmtSum(c.charge)}`, p: c.covered / c.charge, L };
   return { k: 'no', t: 'Not paid', p: 0, L };
 }
-const ST_COL = { paid: '#30D158', part: '#FF9F0A', no: '#FF453A', free: '#C7C7CC' };
+const ST_COL = { paid: '#34C759', part: '#FF9500', no: '#FF3B30', free: '#C7C7CC' };
 function miniRing(p, col, size = 30, w = 4.5) {
   const r = (size - w) / 2, C = 2 * Math.PI * r;
   return `<svg class="nx-ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${col}" stroke-opacity=".18" stroke-width="${w}"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${Math.max(0.001, C * Math.min(1, p)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`;
@@ -68,7 +68,7 @@ function pgStudents() {
     <label class="nx-search">${ic('Search')}<input id="nx-q" placeholder="Search students" autocomplete="off" data-noswipe></label>
     <div class="nx-hits" id="nx-hits" hidden></div>
     <div id="nx-lists"><div class="nx-sec">Groups</div><div class="nx-list">${workGroups().map(grow).join('') || '<p class="nx-empty">No groups yet</p>'}</div>
-    ${solos.length ? `<div class="nx-sec">One to one</div><div class="nx-list"><button class="nx-row" data-nxpush="sgrp" data-g="solo"><span class="nx-tile" style="--c:#AC8E68">${ic('UserRound')}</span><span class="nx-tx"><b>Individual students</b><small>${esc(solos.map((g) => g.students[0].name).sort().join(' · '))}</small></span><em>${solos.length}</em>${chev()}</button></div>` : ''}
+    ${solos.length ? `<div class="nx-sec">One to one</div><div class="nx-list"><button class="nx-row" data-nxpush="sgrp" data-g="solo"><span class="nx-tile" style="--c:#A2845E">${ic('UserRound')}</span><span class="nx-tx"><b>Individual students</b><small>${esc(solos.map((g) => g.students[0].name).sort().join(' · '))}</small></span><em>${solos.length}</em>${chev()}</button></div>` : ''}
     <div class="nx-list"><button class="nx-row" data-nxpush="sarch"><span class="nx-tile" style="--c:#8E8E93">${ic('History')}</span><span class="nx-tx"><b>Archived</b><small>Students who left · their history is kept</small></span><em>${left}</em>${chev()}</button></div>
     <button class="nx-btn soft" data-sheet="group">${ic('Plus')} New group</button></div>`;
 }
@@ -80,7 +80,7 @@ function scSGrp(f) {
   const rows = list.map(({ g: x, st }) => { const s = nxSt(x, st, ym), two = classesOf(st).twins.length > 1;
     return `<button class="nx-row" data-nxpush="sprof" data-g="${x.id}" data-sid="${st.id}">${nxAv(st)}<span class="nx-tx"><b>${esc(st.name)}</b><small>${solo ? esc(LVNAME(x.lvl)) + ' · ' : ''}${two ? 'Also in another class' : ''}</small></span><span class="nx-st ${s.k}">${esc(s.t)}</span>${chev()}</button>`; }).join('');
   return `${backBar('Students', solo ? '' : `<button class="tp-pill" data-sheet="group" data-g="${g.id}">${ic('Pencil')} Edit</button>`)}<div class="tp-inner">
-    <div class="nx-title"><span class="nx-dot" style="background:${solo ? '#AC8E68' : gColor(g)}"></span>${solo ? 'Individual students' : esc(g.name)}</div>
+    <div class="nx-title"><span class="nx-dot" style="background:${solo ? '#A2845E' : gColor(g)}"></span>${solo ? 'Individual students' : esc(g.name)}</div>
     <p class="nx-sub">${solo ? 'One-to-one lessons' : `${esc(LVNAME(g.lvl))} · ${g.days.map((d) => DAYS[d]).join(', ')} · ${g.time}`}</p>
     ${solo ? '' : `<div class="nx-tiles"><div><span>Price</span><b>${p && p.fee ? fmtSum(p.fee) : '—'}</b><small>a month</small></div><div><span>Now teaching</span><b>${cl ? `Week ${cl.w} · ${dayWord(g.lvl)} ${cl.l}` : '—'}</b><small>${cl ? esc((weekOf(g.lvl, cl.w).lessons[cl.l - 1] || {}).subtopic || '') : ''}</small></div></div>`}
     <div class="nx-sec">Students · A–Z</div><div class="nx-list">${rows || '<p class="nx-empty">No students yet</p>'}</div>
@@ -116,10 +116,10 @@ function scSProf(f) {
       body = `${att}<p class="nx-note">${MONTHS[+sym.slice(5) - 1]}: ${n} lesson${n === 1 ? '' : 's'} × ${fmtSum(price)} = <b>${fmtSum(sym === ym && cur ? cur.cur.charge : n * price)} so'm</b></p>`;
     } else if (cur) {
       const rows = ledger(x, s, ym).rows, at = (m) => rows.find((r) => r.m === m);
-      body = `${att}<div class="nx-months">${mon.map((m) => { const r = at(m); if (!r || !r.charge) return `<div class="off">${miniRing(0, '#C7C7CC', 38, 5)}<span>${SHORT(m)}</span></div>`; const p = r.covered / r.charge, col = p >= 1 ? ST_COL.paid : p > 0 ? ST_COL.part : m < ym ? ST_COL.no : '#FF453A'; return `<div>${miniRing(p, col, 38, 5)}<span>${SHORT(m)}</span></div>`; }).join('')}</div>
+      body = `${att}<div class="nx-months">${mon.map((m) => { const r = at(m); if (!r || !r.charge) return `<div class="off">${miniRing(0, '#C7C7CC', 38, 5)}<span>${SHORT(m)}</span></div>`; const p = r.covered / r.charge, col = p >= 1 ? ST_COL.paid : p > 0 ? ST_COL.part : m < ym ? ST_COL.no : '#FF3B30'; return `<div>${miniRing(p, col, 38, 5)}<span>${SHORT(m)}</span></div>`; }).join('')}</div>
         ${cur.debt > 0 ? `<p class="nx-owe">Owes ${fmtSum(cur.debt)} so'm · ${cur.rows.filter((r) => r.charge - r.covered > 0).map((r) => SHORT(r.m)).join(', ')}</p>` : '<p class="nx-ok">Nothing owed</p>'}`;
     }
-    return `<div class="nx-card"><div class="nx-ch"><b><i style="background:${x.solo ? '#AC8E68' : gColor(x)}"></i>${esc(x.solo ? 'Individual · ' + LVNAME(x.lvl) : x.name)}</b><span>${hasFee(x) ? fmtSum(price) + (single ? ' a lesson' : ' a month') : 'No fee'}</span></div>${body}
+    return `<div class="nx-card"><div class="nx-ch"><b><i style="background:${x.solo ? '#A2845E' : gColor(x)}"></i>${esc(x.solo ? 'Individual · ' + LVNAME(x.lvl) : x.name)}</b><span>${hasFee(x) ? fmtSum(price) + (single ? ' a lesson' : ' a month') : 'No fee'}</span></div>${body}
       ${hasFee(x) ? `<button class="nx-btn" data-nxpay="${x.id}|${s.id}">${ic('Wallet')} Pay</button>` : ''}</div>`;
   }).join('');
   const det = [['Boy or girl', P.g ? (P.g === 'f' ? 'Girl' : 'Boy') : (guessG(st.name) === 'f' ? 'Girl?' : 'Boy?')], ['Phone', P.phone || '—'], ['Parent’s phone', P.parent || '—'], ['Birthday', P.bday ? (() => { const [m, d] = P.bday.split('-'); return `${+d} ${MONTHS[+m - 1]}`; })() : '—'], ['Started', ymName(ymOf(new Date(st.added || g.created || Date.now())))], ['Notes', P.note || '—']];
@@ -153,7 +153,7 @@ function pgPayments() {
   return nxHead('Payments', v === 'm' ? ymName(ym) : ym.slice(0, 4)) + seg + (v === 'm' ? payMonth(ym) : payYear(ym.slice(0, 4)));
 }
 const payGroups = () => { const out = workGroups().filter(hasFee).map((g) => ({ id: g.id, name: g.name, col: gColor(g), items: feeStu(g, payState().ym, true).map((st) => ({ g, st })) }));
-  const solos = soloGroups().filter(hasFee); if (solos.length) out.push({ id: 'solo', name: 'Individual', col: '#AC8E68', items: solos.flatMap((g) => feeStu(g, payState().ym, true).map((st) => ({ g, st }))) });
+  const solos = soloGroups().filter(hasFee); if (solos.length) out.push({ id: 'solo', name: 'Individual', col: '#A2845E', items: solos.flatMap((g) => feeStu(g, payState().ym, true).map((st) => ({ g, st }))) });
   out.forEach((x) => x.items.sort((a, b) => byName(a.st, b.st))); return out; };
 function payMonth(ym) {
   const sc = statusCounts(ym), gs = payGroups(), FOLD = 2; // user, 16 Nov: 2 people, then "Show all"
@@ -238,8 +238,8 @@ const numOf = (id) => +String((document.getElementById(id) || {}).value || '').r
 function sheetQuick() {
   const row = (attr, icon, col, t, sub) => `<button class="nx-row" ${attr}><span class="nx-tile" style="--c:${col}">${ic(icon)}</span><span class="nx-tx"><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</span>${chev()}</button>`;
   return `<div class="tp-sh-h"><span></span><b>Quick actions</b><button class="tp-back strong" data-closesheet>Done</button></div>
-    <div class="nx-list">${row('data-sheet="nxwho"', 'Wallet', '#30D158', 'Pay', 'Mark a payment')}${row('data-sheet="nxadd"', 'UserPlus', '#0A84FF', 'Add a student', 'To a group, or one to one')}${row('data-sheet="group"', 'Users', '#5E5CE6', 'New group', '')}</div>
-    <div class="nx-list">${row('data-sheet="nxless" data-kind="cancel"', 'CalendarX2', '#FF453A', 'Cancel a lesson', 'The plan waits')}${row('data-sheet="nxless" data-kind="move"', 'Clock', '#FF9F0A', 'Move a lesson', 'Another day')}${row('data-sheet="nxless" data-kind="extra"', 'Plus', '#BF5AF2', 'Extra lesson', 'An added day')}${row('data-sheet="breaks"', 'Sun', '#FFD60A', 'Break or holiday', '')}</div>`;
+    <div class="nx-list">${row('data-sheet="nxwho"', 'Wallet', '#34C759', 'Pay', 'Mark a payment')}${row('data-sheet="nxadd"', 'UserPlus', '#007AFF', 'Add a student', 'To a group, or one to one')}${row('data-sheet="group"', 'Users', '#5856D6', 'New group', '')}</div>
+    <div class="nx-list">${row('data-sheet="nxless" data-kind="cancel"', 'CalendarX2', '#FF3B30', 'Cancel a lesson', 'The plan waits')}${row('data-sheet="nxless" data-kind="move"', 'Clock', '#FF9500', 'Move a lesson', 'Another day')}${row('data-sheet="nxless" data-kind="extra"', 'Plus', '#AF52DE', 'Extra lesson', 'An added day')}${row('data-sheet="breaks"', 'Sun', '#FFCC00', 'Break or holiday', '')}</div>`;
 }
 function sheetNxWho(s) {
   const gs = payGroups();
@@ -249,7 +249,7 @@ function sheetNxWho(s) {
 function sheetNxAdd() {
   return `<div class="tp-sh-h"><button class="tp-back" data-sheet="quick">${ic('ChevronLeft')} Back</button><b>Add a student</b><span></span></div>
     <div class="nx-list">${workGroups().map((g) => `<button class="nx-row" data-sheet="group" data-g="${g.id}"><span class="nx-tile" style="--c:${gColor(g)}">${ic('Users')}</span><span class="nx-tx"><b>${esc(g.name)}</b><small>${g.students.length} students</small></span>${chev()}</button>`).join('')}
-    <button class="nx-row" data-sheet="group"><span class="nx-tile" style="--c:#AC8E68">${ic('UserRound')}</span><span class="nx-tx"><b>One-to-one student</b><small>Their own lessons and price</small></span>${chev()}</button></div>`;
+    <button class="nx-row" data-sheet="group"><span class="nx-tile" style="--c:#A2845E">${ic('UserRound')}</span><span class="nx-tx"><b>One-to-one student</b><small>Their own lessons and price</small></span>${chev()}</button></div>`;
 }
 function nextDays(g, n) { const out = []; for (let i = 0; i < 21 && out.length < n; i++) { const d = addDays(TODAY, i); if (hasLesson(g, d) && !(i === 0 && doneOn(g, d))) out.push(iso(d)); } return out; }
 function sheetNxLess(s) {
@@ -317,8 +317,8 @@ pgHomeNew = function () {
 /* ---------- birthdays and breaks: a pop-up the day before and on the day ---------- */
 function popItems() {
   const out = [], t0 = iso(TODAY), t1 = iso(addDays(TODAY, 1)), md = (k) => k.slice(5);
-  S.groups.forEach((g) => g.students.forEach((st) => { const b = prof(st.id).bday; if (!b) return; if (b === md(t0)) out.push(['PartyPopper', '#FF375F', `${st.name}’s birthday is today`, g.solo ? 'Individual' : g.name]); else if (b === md(t1)) out.push(['PartyPopper', '#FF375F', `${st.name}’s birthday is tomorrow`, g.solo ? 'Individual' : g.name]); }));
-  S.pauses.forEach((p) => { if (p.from === t0) out.push(['Sun', '#FF9F0A', `${p.label || 'A break'} starts today`, `No lessons until ${dDate(p.to)}`]); else if (p.from === t1) out.push(['Sun', '#FF9F0A', `${p.label || 'A break'} starts tomorrow`, `No lessons until ${dDate(p.to)}`]); });
+  S.groups.forEach((g) => g.students.forEach((st) => { const b = prof(st.id).bday; if (!b) return; if (b === md(t0)) out.push(['PartyPopper', '#FF2D55', `${st.name}’s birthday is today`, g.solo ? 'Individual' : g.name]); else if (b === md(t1)) out.push(['PartyPopper', '#FF2D55', `${st.name}’s birthday is tomorrow`, g.solo ? 'Individual' : g.name]); }));
+  S.pauses.forEach((p) => { if (p.from === t0) out.push(['Sun', '#FF9500', `${p.label || 'A break'} starts today`, `No lessons until ${dDate(p.to)}`]); else if (p.from === t1) out.push(['Sun', '#FF9500', `${p.label || 'A break'} starts tomorrow`, `No lessons until ${dDate(p.to)}`]); });
   return out;
 }
 function sheetNxPop() {
@@ -333,13 +333,13 @@ function scSet2() {
     <div class="nx-list"><div class="nx-row still prof"><span class="tp-avatar big">${initials(P.name) || ic('UserRound')}</span><span class="nx-tx"><b>${esc(P.name || 'Your name')}</b><small>${esc(P.role || 'Teacher')}</small></span></div>
       <label class="nx-row still"><span class="nx-tx"><small>Your name</small><input id="f-pname" value="${esc(P.name || '')}" placeholder="Your name" autocomplete="off" data-profile></span></label>
       <label class="nx-row still"><span class="nx-tx"><small>Your role</small><input id="f-prole" value="${esc(P.role || '')}" placeholder="English teacher" autocomplete="off" data-profile></span></label></div>
-    <div class="nx-sec">Account and safety</div><div class="nx-list">${row('data-nxsoon="Signing in comes with the online copy"', 'ShieldCheck', '#0A84FF', 'Account', 'One sign-in for Teacher and Budget', 'Soon')}${row('data-nxsoon="Passcode and fingerprint come in the real build"', 'Fingerprint', '#5E5CE6', 'Passcode and fingerprint', 'Open the app with your face or finger', 'Soon')}</div>
-    <div class="nx-sec">Teaching</div><div class="nx-list">${row('data-tab="2"', 'Users', '#5E5CE6', 'Groups and students', `${S.groups.length} groups · ${n} students`)}${row('data-sheet="group"', 'Plus', '#30D158', 'New group', '')}${row('data-sheet="breaks"', 'Sun', '#FF9F0A', 'Breaks and holidays', `${S.pauses.length} saved`)}</div>
-    <div class="nx-sec">Payments</div><div class="nx-list">${row('data-sheet="extra"', 'Package', '#30D158', 'Extra charges', 'A book, a trip…')}<div class="nx-row still"><span class="nx-tile" style="--c:#8E8E93">${ic('Percent')}</span><span class="nx-tx"><b>Rounding</b><small>Part months round DOWN to 5 000 · you can change each one</small></span></div></div>
-    <div class="nx-sec">Three dots</div><div class="nx-list">${row('data-nxpush="setdots"', 'Sliders', '#FF453A', 'What each dot opens', 'Red · Yellow · Green, for every place')}</div>
+    <div class="nx-sec">Account and safety</div><div class="nx-list">${row('data-nxsoon="Signing in comes with the online copy"', 'ShieldCheck', '#007AFF', 'Account', 'One sign-in for Teacher and Budget', 'Soon')}${row('data-nxsoon="Passcode and fingerprint come in the real build"', 'Fingerprint', '#5856D6', 'Passcode and fingerprint', 'Open the app with your face or finger', 'Soon')}</div>
+    <div class="nx-sec">Teaching</div><div class="nx-list">${row('data-tab="2"', 'Users', '#5856D6', 'Groups and students', `${S.groups.length} groups · ${n} students`)}${row('data-sheet="group"', 'Plus', '#34C759', 'New group', '')}${row('data-sheet="breaks"', 'Sun', '#FF9500', 'Breaks and holidays', `${S.pauses.length} saved`)}</div>
+    <div class="nx-sec">Payments</div><div class="nx-list">${row('data-sheet="extra"', 'Package', '#34C759', 'Extra charges', 'A book, a trip…')}<div class="nx-row still"><span class="nx-tile" style="--c:#8E8E93">${ic('Percent')}</span><span class="nx-tx"><b>Rounding</b><small>Part months round DOWN to 5 000 · you can change each one</small></span></div></div>
+    <div class="nx-sec">Three dots</div><div class="nx-list">${row('data-nxpush="setdots"', 'Sliders', '#FF3B30', 'What each dot opens', 'Red · Yellow · Green, for every place')}</div>
     <div class="nx-sec">Look</div><div class="nx-list"><div class="nx-row still"><span class="nx-tx"><b>Style</b></span><div class="tp-seg2 slide" id="look-seg" style="--n:2;width:180px"><span class="seg-thumb" style="--i:${lookGet() === 'glass' ? 1 : 0}"></span><button class="${lookGet() === 'normal' ? 'on' : ''}" data-look="normal">Normal</button><button class="${lookGet() === 'glass' ? 'on' : ''}" data-look="glass">Glass</button></div></div></div>
-    <div class="nx-sec">Backup</div><div class="nx-list">${row('data-backup', 'Download', '#40C8E0', 'Save a backup file', 'Send it to yourself in Telegram')}<label class="nx-row"><span class="nx-tile" style="--c:#40C8E0">${ic('Upload')}</span><span class="nx-tx"><b>Restore from a backup file</b><small>A copy is kept first</small></span>${chev()}<input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>${row('data-sheet="copies"', 'History', '#40C8E0', 'Automatic copies', 'One a day, kept two weeks')}${row('data-nxsoon="The daily online copy comes with the account"', 'ShieldCheck', '#40C8E0', 'Daily online copy', 'Back on a new phone with one sign-in', 'Soon')}</div>
-    <div class="nx-sec">Update</div><div class="nx-list">${row('data-appupdate', 'Download', '#0A84FF', 'Update the app', 'Get the newest version now, without closing the app')}</div><div class="nx-sec">About</div><div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#8E8E93">${ic('Info')}</span><span class="nx-tx"><b>${VERSION_LABEL}</b><small>Updated 17 Nov 2026</small></span></div></div></div>`;
+    <div class="nx-sec">Backup</div><div class="nx-list">${row('data-backup', 'Download', '#30B0C7', 'Save a backup file', 'Send it to yourself in Telegram')}<label class="nx-row"><span class="nx-tile" style="--c:#30B0C7">${ic('Upload')}</span><span class="nx-tx"><b>Restore from a backup file</b><small>A copy is kept first</small></span>${chev()}<input type="file" accept=".json,application/json,text/plain" data-restore hidden></label>${row('data-sheet="copies"', 'History', '#30B0C7', 'Automatic copies', 'One a day, kept two weeks')}${row('data-nxsoon="The daily online copy comes with the account"', 'ShieldCheck', '#30B0C7', 'Daily online copy', 'Back on a new phone with one sign-in', 'Soon')}</div>
+    <div class="nx-sec">Update</div><div class="nx-list">${row('data-appupdate', 'Download', '#007AFF', 'Update the app', 'Get the newest version now, without closing the app')}</div><div class="nx-sec">About</div><div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#8E8E93">${ic('Info')}</span><span class="nx-tx"><b>${VERSION_LABEL}</b><small>Updated 18 Nov 2026</small></span></div></div></div>`;
 }
 const scSetDots = () => `${backBar('Settings')}<div class="tp-inner"><div class="nx-title">Three dots</div>${dotsSettingsHtml()}</div>`;
 
@@ -455,5 +455,5 @@ setTimeout(() => { try { const k = 'nx-pop'; if (localStorage.getItem(k) === iso
 }
 
 /* group colours: the iPhone colours, a little brighter (user, 15 Nov) */
-IOS.splice(0, IOS.length, '#0A84FF', '#30D158', '#FF9F0A', '#BF5AF2', '#FF375F', '#FF453A', '#FFD60A');
+IOS.splice(0, IOS.length, '#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#FF3B30', '#FFCC00');
 PIE.splice(0, PIE.length, ...IOS);

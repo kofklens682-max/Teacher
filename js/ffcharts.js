@@ -1,7 +1,7 @@
 'use strict';
 /* B+ infographics (charts) for Home. Counts only: money stays in the Budget app. Loaded after ffsys.js. */
 const ffShort = (k) => { const d = fromIso(k); return d.getDate() + '/' + (d.getMonth() + 1); };
-const ffCol = (p) => (p >= 85 ? '#34C759' : p >= 65 ? '#F0A92E' : '#F0614F');
+const ffCol = (p) => (p >= 85 ? '#34C759' : p >= 65 ? '#FF9500' : '#FF3B30');
 function ffBars(pts, o) { // pts: [{p, top, label, col, cur}]  p = 0..100; a quiet bar chart in SVG
   const W = 320, H = o.h || 150, top = 20, bot = 24, hh = H - top - bot, n = pts.length, slot = (W - 8) / n, bw = Math.min(30, slot * 0.62);
   const grid = [0, 50, 100].map((v) => { const y = top + hh - (v / 100) * hh; return `<line x1="4" x2="${W - 4}" y1="${y}" y2="${y}" class="gl${v ? '' : ' base'}"/>${v && !o.h ? `<text x="${W - 4}" y="${y - 3}" text-anchor="end" class="gt">${v}%</text>` : ''}`; }).join('');

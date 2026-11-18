@@ -24,10 +24,10 @@ html .tp-push{transition:transform var(--t-slow,.45s) var(--ease,cubic-bezier(.3
 /* a zoomed screen arrives whole: its cards do not rise one by one on top of the zoom */
 html .tp-push.f20-z :is(.nx-card,.nx-gcard,.nx-list,.nx-hero,.nx-w2,.nx-ghero,.nx-phead,.nx-tiles,.nx-course,.nx-sum,.nx-wg){animation:none !important}
 /* "Not paid?" on a paid tick, and Remove on the student's payments */
-html .nx-tick.done.f20-un.f20-arm{min-width:128px;gap:6px;background:#FF453A;color:#fff;border:0}
+html .nx-tick.done.f20-un.f20-arm{min-width:128px;gap:6px;background:#FF3B30;color:#fff;border:0}
 html .nx-tick.done.f20-un.f20-arm span{max-width:100px;opacity:1}
 html .nx-tick.done.f20-un.f20-arm svg{display:none}
-html .nx-mini.red.f20-rm.f20-arm{background:#FF453A;color:#fff}
+html .nx-mini.red.f20-rm.f20-arm{background:#FF3B30;color:#fff}
 .f20-pay .nx-tx b{font-size:15px}
 /* Library: a real cover picture (library2.js) hides the drawn title, circle and bottom bar */
 .bk[style*="media/covers/"]>span,.bk[style*="media/covers/"]::before,.bk[style*="media/covers/"]::after{display:none !important}

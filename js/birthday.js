@@ -30,11 +30,11 @@
   window.f20Fit = fit;
   function tile() {
     const L = f20Birthdays(), soon = L.filter((x) => x.days <= 30), x = L[0];
-    if (!x) return `<button class="nx-card f20-bday" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF375F'}" data-nxpush="bdays"><div class="nx-ch"><b>${ic('PartyPopper')} Birthday</b></div><span class="f20-none">Add birthdays in each student’s Edit</span></button>`;
+    if (!x) return `<button class="nx-card f20-bday" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF2D55'}" data-nxpush="bdays"><div class="nx-ch"><b>${ic('PartyPopper')} Birthday</b></div><span class="f20-none">Add birthdays in each student’s Edit</span></button>`;
     const mo = Math.round(x.days / 30.4); // far away: months, so the number stays narrow and the name fits beside it
     const big = x.days === 0 ? '<b class="big f20-today">Today</b>' : x.days > 99 ? `<b class="big f20-num">${mo}<small>${mo === 1 ? 'month' : 'months'}</small></b>` : `<b class="big f20-num">${x.days}<small>${x.days === 1 ? 'day' : 'days'}</small></b>`;
     const more = soon.length > 1 ? `<small class="f20-more">+${soon.length - 1} more</small>` : '';
-    return `<button class="nx-card f20-bday${x.days === 0 ? ' on' : ''}" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF375F'}" data-nxpush="bdays"><div class="nx-ch"><b>${ic('PartyPopper')} Birthday</b></div><div class="f20-orow${x.days === 0 ? ' f20-col2' : fit(x.st.name)}">${big}<span class="f20-on"><b>${esc(x.st.name)}</b><small>${when(x)}</small>${more}</span></div></button>`;
+    return `<button class="nx-card f20-bday${x.days === 0 ? ' on' : ''}" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF2D55'}" data-nxpush="bdays"><div class="nx-ch"><b>${ic('PartyPopper')} Birthday</b></div><div class="f20-orow${x.days === 0 ? ' f20-col2' : fit(x.st.name)}">${big}<span class="f20-on"><b>${esc(x.st.name)}</b><small>${when(x)}</small>${more}</span></div></button>`;
   }
   const _home = PAGES[0];
   PAGES[0] = function () {
@@ -64,7 +64,7 @@
     const L = f20Birthdays(), soon = L.filter((x) => x.days <= 30), later = L.filter((x) => x.days > 30);
     const row = (x) => `<button class="nx-row" data-nxpush="sprof" data-g="${x.g.id}" data-sid="${x.st.id}">${nxAv(x.st)}<span class="nx-tx"><b>${esc(x.st.name)}</b><small>${when(x)} · ${esc(x.g.solo ? 'Individual' : x.g.name)}</small></span><em class="f20-left${x.days === 0 ? ' on' : ''}">${left(x.days)}</em>${chev()}</button>`;
     const sec = (name, rows) => (rows.length ? `<div class="nx-sec">${name}</div><div class="nx-list">${rows.map(row).join('')}</div>` : '');
-    return `${backBar('Back', '')}<div class="tp-inner" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF375F'}">
+    return `${backBar('Back', '')}<div class="tp-inner" style="--bc:${typeof f20BdayCol === 'function' ? f20BdayCol() : '#FF2D55'}">
       <div class="nx-title">Birthdays</div><p class="nx-sub">${soon.length ? `${soon.length} in the next 30 days` : L.length ? 'None in the next 30 days' : 'No birthdays saved yet'}</p>
       ${sec('Next 30 days', soon)}${sec('Later', later)}
       ${!L.length ? `<div class="tp-empty2">${ic('PartyPopper')}<b>No birthdays yet</b><span>Open a student, tap Edit and fill in Birthday.</span></div>` : ''}

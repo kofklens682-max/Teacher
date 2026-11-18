@@ -72,7 +72,7 @@ function ledger(g, s, ym) { // what was paid is used for the oldest month first;
 }
 const payState = () => T.pay || (T.pay = { ym: ymOf(TODAY), f: 'all' });
 
-const STC = { paid: '#34C759', credit: '#3D5AFE', part: '#FF9500', unpaid: '#FF3B30' };
+const STC = { paid: '#34C759', credit: '#5856D6', part: '#FF9500', unpaid: '#FF3B30' };
 function donut(parts, size, w, center, track) { // parts: [[value, colour]]; a ring cut into coloured pieces
   const r = (size - w) / 2, L = 2 * Math.PI * r, on = parts.filter((p) => p[0] > 0), tot = on.reduce((a, p) => a + p[0], 0) || 1; let off = 0;
   const segs = on.map(([v, c]) => { const len = (L * v) / tot, gap = on.length > 1 ? Math.min(4, len / 3) : 0, s = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${(len - gap).toFixed(1)} ${L.toFixed(1)}" style="--L:${L.toFixed(1)}px" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>`; off += len; return s; }).join('');
@@ -102,14 +102,14 @@ function pgHomeNew() {
     <div class="hdr-btns"><button class="tp-avatar" data-sheet="settings" aria-label="Profile and settings">${initials(profileGet().name) || ic('UserRound')}</button><button class="tp-roundbtn" data-sheet="group" aria-label="New group">${ic('Plus')}</button></div></div>`;
   const priv = S.groups.filter(isSingle), kids = S.groups.filter((g) => !priv.includes(g) && (g.lvl === 'own' || KIDLV.some((l) => l.id === g.lvl))), teens = S.groups.filter((g) => !kids.includes(g) && !priv.includes(g));
   const cnt = (a) => a.reduce((n, g) => n + g.students.length, 0), total = cnt(S.groups);
-  const aud = [['Kids', kids, '#5EEAD4'], ['Teens', teens, '#FFFFFF'], ['Private', priv, '#FCD34D']].filter((x) => x[1].length);
+  const aud = [['Kids', kids, '#00C7BE'], ['Teens', teens, '#FFFFFF'], ['Private', priv, '#FFCC00']].filter((x) => x[1].length);
   const hero = `<div class="dr-hero2">${donut(aud.map((x) => [cnt(x[1]), x[2]]), 124, 14, `<b>${total}</b><span>students</span>`, 'rgba(255,255,255,.18)')}
     <div class="dr-aud">${aud.map(([t, gs, c]) => `<div><i style="background:${c}"></i><span><b>${cnt(gs)}</b> ${t}</span><em>${t === 'Private' ? 'pay per lesson' : gs.length + (gs.length === 1 ? ' group' : ' groups')}</em></div>`).join('')}</div></div>`;
   const a = attAll(), h = hwPct(), sc = statusCounts(ym), paidP = sc.n ? sc.ok / sc.n : 0;
   const rings = `<div class="dr-rings">
-    <button class="dr-rt" data-tab="2">${ring((a || 0) / 100, 62, 7, '#34C759', '#0FA37F', a === null ? '–' : a + '%')}<span>Attendance</span></button>
-    <button class="dr-rt" data-tab="2">${ring((h || 0) / 100, 62, 7, '#A78BFA', '#7B3FE4', h === null ? '–' : h + '%')}<span>Homework</span></button>
-    <button class="dr-rt" data-push="pay">${ring(paidP, 62, 7, '#5CC8FF', '#147EFB', sc.n ? `${sc.ok}/${sc.n}` : '–')}<span>Fees paid</span></button></div>`;
+    <button class="dr-rt" data-tab="2">${ring((a || 0) / 100, 62, 7, '#34C759', '#248A3D', a === null ? '–' : a + '%')}<span>Attendance</span></button>
+    <button class="dr-rt" data-tab="2">${ring((h || 0) / 100, 62, 7, '#5856D6', '#5856D6', h === null ? '–' : h + '%')}<span>Homework</span></button>
+    <button class="dr-rt" data-push="pay">${ring(paidP, 62, 7, '#32ADE6', '#007AFF', sc.n ? `${sc.ok}/${sc.n}` : '–')}<span>Fees paid</span></button></div>`;
   const todays = S.groups.filter((g) => hasLesson(g, TODAY)).sort((x, y) => startMin(x, TODAY) - startMin(y, TODAY));
   const nextId = (todays.find((g) => endMin(g, TODAY) > nowMin() && !doneOn(g, TODAY)) || {}).id;
   const rows = todays.map((g) => {
@@ -161,7 +161,7 @@ function scPay() {
       return `<button class="dr-stu" data-sheet="payrec" data-g="${g.id}" data-sid="${s.id}"><span class="dr-av st-${cls}" style="background:${avColor(s.name)}">${esc(s.name[0])}</span><span class="tx"><b>${esc(s.name)}</b><span>${esc(rowText(g, L))}${single ? ` · ${lessonsCame(g, s, ym)} lessons` : ''}</span></span><span class="dr-pill ${cls}">${txt}</span></button>`; }).join('');
     return `<div class="dr-gsec" style="${gvg(g)}"><div class="dr-gh"><span class="dot"></span><div><b>${esc(g.name)}</b><span>${single ? 'Per lesson · ' + dMoney(p.rate) : dMoney(p.fee) + ' a month'}${d ? ` · −${dMoney(d)} this month` : ''}</span></div><button class="dr-disc" data-sheet="disc" data-g="${g.id}">${ic('Percent')}Discount</button></div><div class="dr-sl">${list}</div></div>`;
   }).join('');
-  return `${bar}<div class="tp-inner" style="--g1:#34C759;--g2:#0F9D8F">${head}${nav}${over}<div class="tp-sec"><h4>By group</h4></div>${byg}${chips}${secs || `<div class="tp-empty2">${ic('Check')}<b>Nobody here</b><span>Nothing matches this filter.</span></div>`}</div>`;
+  return `${bar}<div class="tp-inner" style="--g1:#34C759;--g2:#0C817B">${head}${nav}${over}<div class="tp-sec"><h4>By group</h4></div>${byg}${chips}${secs || `<div class="tp-empty2">${ic('Check')}<b>Nobody here</b><span>Nothing matches this filter.</span></div>`}</div>`;
 }
 
 /* ---------- sheets: record a payment, a group discount ---------- */

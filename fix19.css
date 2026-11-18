@@ -21,7 +21,7 @@ html.glass:not(.g2-noshrink) body #tp > .tp-tabs.g2d{transform:translateY(6px) s
 .f19-days .paid{background:rgba(52,199,89,.14)}.f19-days .paid small{color:#248A3D}
 .f19-days .no small,.f19-days .part small{color:#FF3B30}
 .f19-days.pay{margin:0 0 12px}
-.f19-days.pay .will{background:rgba(10,132,255,.14)}.f19-days.pay .will small{color:#0A84FF}
+.f19-days.pay .will{background:rgba(0,122,255,.14)}.f19-days.pay .will small{color:#007AFF}
 .ic-d.f19-pd small{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);font-size:8px;line-height:1;font-weight:800;color:#248A3D;background:#fff;border-radius:6px;padding:2px 4px;box-shadow:0 0 0 .5px rgba(0,0,0,.12)}
 
 /* Payments: an open group keeps its top line on screen; the strip on the right closes it */

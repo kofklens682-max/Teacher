@@ -13,7 +13,7 @@ Object.assign(ICONS, {
 });
 
 const SHORT = (ym) => MONTHS[+ym.slice(5) - 1].slice(0, 3);
-const PIE = ['#3D5AFE', '#34C759', '#FF9500', '#E5484D', '#8E3BD9', '#14B8A6', '#FF6B9A', '#32ADE6', '#C9A400', '#7B61FF', '#FF8A4C', '#0F766E'];
+const PIE = ['#5856D6', '#34C759', '#FF9500', '#FF3B30', '#8944AB', '#00C7BE', '#FF2D55', '#32ADE6', '#FFCC00', '#5856D6', '#FF9500', '#0C817B'];
 const MAXAHEAD = 24; // months into the future you can look at and pay for
 
 /* ---------- small changes to the payment rules ---------- */
@@ -130,7 +130,7 @@ const homeOpen = (g) => (g.lvl === 'own' || planned(g.lvl) ? openLessonAttr(g) :
 const lessonLine = (g) => (g && planned(g.lvl) ? `Week ${curLes(g).w} · ${dayWord(g.lvl)} ${curLes(g).l}` : g ? esc(LVNAME(g.lvl)) : 'Not linked to a group');
 const inMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + (m % 60) + ' min' : ''}`);
 // iPhone system colors, one per group (in the order of your groups), used everywhere on Home
-const IOS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#FFCC00', '#5856D6', '#30B0C7', '#A2845E'];
+const IOS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#32ADE6', '#FFCC00', '#5856D6', '#30B0C7', '#A2845E'];
 const hc = (g) => IOS[gci(g) % IOS.length];
 function secNext() { // one lesson big (the one that is on, or the next); today's other lessons smaller underneath: what's coming and what's taught
   const { list } = todayBlocks(), now = nowMin(), b = list.find((x) => x.to > now); if (!list.length) return '';

@@ -38,15 +38,15 @@ function acStatus() {
   if (s.status === 'busy') return 'Saving…';
   if (s.status === 'down') return esc(s.msg || 'Bringing your data back…');
   if (s.status === 'offline') return 'Waiting for internet · it saves by itself';
-  if (s.status === 'error') return `<span style="color:#FF453A">Not saved: ${esc(s.msg)}</span>`;
+  if (s.status === 'error') return `<span style="color:#FF3B30">Not saved: ${esc(s.msg)}</span>`;
   if (s.dirty) return 'Saving in a moment…';
-  if (s.status === 'ok') return `<span style="color:#1E9E46">✓ Saved online · ${acAgo(s.at)}</span>`;
+  if (s.status === 'ok') return `<span style="color:#248A3D">✓ Saved online · ${acAgo(s.at)}</span>`;
   return 'Checking…';
 }
 // the Settings row (final.js puts it in "Account and safety")
 const acRow = () => Acct.signedIn()
-  ? `<button class="nx-row" data-sheet="acct"><span class="nx-tile" style="--c:#30D158">${ic('ShieldCheck')}</span><span class="nx-tx"><b>${esc(Acct.user())}</b><small class="ac-status">${acStatus()}</small></span>${chev()}</button>`
-  : `<button class="nx-row" data-sheet="acct" data-mode="new"><span class="nx-tile" style="--c:#0A84FF">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Save online</b><small>One sign-in for Teacher, Budget and Notes</small></span>${chev()}</button>`;
+  ? `<button class="nx-row" data-sheet="acct"><span class="nx-tile" style="--c:#34C759">${ic('ShieldCheck')}</span><span class="nx-tx"><b>${esc(Acct.user())}</b><small class="ac-status">${acStatus()}</small></span>${chev()}</button>`
+  : `<button class="nx-row" data-sheet="acct" data-mode="new"><span class="nx-tile" style="--c:#007AFF">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Save online</b><small>One sign-in for Teacher, Budget and Notes</small></span>${chev()}</button>`;
 
 // ---------- the account pop-up ----------
 const acField = (id, label, type, value, ph) => `<label class="tp-f"><span>${label}</span><input id="${id}" type="${type || 'text'}" value="${esc(value || '')}" placeholder="${esc(ph || '')}" autocomplete="off" autocapitalize="none" spellcheck="false"></label>`;
@@ -57,8 +57,8 @@ function sheetAcct(s) {
   const go = (label) => `<button class="tp-cta" data-acgo ${s.busy ? 'disabled' : ''}>${s.busy ? 'Please wait…' : label}</button>`;
   if (m === 'which') return `${head('Which copy stays?', '<span></span>')}
     <p class="tp-small" style="text-align:left">This phone already has Teacher data, and there is an online copy too.</p>
-    <div class="nx-list"><button class="nx-row" data-acwhich="online"><span class="nx-tile" style="--c:#30D158">${ic('Download')}</span><span class="nx-tx"><b>Use the online copy</b><small>Saved ${acWhen(s.onlineAt)} · ${esc(s.online)}</small></span></button>
-      <button class="nx-row" data-acwhich="phone"><span class="nx-tile" style="--c:#0A84FF">${ic('Smartphone')}</span><span class="nx-tx"><b>Keep this phone’s</b><small>${esc(s.phone)}</small></span></button></div>
+    <div class="nx-list"><button class="nx-row" data-acwhich="online"><span class="nx-tile" style="--c:#34C759">${ic('Download')}</span><span class="nx-tx"><b>Use the online copy</b><small>Saved ${acWhen(s.onlineAt)} · ${esc(s.online)}</small></span></button>
+      <button class="nx-row" data-acwhich="phone"><span class="nx-tile" style="--c:#007AFF">${ic('Smartphone')}</span><span class="nx-tx"><b>Keep this phone’s</b><small>${esc(s.phone)}</small></span></button></div>
     <p class="tp-small" style="text-align:left">The other one is kept in Settings → Backup → Automatic copies.</p>`;
   if (m === 'code') return `${head('Your recovery code', '<span></span>')}
     <div class="ac-hero">${ic('ShieldCheck')}<p>If you ever forget your password, this code is the only way back in. Keep it somewhere safe, for example in Telegram “Saved Messages”.</p></div>
@@ -66,9 +66,9 @@ function sheetAcct(s) {
     <button class="tp-cta" data-accopy>${ic('Share2')} Send it to Telegram…</button><button class="tp-cta ghost" data-acdone>I’ve saved it</button>`;
   if (m === 'home') {
     return `${head(esc(Acct.user()), '<button class="tp-back" data-closesheet>Done</button>')}
-      <div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#30D158">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Online copy</b><small class="ac-status">${acStatus()}</small></span></div>
-        <button class="nx-row" data-acnow><span class="nx-tile" style="--c:#30D158">${ic('RotateCcw')}</span><span class="nx-tx"><b>Save now</b></span></button>
-        <button class="nx-row" data-acdays><span class="nx-tile" style="--c:#0A84FF">${ic('CalendarDays')}</span><span class="nx-tx"><b>Last 7 days</b><small>One copy a day · bring back any day</small></span>${chev()}</button></div>
+      <div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#34C759">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Online copy</b><small class="ac-status">${acStatus()}</small></span></div>
+        <button class="nx-row" data-acnow><span class="nx-tile" style="--c:#34C759">${ic('RotateCcw')}</span><span class="nx-tx"><b>Save now</b></span></button>
+        <button class="nx-row" data-acdays><span class="nx-tile" style="--c:#007AFF">${ic('CalendarDays')}</span><span class="nx-tx"><b>Last 7 days</b><small>One copy a day · bring back any day</small></span>${chev()}</button></div>
       <p class="tp-small" style="text-align:left">Teacher, Budget and Notes use this account. Everything is locked on the phone before it is sent, so nobody can read it online. Your own lesson files stay on this phone.</p>
       <div class="nx-list"><button class="nx-row" data-acout><span class="nx-tx"><b class="red">Sign out on this phone</b><small>Your data stays on the phone and online</small></span></button></div>`;
   }
@@ -76,8 +76,8 @@ function sheetAcct(s) {
     const list = s.list;
     return `${head('Last 7 days', '<button class="tp-back" data-acmode="home">' + ic('ChevronLeft') + ' Back</button>')}
       <p class="tp-small" style="text-align:left">One copy is saved online each day. Tap a day to bring Teacher back to how it was then. What is on the phone now is kept first.</p>
-      ${!list ? '<p class="tp-small">Loading…</p>' : list.err ? '<p class="tp-small" style="color:#FF453A">Could not load them. Check the internet and try again.</p>'
-        : list.length ? `<div class="nx-list">${list.map((d) => `<button class="nx-row" data-acday="${d.slot}"><span class="nx-tile" style="--c:#0A84FF">${ic('CalendarDays')}</span><span class="nx-tx"><b>${acWhen(d.at).split(',')[0]}</b><small>Saved at ${acWhen(d.at).split(', ')[1]}</small></span>${s.pick === d.slot ? '<em class="ac-ask">Tap again to bring it back</em>' : chev()}</button>`).join('')}</div>`
+      ${!list ? '<p class="tp-small">Loading…</p>' : list.err ? '<p class="tp-small" style="color:#FF3B30">Could not load them. Check the internet and try again.</p>'
+        : list.length ? `<div class="nx-list">${list.map((d) => `<button class="nx-row" data-acday="${d.slot}"><span class="nx-tile" style="--c:#007AFF">${ic('CalendarDays')}</span><span class="nx-tx"><b>${acWhen(d.at).split(',')[0]}</b><small>Saved at ${acWhen(d.at).split(', ')[1]}</small></span>${s.pick === d.slot ? '<em class="ac-ask">Tap again to bring it back</em>' : chev()}</button>`).join('')}</div>`
         : '<p class="tp-small">No daily copies yet. The first one is saved today.</p>'}`;
   }
   if (m === 'recover') return `${head('Forgot password', '<button class="tp-back" data-acmode="signin">' + ic('ChevronLeft') + ' Back</button>')}
@@ -140,4 +140,4 @@ SHEETS.acct = (s) => sheetAcct(s);
 { const _s = PUSH.set2; PUSH.set2 = (f) => _s(f).replace(/<button class="nx-row" data-nxsoon="Signing in comes with the online copy">[\s\S]*?<\/button>/, () => acRow()); }
 
 // Settings → Backup: the "Daily online copy … Soon" row opens the account pop-up (signed in: the Last 7 days list; not yet: create/sign in)
-{ const _s2 = PUSH.set2; PUSH.set2 = (f) => _s2(f).replace(/<button class="nx-row" data-nxsoon="The daily online copy comes with the account">[\s\S]*?<\/button>/, () => `<button class="nx-row" data-sheet="acct"${Acct.signedIn() ? '' : ' data-mode="new"'}><span class="nx-tile" style="--c:#40C8E0">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Daily online copy</b><small>${Acct.signedIn() ? 'Last 7 days · tap to open' : 'Back on a new phone with one sign-in'}</small></span>${chev()}</button>`); }
+{ const _s2 = PUSH.set2; PUSH.set2 = (f) => _s2(f).replace(/<button class="nx-row" data-nxsoon="The daily online copy comes with the account">[\s\S]*?<\/button>/, () => `<button class="nx-row" data-sheet="acct"${Acct.signedIn() ? '' : ' data-mode="new"'}><span class="nx-tile" style="--c:#30B0C7">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Daily online copy</b><small>${Acct.signedIn() ? 'Last 7 days · tap to open' : 'Back on a new phone with one sign-in'}</small></span>${chev()}</button>`); }

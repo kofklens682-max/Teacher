@@ -11,8 +11,8 @@ function ffWeekIcon(lvlId, n, big) {
   return `<span class="emo${big ? ' big' : ''}">${E[n] || '📘'}</span>`;
 }
 /* bright colors, the same family as Home (no dark navy, no purple or pink) */
-Object.assign(GRAD, { A1: ['#4DEB8B', '#17BC52'], A2: ['#58D8FF', '#0A84FF'], B1: ['#3FE0C8', '#10B5A6'], 'B1+': ['#5AB4FF', '#0A6CFF'], B2: ['#8EA2FF', '#4A66F0'], I1: ['#FFCF4D', '#FF8A00'], I2: ['#FF8A80', '#FF3B30'], IT: ['#B3BDCC', '#6B7A90'],
-  RU: ['#FF9A6B', '#F25C2C'], K2: ['#FFCF4D', '#FF9500'], K3: ['#5AB4FF', '#0A6CFF'], K4: ['#4DEB8B', '#17BC52'], K5: ['#8EA2FF', '#4A66F0'], own: ['#FFCF4D', '#FF9500'] });
+Object.assign(GRAD, { A1: ['#34C759', '#34C759'], A2: ['#32ADE6', '#007AFF'], B1: ['#00C7BE', '#00C7BE'], 'B1+': ['#32ADE6', '#007AFF'], B2: ['#007AFF', '#5856D6'], I1: ['#FFCC00', '#FF9500'], I2: ['#FF3B30', '#FF3B30'], IT: ['#B3BDCC', '#6B7A90'],
+  RU: ['#FF9500', '#FF3B30'], K2: ['#FFCC00', '#FF9500'], K3: ['#32ADE6', '#007AFF'], K4: ['#34C759', '#34C759'], K5: ['#007AFF', '#5856D6'], own: ['#FFCC00', '#FF9500'] });
 /* the Units page: every week row uses ffWeekIcon, and the card above the weeks takes the level's own color.
    11 Nov (smooth): built in ONE pass over the text of pgUnits (app.js). Before, the page was parsed and written back as HTML
    three times per draw (ffunits3.js twice, then here) only to swap these icons; the screen shows exactly the same. */

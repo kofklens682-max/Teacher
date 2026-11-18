@@ -42,7 +42,7 @@
     ['Round-Up', /^Round-Up/, (n) => (/Workbook/.test(n) ? 2 : 1), (n) => 'Starter · ' + (/Workbook/.test(n) ? 'Workbook' : 'Class Book')],
   ];
   const SHORT_LV = { A1: 'Beginner', A2: 'Elementary', B1: 'Pre-Int', 'B1+': 'Int', B2: 'Upper-Int', I1: 'IELTS 5.5', I2: 'IELTS 7+' };
-  const COLS = ['#30D158', '#0A84FF', '#FF9F0A', '#FF453A', '#BF5AF2', '#FF375F', '#FFD60A'];
+  const COLS = ['#34C759', '#007AFF', '#FF9500', '#FF3B30', '#AF52DE', '#FF2D55', '#FFCC00'];
   function seriesOf(kids) { // [{ name, col, books: [{ f, vol, lv: [level ids] }] }]
     const lv = {}; lbShelves(kids).forEach((s) => s.books.forEach((f) => { (lv[f] = lv[f] || []).includes(s.id) || lv[f].push(s.id); }));
     const out = SERIES.map(([name], i) => ({ name, col: COLS[i % COLS.length], books: [] })), other = { name: 'Other books', col: '#8E8E93', books: [] };

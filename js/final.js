@@ -14,9 +14,9 @@ const stripGrpAtt = (html) => (typeof html === 'string' && html.includes('data-p
   : html);
 
 /* ---------- individual students: the iPhone-style month calendar (their attendance) ---------- */
-CST.done[0] = 'Came'; CST.done[1] = '#30D158';
-CST.cancel[0] = 'Canceled'; CST.cancel[1] = '#FF453A';
-CST.moved[0] = 'Moved'; CST.moved[1] = '#FF9F0A';
+CST.done[0] = 'Came'; CST.done[1] = '#34C759';
+CST.cancel[0] = 'Canceled'; CST.cancel[1] = '#FF3B30';
+CST.moved[0] = 'Moved'; CST.moved[1] = '#FF9500';
 function soloCount(g, ym) {
   const [y, m] = ym.split('-').map(Number), cnt = { done: 0, cancel: 0, moved: 0, open: 0 }, tk = iso(TODAY);
   for (let d = 1; d <= 31; d++) { const dt = new Date(y, m - 1, d); if (dt.getMonth() !== m - 1) break; if (!isLessonDay(g, dt)) continue;
@@ -48,7 +48,7 @@ scSolo = function (f) {
       ${!st && g.left && g.left.length ? `<div class="tp-card2 warn">${ic('CalendarX2')}<p><b>${esc(g.left[0].name)} stopped coming after ${ymName(g.left[0].until)}.</b> The lessons and payments up to then are kept.</p></div>` : ''}
       <div class="nx-sec">Attendance</div><div class="nx-card">${soloCal(g, f.ym)}</div>
       <p class="nx-foot">Tap a day to mark it: came, canceled or moved. Tap any other day to add a lesson.</p>
-      ${st ? `<div class="nx-list"><button class="nx-row" data-nxpush="sprof" data-g="${g.id}" data-sid="${st.id}"><span class="nx-tile" style="--c:#0A84FF">${ic('UserRound')}</span><span class="nx-tx"><b>Profile and payments</b></span>${chev()}</button></div>` : ''}</div>`;
+      ${st ? `<div class="nx-list"><button class="nx-row" data-nxpush="sprof" data-g="${g.id}" data-sid="${st.id}"><span class="nx-tile" style="--c:#007AFF">${ic('UserRound')}</span><span class="nx-tx"><b>Profile and payments</b></span>${chev()}</button></div>` : ''}</div>`;
 };
 // the day pop-up: short iPhone texts
 {
@@ -72,7 +72,7 @@ function lpClass(g, f) { // the card at the bottom of a group's lesson: how it c
   const can = g.lvl !== 'own' && planned(g.lvl) && (today || t || repOn(g, TODAY)), on = repOn(g, TODAY), two = dblOn(g, TODAY);
   const rows = can ? `${two ? '' : `<button class="lp-row" data-repeat="${g.id}"><span class="tx"><b>Not finished</b><small>Stay on this lesson next class</small></span>${lpSw(on)}</button>`}
       ${on ? '' : `<button class="lp-row" data-two="${g.id}"><span class="tx"><b>Two lessons today</b><small>The plan moves on by two</small></span>${lpSw(two)}</button>`}` : '';
-  return `<div class="nx-sec">This class</div><div class="lp-card"><div class="lp-stat"><span class="lp-ic" style="--c:${isT ? '#30D158' : '#0A84FF'}">${ic(isT ? 'Check' : 'Clock')}</span><span class="tx"><b>${esc(g.name)}</b><small>${status}</small></span></div>${rows}</div>`;
+  return `<div class="nx-sec">This class</div><div class="lp-card"><div class="lp-stat"><span class="lp-ic" style="--c:${isT ? '#34C759' : '#007AFF'}">${ic(isT ? 'Check' : 'Clock')}</span><span class="tx"><b>${esc(g.name)}</b><small>${status}</small></span></div>${rows}</div>`;
 }
 function lpSolo(g) { // an individual student's lesson: mark today right here
   const st = g.students[0], k = iso(TODAY), cnt = soloCount(g, ymOf(TODAY)), les = isLessonDay(g, TODAY), cur = les ? calSt(g, k) : '';
@@ -161,7 +161,7 @@ document.documentElement.classList.add('glass');
   const _s = PUSH.set2;
   PUSH.set2 = (f) => _s(f).replace(/<div class="nx-sec">Look<\/div><div class="nx-list">[\s\S]*?<\/div><\/div><\/div>/, () => {
     const on = typeof tabShrinkOn === 'function' ? tabShrinkOn() : true;
-    return `<div class="nx-sec">Look</div><div class="nx-list"><button class="nx-row" data-tabshrink role="switch" aria-checked="${on}"><span class="nx-tile" style="--c:#0A84FF">${ic('Smartphone')}</span><span class="nx-tx"><b>Shrink the tab bar</b><small>Smaller while you scroll down</small></span><i class="ts-sw${on ? ' on' : ''}"></i></button>${window.GlassBend ? GlassBend.html() : ''}</div>`;
+    return `<div class="nx-sec">Look</div><div class="nx-list"><button class="nx-row" data-tabshrink role="switch" aria-checked="${on}"><span class="nx-tile" style="--c:#007AFF">${ic('Smartphone')}</span><span class="nx-tx"><b>Shrink the tab bar</b><small>Smaller while you scroll down</small></span><i class="ts-sw${on ? ' on' : ''}"></i></button>${window.GlassBend ? GlassBend.html() : ''}</div>`;
   });
 }
 

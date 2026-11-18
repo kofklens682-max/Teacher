@@ -35,13 +35,13 @@ function packBlock(L, u, l) {
     const d = `data-pk="${key}|${k}" data-pt="${esc(title + ' - ' + name)}"`;
     return `<div class="pk-row"><div class="pk-t"><b>${name}</b><span>${sub} · ${packSize(P[k][1])}</span></div><a class="tp-pill" href="media/packs/${P[k][0]}" target="_blank" rel="noopener"${/.html$/.test(P[k][0]) ? '' : ` data-pvopen="${key}|${k}" data-pt="${esc(title + ' - ' + name)}"`}>Open</a><button class="tp-pill" data-packshare="${key}|${k}" ${d}>${ic('Share2')} Share</button></div>`;
   }).join('');
-  const games = (P.g || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF5A5F">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
-  const vids = (P.v || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#147EFB">${ic('CirclePlay')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
+  const games = (P.g || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#FF3B30">${ic('Play')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
+  const vids = (P.v || []).map((g) => `<div class="pk-gr"><a class="tp-media" href="${esc(safeUrl(g[1]))}" target="_blank" rel="noopener"><span class="mi" style="background:#007AFF">${ic('CirclePlay')}</span><span class="tx"><b>${esc(g[0])}</b><span>${esc(g[2])}</span></span></a><button class="tp-pill pk-ic" data-sharelink="${esc(g[1])}" data-pt="${esc(g[0])}" aria-label="Share the link">${ic('Share2')}</button></div>`).join('');
   const all = PK_KINDS.filter(([k]) => P[k]).length > 1 ? `<button class="tp-cta pk-all" data-packshareall="${key}" data-pt="${esc(title)}">${ic('Share2')} Share all ${PK_KINDS.filter(([k]) => P[k]).length}</button>` : '';
-  return (rows ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Lesson files</div>${rows}${all}</div>` : '')
-    + (vids ? `<div class="tp-card2 pk-game"><div class="h" style="color:#147EFB">${ic('CirclePlay')}Watch and listen</div>${vids}</div>` : '')
-    + (games ? `<div class="tp-card2 pk-game"><div class="h" style="color:#FF5A5F">${ic('Play')}Game · Baamboozle</div>${games}</div>` : '')
-    + (P.b && P.b.length ? `<div class="tp-card2"><div class="h" style="color:#147EFB">${ic('BookOpen')}Books for this lesson</div>${P.b.map((b) => `<p>${esc(b)}</p>`).join('')}</div>` : '');
+  return (rows ? `<div class="tp-card2"><div class="h" style="color:#5856D6">${ic('FileText')}Lesson files</div>${rows}${all}</div>` : '')
+    + (vids ? `<div class="tp-card2 pk-game"><div class="h" style="color:#007AFF">${ic('CirclePlay')}Watch and listen</div>${vids}</div>` : '')
+    + (games ? `<div class="tp-card2 pk-game"><div class="h" style="color:#FF3B30">${ic('Play')}Game · Baamboozle</div>${games}</div>` : '')
+    + (P.b && P.b.length ? `<div class="tp-card2"><div class="h" style="color:#007AFF">${ic('BookOpen')}Books for this lesson</div>${P.b.map((b) => `<p>${esc(b)}</p>`).join('')}</div>` : '');
 }
 async function packFile(key, kind, title) {
   const name = PACKS[key][kind][0];

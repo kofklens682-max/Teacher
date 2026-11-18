@@ -1,0 +1,84 @@
+/* 18 Nov 2026: pop-ups stay on the bottom edge, one page sinks behind a pop-up with its own color around it, smooth sink,
+   the class card holds all its text (see js/fix21.js) */
+
+/* 1) A pop-up rises on the iPhone's smooth spring: it never shoots past the bottom edge (the old curve lifted it 12-20 px, and the page
+      underneath showed below it: "the Quick actions page floats"). While the finger holds it, it follows the finger at once. */
+html .tp-sheet.show .panel{transition:transform .5s var(--f20-spring,cubic-bezier(.32,.72,0,1)),background-color .25s ease !important}
+html .tp-sheet.show.dragging .panel{transition:none !important}
+html .tp-sheet.show.closing .panel,html .tp-sheet.closing .panel{transition:transform .34s cubic-bezier(.32,.72,0,1) !important}
+
+/* 2) The page behind a pop-up sinks back. Only transform moves (the graphics chip does it; the old rounded corners repainted the whole
+      page on every frame). The page keeps its own layer all the time, so starting to sink costs nothing. */
+html .tp-viewport .tp-page.f20-cur,html .tp-push{transition:transform var(--t-slow,.45s) var(--ease,cubic-bezier(.32,.72,0,1)) !important;will-change:transform}
+html .tp-viewport .tp-page.f20-cur.f20-sink,html .tp-push.f20-sink{transform:translate3d(0,12px,0) scale(.94) !important;border-radius:0 !important;transform-origin:50% 0;box-shadow:none !important}
+html.f21-nosink .tp-viewport .tp-page.f20-cur.f20-sink,html.f21-nosink .tp-push.f20-sink{transform:none !important}
+/* what lies under a sinking screen: the same color as the screen itself, so nothing else peeks out (the user: "the page itself, with its
+   own color, squeezes; no feeling of empty space behind") */
+.f21-under{position:absolute;inset:0;z-index:15;pointer-events:none;background:linear-gradient(180deg,var(--pbg,#F2F2F7),var(--pbg2,#F2F2F7))}
+/* the tab page has no background of its own: the app's background is its color */
+
+/* 3) The class card: every word visible. The card grows to fit its longest text (js measures it); no "..." */
+html .nx-hcard{padding:16px 18px 14px}
+html .nx-hcard .s{display:block;-webkit-line-clamp:unset;overflow:visible;line-height:1.25}
+html .nx-hcard .t{margin-top:2px;line-height:1.15}
+html .nx-hcard .f{padding-top:8px}
+html .nx-hero + .f21-gap{height:12px}
+
+/* 4) Glass that blurs what is behind it redraws on every frame while something moves (measured: the pop-up panel blurs 393 x 722 px
+      and the tab bar runs its lens filter while the page behind it sinks). Rule of this app: such effects only when standing still.
+      - the pop-up: glass while it stands still; while it rises, closes or follows the finger, an almost solid panel instead;
+      - the tab bar under a pop-up (always covered by the pop-up and the dark layer): no lens while a pop-up is open. */
+html.glass .tp-sheet:is(:not(.show),.f21-mv,.dragging,.closing) .panel{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;background:rgba(246,247,250,.96) !important}
+html.f21-sh.f21-sh.f21-sh body #tp > .tp-tabs.tp-tabs.tp-tabs,html.f21-sh body #tp > .tp-fab{-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+
+/* 5) No text is ever cut with "..." (the user: "make sure every single text is visible"; names were already a rule). Every place that
+      ended a line with "..." now continues on the next line. Not changed: the segmented buttons, the file viewer's title bar and the two
+      small Home tiles (they shrink the font to fit instead, js/birthday.js). */
+html :is(.nx-tx b,.nx-tx small,.nx-row>em.v,.nx-yr .n,.nx-gcard .gl>small,.nx-ghero .cl,.nx-lvbtn small,.nx-sum2 .gl span,.nx-tiles small,.nx-tiles:not(.four) b,.nx-wg .nm,.nx-gfrow b,.nx-wlist small,
+  .tp-media .tx span,.tp-lrow .tx span,.tp-lesrow2 .tx span,.hist .n,.tp-lrow .tx>span,.tp-prof b,.dr-main .tx>span,.dr-stu .tx>span,.dr-gt>b,.dr-gt .l,.dr-gt .f,.dr-byg .nm,.h2-ex .tx>span,.h2-og .nm,
+  .ffnx-r .tx span,.pm span,.un-row2 .tx>span,.hn-x small,.io-nm,.tp-hdr .tp-eyebrow,.ffup .tx b,.ffup .tx span,.tp-sh-h>b,.rt-n b,.f17-pie .gl span){white-space:normal !important;overflow:visible !important;text-overflow:clip !important;overflow-wrap:break-word}
+
+/* 6) Tighter, like iPhone (measured with Tests/teacher-gaps.js: the biggest empty bands were 37 px under a page's subtitle and
+      22-27 px around the tiles and section titles). Now about 16 px everywhere; nothing touches. */
+html .tp-inner>.nx-sec{margin-top:6px}
+html .tp-inner>.nx-sub+.nx-sec{margin-top:2px !important}
+html .tp-inner>.nx-sub{margin-bottom:-4px}
+html .tp-inner>.nx-tiles{margin-top:4px}
+/* the Payment pop-up: Approve was below the bottom edge on his phone. Rows 10 px apart, the amount box without its empty band */
+html .tp-sheet .panel:has(.nx-payh2){gap:10px}
+html .tp-sheet .panel:has(.nx-payh2) .nx-amt{padding-top:6px !important;padding-bottom:6px !important;margin-top:4px}
+html .tp-sheet .panel:has(.nx-payh2) .nx-note{margin:2px 0 2px}
+html .tp-sheet .panel:has(.nx-payh2) .nx-lab{margin-top:2px}
+
+/* 7) Solid Apple colors (the user: "strict colors, no blurry color; I really want solid"). Every color of the app was moved to Apple's
+      system colors (Apps/next/applecolors.js); here the places that blended two tones become one solid color.
+      Checked with Tests/teacher-grads.js (lists every drawn background that mixes two colors). */
+html .nx-hcard{background:var(--c) !important}
+html .nx-hcard::before{display:none}
+html .tp-lights .lt{background:var(--c) !important}
+html.glass .tp-fab,html .tp-fab{background:#007AFF !important}
+html .nx-try{background:#FF9500 !important}
+html .ffseg i.n{background:#FF9500 !important}
+html .ffseg i.d{background:var(--pa,#007AFF) !important}
+/* the Birthday tile: a white card like its neighbours, its color in the title and the number; on the day itself it is solid color */
+html .f20-bday{background:#fff !important}
+html .f20-bday .nx-ch b,html .f20-bday .big{color:var(--bc) !important}
+html .f20-bday.on{background:var(--bc) !important}
+html .bk:not([style*="media/covers/"]){background:var(--c1) !important}
+/* the color picker: solid circles; under the 12 colors, the 5 shades of the chosen one */
+html .wc-ball,html .wc-cur{background:var(--c) !important}
+html .wc-tile{background:#007AFF !important}
+.wc-shades{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:2px 0 4px}
+.wc-sh{border:0;background:none;padding:0;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;gap:5px}
+.wc-dot{width:44px;height:44px;border-radius:50%;background:var(--c);display:flex;align-items:center;justify-content:center;color:#fff}
+.wc-dot svg{width:20px;height:20px;stroke-width:3}
+.wc-sh.on .wc-dot{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--c)}
+.wc-sh b{font-size:11.5px;font-weight:600;white-space:nowrap}
+.wc-sh:active .wc-dot{transform:scale(.92)}
+/* icon tiles (Quick actions, Settings, lists), the group cards and the level dots: one solid color, no shine */
+html .nx-tile{background:var(--c) !important}
+html .nx-tile::after{display:none !important}
+html .nx-gcard .band,html .nx-lvbtn .dot{background:var(--c) !important}
+html .nx-ghero{background:var(--c) !important}
+html .nx-ghero::before{display:none}
+html .ffm{background:var(--w1) !important}

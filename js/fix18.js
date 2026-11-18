@@ -24,8 +24,8 @@ SHEETS.nxedit = function (s) {
     <label class="tp-f"><span>Notes</span><input id="nx-note" value="${esc(P.note || '')}" placeholder="Anything to remember" autocomplete="off"></label>
     <div class="nx-sec" style="margin-top:14px">One person, two classes</div>
     <div class="nx-list">${joined.length
-      ? `<div class="nx-row still"><span class="nx-tile" style="--c:#30D158">${ic('Check')}</span><span class="nx-tx"><b>Joined with ${esc(joined.map(where).join(', '))}</b><small>Counted as one person</small></span></div><button class="nx-row" data-f18split="${g.id}|${st.id}"><span class="nx-tx"><b style="color:#FF453A">Separate them</b></span></button>`
-      : `<button class="nx-row" data-f18merge="${g.id}|${st.id}"><span class="nx-tile" style="--c:#0A84FF">${ic('Users')}</span><span class="nx-tx"><b>Same person as…</b><small>Join with the same student in another class</small></span>${chev()}</button>`}</div>`;
+      ? `<div class="nx-row still"><span class="nx-tile" style="--c:#34C759">${ic('Check')}</span><span class="nx-tx"><b>Joined with ${esc(joined.map(where).join(', '))}</b><small>Counted as one person</small></span></div><button class="nx-row" data-f18split="${g.id}|${st.id}"><span class="nx-tx"><b style="color:#FF3B30">Separate them</b></span></button>`
+      : `<button class="nx-row" data-f18merge="${g.id}|${st.id}"><span class="nx-tile" style="--c:#007AFF">${ic('Users')}</span><span class="nx-tx"><b>Same person as…</b><small>Join with the same student in another class</small></span>${chev()}</button>`}</div>`;
 };
 SHEETS.f18merge = function (s) {
   const g = gById(s.g), st = g && stuOf(g, s.sid); if (!st) return '';

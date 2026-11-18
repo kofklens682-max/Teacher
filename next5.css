@@ -10,11 +10,11 @@
 /* E) who owes the most */
 .nx-owem{padding:6px 0}
 .nx-orow{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:6px 14px}
-.nx-orow .rk{width:20px;font-size:15px;font-weight:800;color:#FF453A;text-align:center;flex:none}
+.nx-orow .rk{width:20px;font-size:15px;font-weight:800;color:#FF3B30;text-align:center;flex:none}
 .nx-orow .nx-tx{padding:2px 0}
-.nx-orow .bar{display:block;height:5px;border-radius:3px;background:rgba(255,69,58,.12);margin-top:5px;overflow:hidden}
-.nx-orow .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#FF7B72,#FF453A)}
-.nx-orow em{font-style:normal;font-size:15px;font-weight:700;color:#E0322A;white-space:nowrap}
+.nx-orow .bar{display:block;height:5px;border-radius:3px;background:rgba(255,59,48,.12);margin-top:5px;overflow:hidden}
+.nx-orow .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#FF3B30,#FF3B30)}
+.nx-orow em{font-style:normal;font-size:15px;font-weight:700;color:#D70015;white-space:nowrap}
 :is(.nx-play,.tp-push) .nx-orow .bar i{transform-origin:left;animation:nxGrowX .9s cubic-bezier(.25,.8,.25,1) .2s both}
 :is(.nx-play,.tp-push) .nx-wg{animation:nxRise .5s cubic-bezier(.2,.8,.2,1) both}
 
@@ -47,7 +47,7 @@
 .lb-book:active .bk{transform:translateY(-6px) rotate(-2deg) scale(1.03)}
 .lb-book b{font-size:12.5px;font-weight:700;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lb-book small{font-size:11px;color:var(--nx-l2)}
-.lb-book small.on{color:#1E9E46;font-weight:600}
+.lb-book small.on{color:#248A3D;font-weight:600}
 .lb-book.dim .bk{filter:saturate(.55) brightness(1.04);opacity:.85}
 .lb-yours{background:#fff;border-radius:22px;padding:14px 0 0;margin:0 0 18px;box-shadow:0 1px 2px rgba(20,40,80,.04),0 10px 24px -16px rgba(20,40,80,.25)}
 .lb-yours .lb-sh{margin:0 16px 4px}.lb-yours .lb-row{margin:0;padding:6px 16px 16px}

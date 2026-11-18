@@ -42,8 +42,8 @@ function setPin(after) {
 const scSetLock = () => { const p = pinGet();
   return `${backBar('Settings')}<div class="tp-inner"><div class="nx-title">Passcode and fingerprint</div>
     <p class="nx-sub">The app asks when it opens and when you come back after a minute away.</p>
-    <div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#5E5CE6">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Passcode</b><small>${p ? 'On · 4 digits' : 'Off'}</small></span><button class="nx-mini${p ? ' red' : ''}" data-nxpin="${p ? 'off' : 'on'}">${p ? 'Turn off' : 'Turn on'}</button></div>
-      <div class="nx-row still"><span class="nx-tile" style="--c:#FF375F">${ic('Fingerprint')}</span><span class="nx-tx"><b>Fingerprint or face</b><small>${TBIO.on() ? 'On' : p ? 'Off' : 'Turn the passcode on first'}</small></span>${p ? `<button class="nx-mini${TBIO.on() ? ' red' : ''}" data-nxbio="${TBIO.on() ? 'off' : 'on'}">${TBIO.on() ? 'Turn off' : 'Turn on'}</button>` : ''}</div></div>
+    <div class="nx-list"><div class="nx-row still"><span class="nx-tile" style="--c:#5856D6">${ic('ShieldCheck')}</span><span class="nx-tx"><b>Passcode</b><small>${p ? 'On · 4 digits' : 'Off'}</small></span><button class="nx-mini${p ? ' red' : ''}" data-nxpin="${p ? 'off' : 'on'}">${p ? 'Turn off' : 'Turn on'}</button></div>
+      <div class="nx-row still"><span class="nx-tile" style="--c:#FF2D55">${ic('Fingerprint')}</span><span class="nx-tx"><b>Fingerprint or face</b><small>${TBIO.on() ? 'On' : p ? 'Off' : 'Turn the passcode on first'}</small></span>${p ? `<button class="nx-mini${TBIO.on() ? ' red' : ''}" data-nxbio="${TBIO.on() ? 'off' : 'on'}">${TBIO.on() ? 'Turn off' : 'Turn on'}</button>` : ''}</div></div>
     ${p ? '<button class="nx-btn soft" data-nxpin="change">Change passcode</button>' : ''}
     <p class="nx-note">Forgot the passcode? Your fingerprint still opens the app. Without both, the only way in is to restore a backup.</p></div>`; };
 PUSH.setlock = scSetLock;

@@ -12,21 +12,33 @@
 (function () {
   if (typeof IOS === 'undefined' || typeof PUSH === 'undefined') return;
   // The IOS slots from 200 keep the order of the first version (so a colour chosen in 9.8 stays the same); new ones are appended.
-  const SLOTS = ['#FF375F', '#FF2D92', '#FF453A', '#FF6B35', '#FF9F0A', '#FFD60A', '#A3E635', '#30D158', '#00C7BE', '#40C8E0', '#64D2FF', '#0A84FF', '#5E5CE6', '#BF5AF2',
-    '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#63E6E2', '#30B0C7', '#32ADE6', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#A2845E', '#AC8E68'];
-  // what is offered: Apple's system colours (vivid), Apple's order
-  const APPLE = [['#FF453A', 'Red'], ['#FF9F0A', 'Orange'], ['#FFD60A', 'Yellow'], ['#30D158', 'Green'], ['#63E6E2', 'Mint'], ['#40C8E0', 'Teal'],
-    ['#64D2FF', 'Cyan'], ['#0A84FF', 'Blue'], ['#5E5CE6', 'Indigo'], ['#BF5AF2', 'Purple'], ['#FF375F', 'Pink'], ['#AC8E68', 'Brown']];
+  const SLOTS = ['#FF2D55', '#FF2D55', '#FF3B30', '#FF9500', '#FF9500', '#FFCC00', '#34C759', '#34C759', '#00C7BE', '#30B0C7', '#32ADE6', '#007AFF', '#5856D6', '#AF52DE',
+    '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE', '#30B0C7', '#32ADE6', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#A2845E', '#A2845E'];
+  /* 18 Nov 2026 (user): "strict Apple colors, and let me choose a bit darker, dark, the actual color, bright, a bit brighter".
+     Each of Apple's 12 colors in 5 shades, all Apple's own values: Darker = Apple's high-contrast color, Actual = the standard system
+     color, Bright = the dark-mode color, Brighter = the high-contrast dark-mode color; Dark = halfway between Darker and Actual.
+     (Apps/next/applecolors.js skips this file: these values are chosen on purpose.) */
+  const SHADE = ['Darker', 'Dark', 'Actual', 'Bright', 'Brighter'];
+  const half = (a, b) => '#' + [1, 3, 5].map((i) => Math.round((parseInt(a.substr(i, 2), 16) + parseInt(b.substr(i, 2), 16)) / 2).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const FAM = [['Red', '#D70015', '#FF3B30', '#FF453A', '#FF6961'], ['Orange', '#C93400', '#FF9500', '#FF9F0A', '#FFB340'], ['Yellow', '#B25000', '#FFCC00', '#FFD60A', '#FFD426'],
+    ['Green', '#248A3D', '#34C759', '#30D158', '#30DB5B'], ['Mint', '#0C817B', '#00C7BE', '#63E6E2', '#66D4CF'], ['Teal', '#008299', '#30B0C7', '#40C8E0', '#5DE6FF'],
+    ['Cyan', '#0071A4', '#32ADE6', '#64D2FF', '#70D7FF'], ['Blue', '#0040DD', '#007AFF', '#0A84FF', '#409CFF'], ['Indigo', '#3634A3', '#5856D6', '#5E5CE6', '#7D7AFF'],
+    ['Purple', '#8944AB', '#AF52DE', '#BF5AF2', '#DA8FFF'], ['Pink', '#D30F45', '#FF2D55', '#FF375F', '#FF6482'], ['Brown', '#7F6545', '#A2845E', '#AC8E68', '#B59469']]
+    .map(([n, d, a, b, bb]) => ({ n, s: [d, half(d, a), a, b, bb] }));
+  // what is offered in the grid: each color in its Actual shade
+  const APPLE = FAM.map((f) => [f.s[2], f.n]);
+  FAM.forEach((f) => f.s.forEach((c) => SLOTS.push(c))); // the 60 shades get their own slots after the old ones (old picks keep theirs)
   const BASE = IOS.slice(0, 10), AT = 200;
   while (IOS.length < AT) IOS.push(BASE[IOS.length % BASE.length]);
   SLOTS.forEach((c) => IOS.push(c));
   const slotOf = (c) => AT + SLOTS.indexOf(c);
-  const nameOf = (c) => { const x = APPLE.find(([h]) => h.toUpperCase() === String(c).toUpperCase()); return x ? x[1] : 'Original'; };
+  const findC = (c) => { const u = String(c).toUpperCase(); for (let i = 0; i < FAM.length; i++) { const j = FAM[i].s.indexOf(u); if (j >= 0) return { f: i, s: j }; } return null; };
+  const nameOf = (c) => { const x = findC(c); return x ? FAM[x.f].n + (x.s !== 2 ? ' · ' + SHADE[x.s] : '') : 'Original'; };
   const W = () => (S.wcol = S.wcol && typeof S.wcol === 'object' ? S.wcol : {});
-  const SOLO0 = '#AC8E68', BDAY0 = '#FF375F';
+  const SOLO0 = '#A2845E', BDAY0 = '#FF2D55';
   window.f20BdayCol = () => W().bday || BDAY0;
   const soloCol = () => W().solo || SOLO0;
-  // the one-to-one students' colour is written as a fixed '#AC8E68' in a few pages: swap it for the chosen one
+  // the one-to-one students' colour is written as a fixed '#A2845E' in a few pages: swap it for the chosen one
   const swapSolo = (h) => (W().solo && typeof h === 'string' ? h.split(SOLO0).join(W().solo) : h);
   [0, 4].forEach((i) => { const f = PAGES[i]; PAGES[i] = function () { return swapSolo(f.apply(this, arguments)); }; });
   ['owe2', 'sprof'].forEach((k) => { const f = PUSH[k]; if (f) PUSH[k] = function () { return swapSolo(f.apply(this, arguments)); }; });
@@ -62,12 +74,18 @@
   SHEETS.wcpick = function (sh) {
     const all = items(), x = all.find((i) => i.k === sh.k); if (!x) return '';
     const cur = String(x.col).toUpperCase();
-    const usedBy = (c) => all.filter((i) => i.k !== x.k && i.k !== 'bday' && String(i.col).toUpperCase() === c.toUpperCase()).map((i) => i.name);
-    const grid = APPLE.map(([c, n]) => { const on = x.own && cur === c.toUpperCase(), u = x.k === 'bday' ? [] : usedBy(c);
-      return `<button class="wc-sw${on ? ' on' : ''}" data-wcset="${x.k}|${c}" style="--c:${c}" aria-label="${n}${u.length ? ', used by ' + esc(u.join(', ')) : ''}"><span class="wc-ball">${on ? ic('Check') : ''}</span><b>${n}</b>${u.length ? `<em>${esc(u.join(', '))}</em>` : ''}</button>`; }).join('');
+    // "used by" = another group has the same color (any shade of it)
+    const me = x.own ? findC(cur) : null, si = me ? me.s : 2;
+    const usedBy = (fi) => all.filter((i) => i.k !== x.k && i.k !== 'bday' && (findC(i.col) || {}).f === fi).map((i) => i.name);
+    const grid = FAM.map((f, fi) => { const c = f.s[si], on = !!me && me.f === fi, u = x.k === 'bday' ? [] : usedBy(fi);
+      return `<button class="wc-sw${on ? ' on' : ''}" data-wcset="${x.k}|${c}" style="--c:${c}" aria-label="${f.n}${u.length ? ', used by ' + esc(u.join(', ')) : ''}"><span class="wc-ball">${on ? ic('Check') : ''}</span><b>${f.n}</b>${u.length ? `<em>${esc(u.join(', '))}</em>` : ''}</button>`; }).join('');
+    // the 5 shades of the chosen color (shown once a color is chosen)
+    const shades = me ? `<div class="nx-sec">Shade of ${FAM[me.f].n.toLowerCase()}</div><div class="wc-shades" data-noswipe>${FAM[me.f].s.map((c, j) => `<button class="wc-sh${j === me.s ? ' on' : ''}" data-wcset="${x.k}|${c}" style="--c:${c}" aria-label="${SHADE[j]}"><span class="wc-dot">${j === me.s ? ic('Check') : ''}</span><b>${SHADE[j]}</b></button>`).join('')}</div>`
+      : `<p class="nx-note c">Choose a color, then its shade: darker, dark, actual, bright or brighter.</p>`;
     return `<div class="tp-sh-h"><span></span><b>${esc(x.name)}</b><button class="tp-back strong" data-closesheet>Done</button></div>
       ${preview()}
       <div class="wc-grid" data-noswipe>${grid}</div>
+      ${shades}
       <button class="nx-row wc-orig${x.own ? '' : ' on'}" data-wcset="${x.k}|">${dotHTML(x.orig)}<span class="nx-tx"><b>Original color</b><small>The color it had before</small></span>${x.own ? '' : `<span class="wc-tick">${ic('Check')}</span>`}</button>`;
   };
 

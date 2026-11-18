@@ -35,7 +35,7 @@ function turboWeek(f) {
       <div class="tp-whead">${unitTile(u, f.w - 1, true)}<div><div class="tp-eyebrow">IELTS Turbo · Week ${u.n} · ${tDate(w.start)} – ${tDate(w.end)}</div><div class="tp-lt" style="font-size:28px">${esc(w.topic)}</div></div></div>
       <div class="tp-goal2">${ic('Target')}<div><small>${esc(w.phase)} · Sunday mock target ${w.target ? `Listening ${w.target[0]}/40 · Reading ${w.target[1]}/40` : ''}</small>${esc(w.phase_note)}</div></div>
       <div class="tp-list">${u.lessons.map((l) => `<button class="tp-lesrow2" data-push="lesson" data-lvl="IT" data-w="${u.n}" data-l="${l.n}"${g ? ` data-g="${g.id}"` : ''}><span class="num">${l.n}</span><span class="tx"><b>${esc(l.title)}</b><span>${tWhen(g, u, l)} · ${esc(l.focus)}</span></span><span class="tp-chev">${ic('ChevronRight')}</span></button>`).join('')}</div>
-      ${focus ? `<div class="tp-card2"><div class="h" style="color:#E5484D">${ic('Target')}This week's question types</div>${focus}</div>` : ''}
+      ${focus ? `<div class="tp-card2"><div class="h" style="color:#FF3B30">${ic('Target')}This week's question types</div>${focus}</div>` : ''}
       ${hw}
     </div>`;
 }
@@ -52,10 +52,10 @@ function turboLesson(f) {
     <div class="tp-inner" style="${gv('IT')}">
       <div><div class="tp-eyebrow">IELTS Turbo · Week ${u.n} · ${tWhen(f.g && gById(f.g), u, l)}</div><div class="tp-lt" style="font-size:26px">${esc(l.title)}</div></div>
       <div class="tp-goal2">${ic('Target')}<div><small>Today's aim</small>${esc(l.focus)}</div></div>
-      <div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('ListChecks')}What we do</div>${tList(l.do)}</div>
+      <div class="tp-card2"><div class="h" style="color:#5856D6">${ic('ListChecks')}What we do</div>${tList(l.do)}</div>
       <div class="tp-card2"><div class="h" style="color:#34C759">${ic('Award')}What he knows at the end</div>${tList(l.know)}</div>
       ${l.tips && l.tips.length ? `<div class="tp-card2"><div class="h" style="color:#FF9500">${ic('Sparkles')}Tips</div>${tList(l.tips)}</div>` : ''}
-      ${files ? `<div class="tp-card2"><div class="h" style="color:#3D5AFE">${ic('FileText')}Files</div>${files}</div>` : ''}
+      ${files ? `<div class="tp-card2"><div class="h" style="color:#5856D6">${ic('FileText')}Files</div>${files}</div>` : ''}
       ${hw ? `<div class="tp-card2"><div class="h" style="color:#5C6378">${ic('ListChecks')}Homework after this lesson · ${hw.tasks.reduce((a, t) => a + t.min, 0) / 60} h</div>${hw.tasks.map((t) => `<p class="hw">${ic('Square')}<span><b>${esc(t.skill)} · ${t.min} min.</b> ${esc(t.task)}</span></p>`).join('')}</div>` : ''}
       ${f.g && gById(f.g) ? attMain(gById(f.g), f, 'lesson') : ''}
     </div>`;

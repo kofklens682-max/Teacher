@@ -83,7 +83,7 @@ function f19PaidRows() {
   const ym = payState().ym, sc = statusCounts(ym), rows = [];
   workGroups().filter(hasFee).forEach((g) => { const c = sc.per[g.id]; if (c && c.n) rows.push({ name: g.name, col: gColor(g), ok: c.paid + c.credit, n: c.n }); });
   rows.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
-  const solo = { name: 'Individual', col: '#AC8E68', ok: 0, n: 0 };
+  const solo = { name: 'Individual', col: '#A2845E', ok: 0, n: 0 };
   soloGroups().filter(hasFee).forEach((g) => { const c = sc.per[g.id]; if (c) { solo.ok += c.paid + c.credit; solo.n += c.n; } });
   if (solo.n) rows.push(solo);
   return rows;
@@ -112,7 +112,7 @@ function f19Rings(rows) {
   };
 }
 PUSH.owe2 = function () {
-  const cur = f19Cur(), secs = [], gone = [], solo = { name: 'Individual', col: '#AC8E68', rows: [] };
+  const cur = f19Cur(), secs = [], gone = [], solo = { name: 'Individual', col: '#A2845E', rows: [] };
   feeGroups().forEach((g) => {
     const rows = [];
     feeStu(g, cur, true).forEach((v) => { const st = stuOf(g, v.id); if (!st) return; const L = ledger(g, st, cur), ms = L.rows.filter((r) => r.charge - r.covered > 0).map((r) => r.m); if (ms.length < 2) return;

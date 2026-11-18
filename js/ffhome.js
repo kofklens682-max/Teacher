@@ -16,12 +16,12 @@ function ffInsBody(tab, g, gs) {
     body = pts.length ? ffBars(pts, { color: '#34C759', aria: 'Attendance of the last lessons', h: 112 }) : '<p class="ffc-empty">The chart appears after your first saved register.</p>';
   } else if (tab === 'pay') {
     const ym0 = ymOf(TODAY), cs = [-5, -4, -3, -2, -1, 0].map((k) => ymAdd(ym0, k)).map((ym) => ({ ym, c: statusCounts(ym) })), now = cs[cs.length - 1].c;
-    const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#F0A92E' : '#FFCF66', cur: ym === ym0 }; });
-    head = `<div><b>Who paid · all groups</b><span>students, not money</span></div><div class="ffc-big" style="color:#F0A92E">${now.ok}<em>/${now.n}</em></div>`;
-    body = ffBars(pp, { color: '#F0A92E', aria: 'Students who paid, by month', h: 112 });
+    const pp = cs.map(({ ym, c }) => { const on = c.n > 0 && ym >= S.pay.start; return { p: on ? Math.round((c.ok / c.n) * 100) : 0, top: on ? c.ok + '/' + c.n : '', label: SHORT(ym), col: ym === ym0 ? '#FF9500' : '#FFCC00', cur: ym === ym0 }; });
+    head = `<div><b>Who paid · all groups</b><span>students, not money</span></div><div class="ffc-big" style="color:#FF9500">${now.ok}<em>/${now.n}</em></div>`;
+    body = ffBars(pp, { color: '#FF9500', aria: 'Students who paid, by month', h: 112 });
   } else {
     const L = lv(g.lvl) && lv(g.lvl).units ? lv(g.lvl) : { units: [NO_WEEK] }, wks = L.units.length, cl = curLes(g), total = L.units.reduce((a, u) => a + u.lessons.length, 0), done = L.units.slice(0, cl.w - 1).reduce((a, u) => a + u.lessons.length, 0) + cl.l - 1;
-    head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w > 1 ? (wks - cl.w) + ' weeks left' : wks - cl.w === 1 ? '1 week left' : done >= total ? 'course finished' : 'last week'}</span></div><div class="ffc-big" style="color:#3B5BDB">${Math.round((done / total) * 100)}<em>%</em></div>`;
+    head = `<div><b>${esc(g.name)} · ${esc(LVNAME(g.lvl))}</b><span>${done} of ${total} lessons · ${wks - cl.w > 1 ? (wks - cl.w) + ' weeks left' : wks - cl.w === 1 ? '1 week left' : done >= total ? 'course finished' : 'last week'}</span></div><div class="ffc-big" style="color:#5856D6">${Math.round((done / total) * 100)}<em>%</em></div>`;
     body = `<div class="ffseg" style="--n:${wks}">${L.units.map((u, i) => `<i class="${i + 1 < cl.w ? 'd' : i + 1 === cl.w ? 'n' : ''}"><b>${i + 1}</b></i>`).join('')}</div>`;
   }
   return `${chips}<div class="ffc-h">${head}</div>${body}`;
