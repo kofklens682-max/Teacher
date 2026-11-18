@@ -8,7 +8,7 @@
   if (typeof openSheet !== 'function' || typeof closeTop !== 'function') return;
   const SEL = '[data-sid][data-g],[data-nxpay]';
   const HOLD = 480;
-  let st = null, menu = null, fired = false;
+  let st = null, menu = null, fired = 0; // fired = when the holding finger lifted (ms)
 
   const who = (el) => { const [g, sid] = el.dataset.nxpay ? el.dataset.nxpay.split('|') : [el.dataset.g, el.dataset.sid]; const G = gById(g), s = G && stuOf(G, sid); return s ? { g, sid, st: s } : null; };
   const phoneOf = (sid) => { try { const P = typeof prof === 'function' ? prof(sid) : null; return P && P.phone ? String(P.phone) : ''; } catch (e) { return ''; } };
@@ -24,15 +24,30 @@
   }, true);
   const cancel = () => { if (st) { clearTimeout(st.t); st = null; } };
   document.addEventListener('pointermove', (e) => { if (st && Math.hypot(e.clientX - st.x, e.clientY - st.y) > 8) cancel(); }, true);
-  document.addEventListener('pointerup', cancel, true);
-  document.addEventListener('pointercancel', cancel, true);
+  /* 18 Nov, his phone: "it takes me 2 times to press Pay, 2 times to close it". The finger that held the row lifts WITHOUT a click on
+     Android (a long press gives no click), and the old code waited for "the click that ends the hold" to throw it away: it threw away
+     his next real tap instead. Now only a click within 0.7 s of that lift is thrown away, and never a tap on the menu itself.
+     Like the iPhone, you can also slide the holding finger onto Pay / Edit / Call and lift it there to choose. */
+  const itemAt = (x, y) => { const t = document.elementFromPoint(x, y); return t && t.closest ? t.closest('.f22-menu [data-f22]') : null; };
+  document.addEventListener('pointermove', (e) => { if (!menu || !menu.down) return; const b = itemAt(e.clientX, e.clientY); menu.wrap.querySelectorAll('.hov').forEach((x) => { if (x !== b) x.classList.remove('hov'); }); if (b) b.classList.add('hov'); }, true);
+  document.addEventListener('pointerup', (e) => {
+    cancel();
+    if (menu && menu.down) { menu.down = false; fired = performance.now(); const b = itemAt(e.clientX, e.clientY); if (b) close(true, b.dataset.f22); }
+  }, true);
+  document.addEventListener('pointercancel', (e) => { cancel(); if (menu && menu.down) { menu.down = false; fired = performance.now(); } }, true);
   document.addEventListener('scroll', cancel, true);
-  // the tap that ended a hold must not also open the student
-  document.addEventListener('click', (e) => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation(); return; } cancel(); }, true); // a finished tap also ends a hold that has not opened yet
+  // while the held finger slides over the menu the page under it must not scroll (else the phone takes the finger away)
+  document.addEventListener('touchmove', (e) => { if (menu && menu.down) { if (e.cancelable) e.preventDefault(); const t = e.touches[0]; if (t) { const b = itemAt(t.clientX, t.clientY); menu.wrap.querySelectorAll('.hov').forEach((x) => { if (x !== b) x.classList.remove('hov'); }); if (b) b.classList.add('hov'); } } }, { capture: true, passive: false });
+  document.addEventListener('touchend', (e) => { if (!menu || !menu.down) return; menu.down = false; fired = performance.now(); const t = e.changedTouches[0], b = t && itemAt(t.clientX, t.clientY); if (b) close(true, b.dataset.f22); }, true);
+  // only the click that belongs to the holding finger (if the phone sends one at all) is thrown away
+  document.addEventListener('click', (e) => {
+    if (fired && performance.now() - fired < 700 && !(menu && e.target.closest && e.target.closest('.f22-menu [data-f22]'))) { fired = 0; e.preventDefault(); e.stopPropagation(); return; }
+    fired = 0; cancel(); // a finished tap also ends a hold that has not opened yet
+  }, true);
   document.addEventListener('contextmenu', (e) => { if (menu || (e.target.closest && e.target.closest(SEL) && !e.target.closest('.tp-sheet'))) e.preventDefault(); }, true);
 
   function open(s) {
-    st = null; fired = true;
+    st = null; fired = 0;
     try { navigator.vibrate && navigator.vibrate(12); } catch (x) { /* no buzz */ }
     const r = s.row.getBoundingClientRect(), H = innerHeight, W = innerWidth, ph = phoneOf(s.w.sid);
     const wrap = document.createElement('div'); wrap.className = 'f22-hold';
@@ -51,7 +66,7 @@
     const left = Math.min(Math.max(12, r.left + 8), W - m.offsetWidth - 12);
     m.style.top = top + 'px'; m.style.left = left + 'px'; m.style.transformOrigin = `${Math.round(r.left + 40 - left)}px ${below ? 0 : mh}px`;
     s.row.classList.add('f22-src');
-    menu = { wrap, row: s.row, w: s.w, ph };
+    menu = { wrap, row: s.row, w: s.w, ph, down: true }; // down: the finger that held is still on the screen
     requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('on')));
     stepIn(); // the phone's Back closes the menu
     wrap.addEventListener('click', (e) => {

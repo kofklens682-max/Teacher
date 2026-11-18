@@ -23,3 +23,4 @@
 .f22-src{visibility:hidden}
 /* a pressed row: the iPhone's soft gray highlight (instead of fading) */
 html :is(.nx-row:not(.still),.nx-prow):active{opacity:1 !important;background-color:rgba(120,120,128,.14) !important}
+.f22-menu button.hov{background:rgba(120,120,128,.18)}
