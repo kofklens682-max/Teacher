@@ -57,8 +57,22 @@
         return;
       }
     }
+    // Opening a pop-up over a screen (Owe 2+ -> a student): the screen underneath has not changed, but the draw recomputed it
+    // (every student's debts: ~50 ms on a slow phone) at the very first frame of the pop-up's rise. The Library's pop-ups open over a
+    // tab page and skipped this, so only they were smooth. Now the screen is left as it is; the full redraw after the rise refreshes it.
+    // The catch-up redraw after a pop-up opens ran 0.52 s later = at the last part of the 0.5 s rise (Home: ~60-240 ms of work, the
+    // stutter "while it's happening"). The pages under a pop-up have not changed, so it now waits until the rise is over and the phone
+    // is idle.
+    const later = () => { clearTimeout(R.lateDraw); R.lateDraw = setTimeout(() => { if (typeof requestIdleCallback === 'function') requestIdleCallback(() => draw(), { timeout: 800 }); else draw(); }, 900); };
+    if (lite && T.sheet && !R.sheet && R.stack && R.stack.length && R.stack.length === T.push.length && R.stack.every((el, i) => el._sc === T.push[i])) {
+      const top = R.stack[R.stack.length - 1], k = top._sc.s, f = PUSH[k];
+      PUSH[k] = () => ''; R.f21keep = top;
+      try { return _draw.apply(this, arguments); } finally { PUSH[k] = f; R.f21keep = null; later(); }
+    }
+    if (lite && T.sheet && !R.sheet) { const r = _draw.apply(this, arguments); later(); return r; }
     return _draw.apply(this, arguments);
   };
+  if (typeof setHTML === 'function') { const _set = setHTML; setHTML = function (el) { if (R && el && el === R.f21keep) return false; return _set.apply(this, arguments); }; }
   if (typeof goTab === 'function') { const _go = goTab; goTab = function () { R.f21tab = true; try { return _go.apply(this, arguments); } finally { R.f21tab = false; } }; }
 
   // ---- 3) the class card fits its text ----

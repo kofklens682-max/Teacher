@@ -1,0 +1,25 @@
+/* 18 Nov 2026: press and hold a student -> Pay, Edit, Call (js/hold.js). iPhone context menu: the row lifts, the screen dims, the menu
+   grows out of the row. Only transform and opacity move. */
+.f22-hold{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,0);transition:background-color .3s ease;-webkit-user-select:none;user-select:none}
+.f22-hold{font:15px/1.4 "Inter",-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#000;-webkit-font-smoothing:antialiased}
+.f22-hold.on{background:rgba(0,0,0,.3)}
+.f22-lift{position:fixed !important;margin:0 !important;border-radius:14px !important;background:#fff !important;pointer-events:none;z-index:1;transform:scale(1);
+  box-shadow:0 0 0 rgba(0,0,0,0);transition:transform .45s var(--f20-spring,cubic-bezier(.32,.72,0,1)),box-shadow .3s ease;will-change:transform}
+.f22-hold.on .f22-lift{transform:scale(1.035);box-shadow:0 18px 40px -12px rgba(0,0,0,.35)}
+.f22-hold.off .f22-lift{transform:scale(1);box-shadow:0 0 0 rgba(0,0,0,0);transition:transform .25s ease,box-shadow .2s ease}
+.f22-menu{position:fixed;z-index:2;width:250px;background:#F9F9FB;border-radius:14px;overflow:hidden;box-shadow:0 22px 50px -12px rgba(0,0,0,.4);
+  transform:scale(.35);opacity:0;transition:transform .42s var(--f20-spring,cubic-bezier(.32,.72,0,1)),opacity .2s ease;will-change:transform,opacity}
+.f22-hold.on .f22-menu{transform:none;opacity:1}
+.f22-hold.off .f22-menu{transform:scale(.6);opacity:0;transition:transform .25s ease,opacity .18s ease}
+.f22-hold.off{background:rgba(0,0,0,0)}
+.f22-name{font-size:13px;font-weight:600;color:rgba(60,60,67,.6);padding:10px 16px 7px;overflow-wrap:break-word}
+.f22-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 16px;border:0;border-top:.5px solid rgba(60,60,67,.2);
+  background:none;font:inherit;font-size:16.5px;color:#000;text-align:left}
+.f22-menu button:active{background:rgba(120,120,128,.18)}
+.f22-menu button b{font-weight:500;display:block}
+.f22-menu button small{display:block;font-size:13px;color:rgba(60,60,67,.6);margin-top:1px}
+.f22-menu button svg{width:21px;height:21px;flex:none;color:#000}
+.f22-menu button[data-f22="pay"] b{color:#000}
+.f22-src{visibility:hidden}
+/* a pressed row: the iPhone's soft gray highlight (instead of fading) */
+html :is(.nx-row:not(.still),.nx-prow):active{opacity:1 !important;background-color:rgba(120,120,128,.14) !important}

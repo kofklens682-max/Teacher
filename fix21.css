@@ -3,7 +3,7 @@
 
 /* 1) A pop-up rises on the iPhone's smooth spring: it never shoots past the bottom edge (the old curve lifted it 12-20 px, and the page
       underneath showed below it: "the Quick actions page floats"). While the finger holds it, it follows the finger at once. */
-html .tp-sheet.show .panel{transition:transform .5s var(--f20-spring,cubic-bezier(.32,.72,0,1)),background-color .25s ease !important}
+html .tp-sheet.show .panel{transition:transform .5s var(--f20-spring,cubic-bezier(.32,.72,0,1)) !important} /* transform only: a background fade here restyled the panel on every frame of the rise (measured) */
 html .tp-sheet.show.dragging .panel{transition:none !important}
 html .tp-sheet.show.closing .panel,html .tp-sheet.closing .panel{transition:transform .34s cubic-bezier(.32,.72,0,1) !important}
 
