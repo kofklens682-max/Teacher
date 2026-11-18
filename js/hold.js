@@ -60,7 +60,8 @@
     ];
     const m = document.createElement('div'); m.className = 'f22-menu'; m.setAttribute('role', 'menu');
     m.innerHTML = `<div class="f22-name">${esc(s.w.st.name)}</div>` + items.map(([k, label, svg, sub]) => `<button role="menuitem" data-f22="${k}"><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span>${svg}</button>`).join('');
-    wrap.appendChild(lift); wrap.appendChild(m); document.body.appendChild(wrap);
+    const blur = document.createElement('div'); blur.className = 'f22-blur'; // 18 Nov (user): "blur everyone other than the one I selected, like the iPhone"
+    wrap.appendChild(blur); wrap.appendChild(lift); wrap.appendChild(m); document.body.appendChild(wrap);
     // the menu goes under the row, or above it when there is no room below
     const mh = m.offsetHeight, below = r.bottom + 10 + mh < H - 20, top = below ? r.bottom + 10 : Math.max(20, r.top - 10 - mh);
     const left = Math.min(Math.max(12, r.left + 8), W - m.offsetWidth - 12);
