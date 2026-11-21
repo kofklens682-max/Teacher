@@ -67,7 +67,7 @@ html .f20-bday.on{background:var(--bc) !important}
 html .bk:not([style*="media/covers/"]){background:var(--c1) !important}
 /* the color picker: solid circles; under the 12 colors, the 5 shades of the chosen one */
 html .wc-ball,html .wc-cur{background:var(--c) !important}
-html .wc-tile{background:#007AFF !important}
+html .wc-tile{--c:#007AFF;background:#007AFF !important}
 .wc-shades{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:2px 0 4px}
 .wc-sh{border:0;background:none;padding:0;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;gap:5px}
 .wc-dot{width:44px;height:44px;border-radius:50%;background:var(--c);display:flex;align-items:center;justify-content:center;color:#fff}
