@@ -28,9 +28,10 @@ function clockTick(first) {
   publishBreaks(); let ch = settleTaught(); ch = settleLeft() || ch;
   if (ch) save();
   const sig = clockSig(); if ((ch || (lastSig && sig !== lastSig)) && !first) draw(); lastSig = sig;
+  return ch;
 }
 setInterval(() => clockTick(false), 20000); // coming back to the app: app.js's one visibilitychange handler calls clockTick(true), then draws once
-{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); clockTick(true); draw(); } }, 500); } // once the saved data has loaded
+{ let tries = 0; const t = setInterval(() => { if (S.groups.length || ++tries > 20) { clearInterval(t); if (clockTick(true)) draw(); } }, 500); } // once the saved data has loaded (22 Nov: draws again only if something changed - it rebuilt every page half a second after opening)
 
 /* ---------- 2. stay on this lesson ---------- */
 function repeatBlock(g) {

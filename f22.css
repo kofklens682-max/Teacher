@@ -1,0 +1,12 @@
+/* 22 Nov 2026 (user): faster, smoother, animations only. Loaded last. */
+/* 3. Paid (js/press.js): the "Yes, paid" pill bounces and its tick draws itself; the new green tick pops in after the redraw */
+@keyframes f22PaidBounce{0%{scale:1}35%{scale:1.08}65%{scale:.97}100%{scale:1}}
+@keyframes f22TickDraw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@keyframes f22TickPop{0%{scale:.4;opacity:0}60%{scale:1.15;opacity:1}100%{scale:1}}
+html body .nx-tick.f22-paid{animation:f22PaidBounce .42s cubic-bezier(.32,.72,0,1) both;opacity:1 !important}
+html body .nx-tick.f22-paid svg{stroke-dasharray:24;animation:f22TickDraw .3s ease-out both}
+html body .nx-tick.done.f22-pop{animation:f22TickPop .42s cubic-bezier(.32,.72,0,1) both}
+
+/* 5. Birthday tile: a birthday that already passed this week is shown in gray (it is past, not coming) */
+html body .f20-bday.f22-past .big{color:#8E8E93 !important}
+html body .f20-bday .f20-none small{display:block;margin-top:4px;opacity:.75}

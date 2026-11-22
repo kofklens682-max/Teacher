@@ -12,7 +12,7 @@
 (function () {
   if (typeof syncScreen !== 'function' || typeof slideAway !== 'function') return;
   const KEY = 'f20-zoom';
-  const zoomOn = () => { try { return localStorage.getItem(KEY) !== '0'; } catch (e) { return true; } };
+  const zoomOn = () => { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }; // 22 Nov (user): pages slide in from the right; the zoom only when switched on
   /* 17 Nov, second version (user: "the animation is terrible: it stretches, the edges are not covered, at the end the corners fill
      white at once, closing just disappears; do it the way the iPhone does"). How the iPhone zoom works (WWDC24 "Enhance your UI
      animations and transitions"): the tapped cell MORPHS into the new screen on the system "smooth" spring (no bounce, ~0.5 s), and
