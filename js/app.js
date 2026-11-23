@@ -2,7 +2,7 @@
 /* The teacher app: Home (group tiles) · Units (the course) · Attendance ("everyone is here, tap who isn't") · Books.
    Built from the model the user approved in the Teen Course Plan page. C = the course (data/course.js), S = your data (store.js). */
 
-const VERSION_LABEL = 'Teacher 10.6';
+const VERSION_LABEL = 'Teacher 10.7';
 const GRAD = { A1: ['#34C759', '#248A3D'], A2: ['#32ADE6', '#007AFF'], B1: ['#5856D6', '#5856D6'], 'B1+': ['#5856D6', '#5856D6'], B2: ['#AF52DE', '#8944AB'], I1: ['#FF2D55', '#FF2D55'], I2: ['#FF9500', '#FF3B30'], IT: ['#FF3B30', '#D30F45'], K2: ['#FF9500', '#FF2D55'], K3: ['#00C7BE', '#0C817B'], K4: ['#32ADE6', '#0071A4'], K5: ['#AF52DE', '#8944AB'], own: ['#FF9500', '#FF9500'] };
 const TOPIC = ['#34C759', '#248A3D', '#FF9500', '#FF2D55', '#32ADE6', '#007AFF', '#5856D6', '#5856D6', '#FF9500', '#FF3B30', '#5856D6', '#5856D6', '#00C7BE', '#0C817B', '#32ADE6', '#0071A4', '#FF9500', '#FF9500'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], DAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
