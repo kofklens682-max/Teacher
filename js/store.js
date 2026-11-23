@@ -31,6 +31,8 @@ function normalize(d) {
     left: (Array.isArray(g.left) ? g.left : []).filter((s) => s && s.id && s.name && /^\d{4}-\d\d$/.test(s.until || '')).map((s) => ({ id: String(s.id), name: String(s.name), until: s.until, ...(s.added ? { added: +s.added } : {}) })), // students who stopped coming: their old months stay on the books
     color: String(g.color || ''), gone: Array.isArray(g.gone) ? g.gone : [], created: g.created || Date.now(), ...(g.solo ? { solo: true } : {}),
   }));
+  // 23 Nov 2026 (teacher): Round-Up Starter restarted with the new 1-2-weeks-ahead plan; once, every Round-Up group goes back to week 1 lesson 1 (24 Nov).
+  if (!out.ruNew2311) { out.groups.forEach((g) => { if (g.lvl === 'RU') { g.week = 1; g.les = 1; } }); out.ruNew2311 = 1; }
   const P = out.pay && typeof out.pay === 'object' && !Array.isArray(out.pay) ? out.pay : {}, bp = blankPay();
   const first = /^\d{4}-\d\d$/.test(P.start) ? P.start : bp.start; // 27 Oct 2026: fees count from September (once; after that the saved start is kept)
   out.pay = { start: P.sep26 ? first : (first > '2026-09' ? '2026-09' : first), sep26: 1, pays: Array.isArray(P.pays) ? P.pays.filter((x) => x && x.sid && x.date && +x.amount > 0).map((x) => ({ ...x, amount: +x.amount })) : [] };
